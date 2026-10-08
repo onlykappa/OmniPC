@@ -185,6 +185,7 @@ export class OmniDoctor {
     const userAction = primary?.manualSteps.length ? primary.manualSteps : primary ? [] : ['Run a full health check from OmniDoctor.', `Open ${name}'s log from the Emulators page for details.`];
     return {
       launchId,
+      gameId: rec.gameId,
       gameTitle: game?.title ?? null,
       emulatorId: rec.emulatorId,
       headline: primary && primary.confidence !== 'low' ? 'We found the issue.' : primary ? 'We found a likely cause.' : "We couldn't pinpoint the cause.",

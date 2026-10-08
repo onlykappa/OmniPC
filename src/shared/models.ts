@@ -463,6 +463,7 @@ export interface HealthReport {
 
 export interface FailureAnalysis {
   launchId: number;
+  gameId: number | null;
   gameTitle: string | null;
   emulatorId: string;
   headline: string;

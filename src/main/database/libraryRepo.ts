@@ -384,6 +384,11 @@ export class LibraryRepo {
     this.setCoverThumb(gameId, null);
   }
 
+  gamesForSystems(systems: string[]): GameRow[] {
+    if (!systems.length) return [];
+    return this.db.prepare(`SELECT g.* FROM games g LEFT JOIN metadata m ON m.game_id = g.id WHERE g.availability != 'missing' AND COALESCE(m.locked, 0) = 0 AND g.system_id IN (${systems.map(() => '?').join(',')})`).all(...systems) as GameRow[];
+  }
+
   gamesNeedingMetadata(limit = 500): GameRow[] {
     return this.db.prepare("SELECT g.* FROM games g LEFT JOIN metadata m ON m.game_id = g.id WHERE g.availability != 'missing' AND (m.game_id IS NULL OR (m.fetched_at IS NULL AND m.locked = 0)) LIMIT ?").all(limit) as GameRow[];
   }

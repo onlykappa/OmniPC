@@ -40,6 +40,7 @@ export interface EmulatorManagerDeps {
   notifications: NotificationService;
   hardware: () => HardwareProfile | null;
   controllerProfile: () => UniversalControllerProfile;
+  fetchImpl?: typeof fetch;
 }
 
 async function moveDir(from: string, to: string): Promise<void> {
@@ -164,7 +165,7 @@ export class EmulatorManager {
     const source = sourceForManifest(a.manifest);
     if (!source) throw new OmniFailure({ code: 'NO_SOURCE', whatHappened: `${a.manifest.name} has no download source configured.` });
     const hw = this.d.hardware();
-    return source.resolveLatest({ channel: this.d.settings.get('updateChannel'), cpuFeatures: hw?.cpu.features ?? [] });
+    return source.resolveLatest({ channel: this.d.settings.get('updateChannel'), cpuFeatures: hw?.cpu.features ?? [], fetchImpl: this.d.fetchImpl });
   }
 
   async checkUpdates(): Promise<EmulatorStatus[]> {

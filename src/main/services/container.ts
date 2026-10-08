@@ -116,6 +116,7 @@ export class AppContainer {
       notifications: this.notifications,
       hardware: () => this.hardwareProfile,
       controllerProfile: () => this.controllerProfile(),
+      fetchImpl: opts.host.fetchImpl,
     });
     this.bios = new BiosService(this.registry, this.paths, this.ops);
     this.saves = new SaveService(this.registry, this.emulators, this.paths, this.ops);
@@ -176,6 +177,24 @@ export class AppContainer {
       onSessionEnd: () => opts.host.onSessionEnd?.(),
     });
     this.importer = new ImportService(this.registry, this.emulators, this.library, this.ops, this.bios, this.paths);
+    // When an emulator becomes available, its bundled title/compatibility
+    // database can improve metadata for games scanned earlier.
+    const installed = new Set(this.registry.implemented().filter((a) => this.emulators.isInstalled(a.manifest.id)).map((a) => a.manifest.id));
+    this.bus.on('emulators.changed', ({ id }) => {
+      if (!id || installed.has(id) || !this.emulators.isInstalled(id) || this.safeMode) return;
+      installed.add(id);
+      const systems = this.registry.require(id).manifest.systems;
+      const targets = this.library.gamesForSystems(systems);
+      if (!targets.length) return;
+      this.jobs.start('metadata.refresh', `Updating ${targets.length} game(s) with ${this.registry.require(id).manifest.name} data`, async (ctx) => {
+        for (const [i, g] of targets.entries()) {
+          ctx.throwIfCancelled();
+          await this.metadata.refresh(g.id).catch(() => undefined);
+          ctx.progress((i + 1) / targets.length);
+        }
+        this.bus.emit('library.changed', { reason: 'metadata' });
+      }, { lockKey: 'metadata' });
+    });
     this.bus.on('launch.ended', (e) => {
       if (e.gameId !== null) this.bus.emit('library.changed', { reason: 'played' });
     });

@@ -292,7 +292,7 @@ export class DolphinAdapter implements EmulatorAdapter {
     return args;
   }
 
-  async buildLaunch(target: LaunchTarget, executable: string, settings: EmulatorSettings, profile: GameProfile | null): Promise<LaunchCommand> {
+  async buildLaunch(target: LaunchTarget, executable: string, settings: EmulatorSettings, profile: GameProfile | null, _version?: string | null): Promise<LaunchCommand> {
     const args = ['-u', this.userDir(), '-b'];
     const notes: string[] = [];
     if (profile) {

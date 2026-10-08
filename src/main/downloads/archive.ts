@@ -39,7 +39,11 @@ function extractZip(archivePath: string, dest: string): Promise<{ files: number 
     yauzl.open(archivePath, { lazyEntries: true, decodeStrings: true, validateEntrySizes: true }, (err, zip) => {
       if (err || !zip) return reject(OmniFailure.wrap(err, 'ARCHIVE_INVALID', 'The downloaded ZIP archive could not be opened. It may be damaged.'));
       let files = 0;
-      zip.on('error', (e) => reject(OmniFailure.wrap(e, 'ARCHIVE_INVALID', 'The ZIP archive is damaged.')));
+      zip.on('error', (e: Error) => {
+        // yauzl validates entry names itself ("invalid relative path", "absolute path").
+        if (/invalid relative path|absolute path|invalid characters/i.test(e.message)) reject(new OmniFailure({ code: 'ARCHIVE_TRAVERSAL', whatHappened: 'The archive contains an unsafe path and was rejected.', detected: [e.message] }));
+        else reject(OmniFailure.wrap(e, 'ARCHIVE_INVALID', 'The ZIP archive is damaged.'));
+      });
       zip.on('end', () => resolvePromise({ files }));
       zip.on('entry', (entry: yauzl.Entry) => {
         const bad = isUnsafeEntry(entry.fileName);
