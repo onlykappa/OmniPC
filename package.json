@@ -22,7 +22,8 @@
     "start": "electron .",
     "rebuild:electron": "electron-builder install-app-deps",
     "dist": "npm run build && electron-builder --win --x64",
-    "dist:dir": "npm run build && electron-builder --win --x64 --dir"
+    "dist:dir": "npm run build && electron-builder --win --x64 --dir",
+    "smoke": "npm run build && xvfb-run -a node scripts/smoke-electron.mjs smoke-shots"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",
@@ -50,5 +51,9 @@
     "vite": "^7.3.7",
     "vitest": "^3.2.7",
     "zustand": "^5.0.15"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/onlykappa/emudeck-pc"
   }
 }

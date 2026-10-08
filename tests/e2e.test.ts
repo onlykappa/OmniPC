@@ -13,7 +13,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSyn
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { AppContainer } from '../src/main/services/container';
-import { runProcess } from '../src/main/platform/exec';
+import { processRunner, runProcess } from '../src/main/platform/exec';
 import { IniDocument } from '../src/main/config/ini';
 import { fakeEmulatorScript, nintendoHeader, ps2Bios, ps2Iso, write } from './fixtures/builders.mjs';
 import { tempDir } from './helpers';
@@ -65,6 +65,11 @@ function waitLaunchEnd(): Promise<{ launchId: number; outcome: string; needsAnal
     const off = c.bus.on('launch.ended', (e) => { off(); resolve(e); });
   });
 }
+
+// Stand-in emulator "executables" are Node scripts: run them through Node on every OS.
+const realRun = processRunner.run;
+processRunner.run = (cmd, args, opts) => (/(pcsx2-qt|Dolphin)\.exe$/i.test(cmd) ? realRun(process.execPath, [cmd, ...args], opts) : realRun(cmd, args, opts));
+afterAll(() => { processRunner.run = realRun; });
 
 beforeAll(async () => {
   for (const v of ['2.8.2', '2.8.3']) {

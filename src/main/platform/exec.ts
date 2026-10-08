@@ -12,7 +12,19 @@ export interface ExecResult {
   error: NodeJS.ErrnoException | null;
 }
 
-export function runProcess(command: string, args: string[], opts: { timeoutMs?: number; cwd?: string; env?: NodeJS.ProcessEnv; input?: string; maxOutput?: number } = {}): Promise<ExecResult> {
+export type RunOptions = { timeoutMs?: number; cwd?: string; env?: NodeJS.ProcessEnv; input?: string; maxOutput?: number };
+
+/**
+ * Indirection used by integration tests to run stand-in emulator executables
+ * (Node scripts) on any OS. Production code always uses the default runner.
+ */
+export const processRunner: { run: (command: string, args: string[], opts: RunOptions) => Promise<ExecResult> } = { run: spawnAndCollect };
+
+export function runProcess(command: string, args: string[], opts: RunOptions = {}): Promise<ExecResult> {
+  return processRunner.run(command, args, opts);
+}
+
+function spawnAndCollect(command: string, args: string[], opts: RunOptions = {}): Promise<ExecResult> {
   return new Promise((resolve) => {
     const max = opts.maxOutput ?? 4 * 1024 * 1024;
     let stdout = '';

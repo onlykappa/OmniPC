@@ -30,7 +30,7 @@ h1 { font-size: 30px; }
 h2 { font-size: 21px; }
 h3 { font-size: 16px; }
 p { margin: 0; }
-code, pre, .mono { font-family: 'Cascadia Code', Consolas, ui-monospace, monospace; font-size: 12.5px; }
+code, pre, .mono { overflow-wrap: anywhere; font-family: 'Cascadia Code', Consolas, ui-monospace, monospace; font-size: 12.5px; }
 pre { white-space: pre-wrap; word-break: break-word; background: #0a0c11; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; max-height: 360px; overflow: auto; margin: 0; }
 :focus { outline: none; }
 :focus-visible, .pad-focus :focus { box-shadow: var(--focus); }

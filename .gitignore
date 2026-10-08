@@ -7,3 +7,4 @@ coverage/
 .vite/
 /tmp/
 *.tsbuildinfo
+smoke-shots/

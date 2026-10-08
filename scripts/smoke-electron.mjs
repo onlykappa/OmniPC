@@ -20,6 +20,18 @@ page.on('pageerror', (e) => console.log('[pageerror]', e.message));
 await page.setViewportSize({ width: 1440, height: 900 });
 await page.waitForTimeout(2500);
 await page.screenshot({ path: join(out, '00-start.png') });
+if (process.env.SMOKE_SEED) {
+  // Drive the real backend through the preload bridge, exactly like the UI does.
+  const inv = (m, ...a) => page.evaluate(([m, a]) => window.omni.invoke(m, ...a), [m, a]);
+  await inv('app.settings.set', { onboardingComplete: true });
+  await inv('library.addPath', process.env.SMOKE_SEED);
+  await inv('library.scan', { full: false });
+  await page.waitForTimeout(3000);
+  await inv('doctor.run', 'full');
+  await page.waitForTimeout(2500);
+  await page.reload();
+  await page.waitForTimeout(2000);
+}
 const routes = process.env.SMOKE_ROUTES?.split(',') ?? [];
 for (const r of routes) {
   await page.evaluate((h) => (window.location.hash = h), r);

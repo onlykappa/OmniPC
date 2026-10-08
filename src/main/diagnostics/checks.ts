@@ -212,7 +212,8 @@ export const CHECKS: HealthCheck[] = [
         if (s.status === 'found') out.push(f(this.id, this.category, { severity: 'pass', title: `${s.label}: found`, evidence: s.files.filter((x) => x.valid).map((x) => `${x.path} — ${x.description}`), subject }, s.systemId));
         else if (s.status === 'invalid') out.push(f(this.id, this.category, { severity: s.required ? 'problem' : 'warning', title: `${s.label}: file(s) present but not valid`, detail: s.files.map((x) => `${x.path}: ${x.description}`).join('\n'), subject, manualSteps: ['Re-dump the BIOS from your own console.'] }, s.systemId));
         else if (s.status === 'missing') out.push(f(this.id, this.category, {
-          severity: 'problem',
+          // A missing BIOS only blocks play once the system's emulator integration exists.
+          severity: d.registry.get(s.emulatorId)?.manifest.implemented ? 'problem' : 'warning',
           title: `${s.label} missing`,
           detail: `${getSystem(s.systemId)?.name} games cannot start without it. OmniDeck cannot download BIOS files; you must supply one dumped from your own console.`,
           subject,

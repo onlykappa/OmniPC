@@ -70,25 +70,38 @@ export class MetadataService {
         continue;
       }
       if (!res) continue;
-      sources.push(p.label);
+      let contributed = false;
       if (res.title && !current.locked && res.title !== subj.title) {
         this.repo.setTitle(gameId, res.title);
         subj.title = res.title;
+        contributed = true;
       }
-      if (res.compatibility !== undefined) this.repo.setCompatibility(gameId, res.compatibility);
+      if (res.compatibility !== undefined) {
+        this.repo.setCompatibility(gameId, res.compatibility);
+        contributed ||= res.compatibility !== null;
+      }
       for (const [k, v] of Object.entries(res.metadata ?? {})) {
-        if (v !== null && v !== undefined && (patch as Record<string, unknown>)[k] == null) (patch as Record<string, unknown>)[k] = v;
+        if (k === 'source' || k === 'sourceId') continue;
+        if (v !== null && v !== undefined && (patch as Record<string, unknown>)[k] == null) {
+          (patch as Record<string, unknown>)[k] = v;
+          contributed = true;
+        }
       }
+      if (res.title || res.compatibility) contributed = true;
       for (const a of res.artwork ?? []) {
-        if (a.kind === 'cover' && !cover) cover = await this.fetchArtwork(gameId, a);
-        if (a.kind === 'background' && !background) background = await this.fetchArtwork(gameId, a);
+        if (a.kind === 'cover' && !cover && (cover = await this.fetchArtwork(gameId, a))) contributed = true;
+        if (a.kind === 'background' && !background && (background = await this.fetchArtwork(gameId, a))) contributed = true;
+      }
+      if (contributed) {
+        sources.push(p.label);
+        if (!patch.sourceId && res.sourceId) patch.sourceId = res.sourceId;
       }
     }
     const next = this.repo.saveMetadata(gameId, {
       ...patch,
       coverPath: cover ?? (current.coverPath && existsSync(current.coverPath) ? current.coverPath : null),
       backgroundPath: background ?? (current.backgroundPath && existsSync(current.backgroundPath) ? current.backgroundPath : null),
-      source: patch.source ?? (sources.length ? sources.join(', ') : current.source),
+      source: sources.length ? sources.join(', ') : current.source,
       fetchedAt: new Date().toISOString(),
     });
     await this.updateThumb(gameId, next.coverPath);

@@ -128,6 +128,7 @@ const fs = require('fs');
 const path = require('path');
 const args = process.argv.slice(2);
 const mode = process.env.FAKE_EMU_MODE || 'ok';
+if (args.includes('-testconfig') || args.includes('--version')) { console.log('Fake emulator 1.0'); process.exit(0); }
 const logIdx = args.indexOf('-logfile');
 const log = process.env.FAKE_EMU_LOG;
 const say = (l) => { if (log) { fs.mkdirSync(path.dirname(log), { recursive: true }); fs.appendFileSync(log, l + '\\n'); } };
