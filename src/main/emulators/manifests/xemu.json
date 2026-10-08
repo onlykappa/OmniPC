@@ -1,0 +1,27 @@
+{
+  "id": "xemu",
+  "name": "xemu",
+  "systems": [
+    "xbox"
+  ],
+  "website": "https://xemu.app",
+  "repository": "https://github.com/xemu-project/xemu",
+  "license": "GPL-2.0",
+  "implemented": false,
+  "plannedNote": "The xemu adapter is planned. Its manifest is declared so the library can recognise xbox games, but OmniDeck does not yet install, configure or launch xemu. You can still point OmniDeck at an existing xemu installation in a future release.",
+  "download": {
+    "kind": "none",
+    "allowedHosts": []
+  },
+  "executable": "xemu.exe",
+  "supportedExtensions": [],
+  "dependencies": [],
+  "configFiles": [],
+  "logFiles": [],
+  "saveDirs": [],
+  "biosRequirements": [],
+  "notes": [
+    "Not implemented in this build."
+  ],
+  "assumptions": []
+}

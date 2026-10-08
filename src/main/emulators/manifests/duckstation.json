@@ -1,0 +1,27 @@
+{
+  "id": "duckstation",
+  "name": "DuckStation",
+  "systems": [
+    "ps1"
+  ],
+  "website": "https://www.duckstation.org",
+  "repository": "https://github.com/stenzek/duckstation",
+  "license": "CC-BY-NC-ND-4.0 (source-available; official builds only)",
+  "implemented": false,
+  "plannedNote": "The DuckStation adapter is planned. Its manifest is declared so the library can recognise ps1 games, but OmniDeck does not yet install, configure or launch DuckStation. You can still point OmniDeck at an existing DuckStation installation in a future release.",
+  "download": {
+    "kind": "none",
+    "allowedHosts": []
+  },
+  "executable": "duckstation-qt-x64-ReleaseLTCG.exe",
+  "supportedExtensions": [],
+  "dependencies": [],
+  "configFiles": [],
+  "logFiles": [],
+  "saveDirs": [],
+  "biosRequirements": [],
+  "notes": [
+    "Not implemented in this build."
+  ],
+  "assumptions": []
+}

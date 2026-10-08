@@ -1,0 +1,27 @@
+{
+  "id": "rpcs3",
+  "name": "RPCS3",
+  "systems": [
+    "ps3"
+  ],
+  "website": "https://rpcs3.net",
+  "repository": "https://github.com/RPCS3/rpcs3",
+  "license": "GPL-2.0",
+  "implemented": false,
+  "plannedNote": "The RPCS3 adapter is planned. Its manifest is declared so the library can recognise ps3 games, but OmniDeck does not yet install, configure or launch RPCS3. You can still point OmniDeck at an existing RPCS3 installation in a future release.",
+  "download": {
+    "kind": "none",
+    "allowedHosts": []
+  },
+  "executable": "rpcs3.exe",
+  "supportedExtensions": [],
+  "dependencies": [],
+  "configFiles": [],
+  "logFiles": [],
+  "saveDirs": [],
+  "biosRequirements": [],
+  "notes": [
+    "Not implemented in this build."
+  ],
+  "assumptions": []
+}

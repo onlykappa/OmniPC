@@ -1,0 +1,55 @@
+{
+  "id": "dolphin",
+  "name": "Dolphin",
+  "systems": ["gc", "wii"],
+  "website": "https://dolphin-emu.org",
+  "repository": "https://github.com/dolphin-emu/dolphin",
+  "license": "GPL-2.0-or-later",
+  "implemented": true,
+  "download": {
+    "kind": "dolphin-update",
+    "track": "beta",
+    "allowedHosts": ["dolphin-emu.org", "dl.dolphin-emu.org"]
+  },
+  "executable": "Dolphin.exe",
+  "supportedExtensions": [".iso", ".gcm", ".gcz", ".rvz", ".wia", ".ciso", ".wbfs", ".wad", ".dol", ".elf", ".tgc", ".m3u"],
+  "dependencies": ["vcredist-x64"],
+  "configFiles": [
+    { "label": "Main settings (Dolphin.ini)", "path": "{data}/User/Config/Dolphin.ini", "format": "ini" },
+    { "label": "Graphics (GFX.ini)", "path": "{data}/User/Config/GFX.ini", "format": "ini" },
+    { "label": "GameCube controllers (GCPadNew.ini)", "path": "{data}/User/Config/GCPadNew.ini", "format": "ini" },
+    { "label": "Wii Remotes (WiimoteNew.ini)", "path": "{data}/User/Config/WiimoteNew.ini", "format": "ini" },
+    { "label": "Hotkeys (Hotkeys.ini)", "path": "{data}/User/Config/Hotkeys.ini", "format": "ini" },
+    { "label": "Logging (Logger.ini)", "path": "{data}/User/Config/Logger.ini", "format": "ini" }
+  ],
+  "logFiles": [{ "label": "Emulator log (dolphin.log)", "path": "{data}/User/Logs/dolphin.log" }],
+  "saveDirs": [
+    { "label": "GameCube memory cards", "path": "{saves}/GC" },
+    { "label": "Wii NAND (Wii saves)", "path": "{saves}/Wii" },
+    { "label": "Save states", "path": "{data}/User/StateSaves" }
+  ],
+  "biosRequirements": [
+    {
+      "systemId": "gc",
+      "label": "GameCube IPL (optional)",
+      "required": false,
+      "directory": "{bios}/gc",
+      "filenames": ["IPL.bin"],
+      "validator": "size",
+      "sizes": [2097152],
+      "note": "Optional. Dolphin boots games without it using high-level emulation."
+    }
+  ],
+  "notes": [
+    "OmniDeck launches Dolphin with -b (batch) so stopping emulation exits back to OmniDeck.",
+    "Dolphin's User folder is kept outside the program folder (-u) so updates and rollbacks never touch settings or saves."
+  ],
+  "assumptions": [
+    "Verified against Dolphin master source: CLI options -u/--user, -e/--exec, -b/--batch, -C/--config <System>.<Section>.<Key>=<Value>, -v/--video_backend (Source/Core/UICommon/CommandLineParse.cpp).",
+    "Config system names: Main = 'Dolphin', GFX = 'GFX' (Source/Core/Common/Config/Config.cpp).",
+    "The official update endpoint https://dolphin-emu.org/update/latest/<track>/ returns JSON with artifacts[{system:'Windows x64', url}] (same endpoint used by EmuDeck's Windows edition).",
+    "Keys: [Core] GFXBackend (D3D, D3D12, Vulkan, OGL), EmulationSpeed, MemcardAPath, MemcardBPath; [General] NANDRootPath; [Display] Fullscreen; [Interface] ConfirmStop; GFX.ini [Settings] InternalResolution, AspectRatio; [Hardware] VSync.",
+    "XInput device names: XInput/<n>/Gamepad with inputs 'Button A', 'Pad N', 'Shoulder L', 'Trigger L', 'Thumb L', 'Left X+'. SDL devices use 'Button S/E/W/N' (SDLGamepad.h).",
+    "Hotkey keys are '<Group>/<Label>', e.g. 'General/Stop', 'Save State/Save to Selected Slot' (Source/Core/Core/HotkeyManager.cpp)."
+  ]
+}

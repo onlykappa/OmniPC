@@ -1,0 +1,34 @@
+{
+  "id": "retroarch",
+  "name": "RetroArch",
+  "systems": [
+    "nes",
+    "snes",
+    "n64",
+    "gb",
+    "gbc",
+    "gba",
+    "genesis",
+    "arcade"
+  ],
+  "website": "https://www.retroarch.com",
+  "repository": "https://github.com/libretro/RetroArch",
+  "license": "GPL-3.0",
+  "implemented": false,
+  "plannedNote": "The RetroArch adapter is planned. Its manifest is declared so the library can recognise nes/snes/n64/gb/gbc/gba/genesis/arcade games, but OmniDeck does not yet install, configure or launch RetroArch. You can still point OmniDeck at an existing RetroArch installation in a future release.",
+  "download": {
+    "kind": "none",
+    "allowedHosts": []
+  },
+  "executable": "retroarch.exe",
+  "supportedExtensions": [],
+  "dependencies": [],
+  "configFiles": [],
+  "logFiles": [],
+  "saveDirs": [],
+  "biosRequirements": [],
+  "notes": [
+    "Not implemented in this build."
+  ],
+  "assumptions": []
+}

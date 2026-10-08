@@ -1,0 +1,27 @@
+{
+  "id": "cemu",
+  "name": "Cemu",
+  "systems": [
+    "wiiu"
+  ],
+  "website": "https://cemu.info",
+  "repository": "https://github.com/cemu-project/Cemu",
+  "license": "MPL-2.0",
+  "implemented": false,
+  "plannedNote": "The Cemu adapter is planned. Its manifest is declared so the library can recognise wiiu games, but OmniDeck does not yet install, configure or launch Cemu. You can still point OmniDeck at an existing Cemu installation in a future release.",
+  "download": {
+    "kind": "none",
+    "allowedHosts": []
+  },
+  "executable": "Cemu.exe",
+  "supportedExtensions": [],
+  "dependencies": [],
+  "configFiles": [],
+  "logFiles": [],
+  "saveDirs": [],
+  "biosRequirements": [],
+  "notes": [
+    "Not implemented in this build."
+  ],
+  "assumptions": []
+}

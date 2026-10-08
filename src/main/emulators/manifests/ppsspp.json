@@ -1,0 +1,27 @@
+{
+  "id": "ppsspp",
+  "name": "PPSSPP",
+  "systems": [
+    "psp"
+  ],
+  "website": "https://www.ppsspp.org",
+  "repository": "https://github.com/hrydgard/ppsspp",
+  "license": "GPL-2.0-or-later",
+  "implemented": false,
+  "plannedNote": "The PPSSPP adapter is planned. Its manifest is declared so the library can recognise psp games, but OmniDeck does not yet install, configure or launch PPSSPP. You can still point OmniDeck at an existing PPSSPP installation in a future release.",
+  "download": {
+    "kind": "none",
+    "allowedHosts": []
+  },
+  "executable": "PPSSPPWindows64.exe",
+  "supportedExtensions": [],
+  "dependencies": [],
+  "configFiles": [],
+  "logFiles": [],
+  "saveDirs": [],
+  "biosRequirements": [],
+  "notes": [
+    "Not implemented in this build."
+  ],
+  "assumptions": []
+}

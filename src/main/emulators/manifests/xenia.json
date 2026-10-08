@@ -1,0 +1,27 @@
+{
+  "id": "xenia",
+  "name": "Xenia Canary",
+  "systems": [
+    "x360"
+  ],
+  "website": "https://xenia.jp",
+  "repository": "https://github.com/xenia-canary/xenia-canary",
+  "license": "BSD-3-Clause",
+  "implemented": false,
+  "plannedNote": "The Xenia Canary adapter is planned. Its manifest is declared so the library can recognise x360 games, but OmniDeck does not yet install, configure or launch Xenia Canary. You can still point OmniDeck at an existing Xenia Canary installation in a future release.",
+  "download": {
+    "kind": "none",
+    "allowedHosts": []
+  },
+  "executable": "xenia_canary.exe",
+  "supportedExtensions": [],
+  "dependencies": [],
+  "configFiles": [],
+  "logFiles": [],
+  "saveDirs": [],
+  "biosRequirements": [],
+  "notes": [
+    "Not implemented in this build."
+  ],
+  "assumptions": []
+}

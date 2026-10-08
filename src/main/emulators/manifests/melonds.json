@@ -1,0 +1,27 @@
+{
+  "id": "melonds",
+  "name": "melonDS",
+  "systems": [
+    "nds"
+  ],
+  "website": "https://melonds.kuribo64.net",
+  "repository": "https://github.com/melonDS-emu/melonDS",
+  "license": "GPL-3.0",
+  "implemented": false,
+  "plannedNote": "The melonDS adapter is planned. Its manifest is declared so the library can recognise nds games, but OmniDeck does not yet install, configure or launch melonDS. You can still point OmniDeck at an existing melonDS installation in a future release.",
+  "download": {
+    "kind": "none",
+    "allowedHosts": []
+  },
+  "executable": "melonDS.exe",
+  "supportedExtensions": [],
+  "dependencies": [],
+  "configFiles": [],
+  "logFiles": [],
+  "saveDirs": [],
+  "biosRequirements": [],
+  "notes": [
+    "Not implemented in this build."
+  ],
+  "assumptions": []
+}

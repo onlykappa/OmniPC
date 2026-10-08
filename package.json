@@ -1,0 +1,52 @@
+{
+  "name": "omnideck-pc",
+  "productName": "OmniDeck PC",
+  "version": "0.1.0",
+  "description": "Unified Windows emulation platform: one place to install, configure, launch, diagnose and repair your emulators.",
+  "main": "dist/main/index.js",
+  "license": "MIT",
+  "private": true,
+  "author": "OmniDeck PC contributors",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run build:main && npm run build:renderer",
+    "build:main": "node scripts/build-main.mjs",
+    "build:renderer": "vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
+    "lint": "npm run typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "start": "electron .",
+    "rebuild:electron": "electron-builder install-app-deps",
+    "dist": "npm run build && electron-builder --win --x64",
+    "dist:dir": "npm run build && electron-builder --win --x64 --dir"
+  },
+  "dependencies": {
+    "7zip-bin": "^5.2.0",
+    "better-sqlite3": "^13.0.3",
+    "yauzl": "^3.2.0",
+    "yazl": "^3.3.1"
+  },
+  "devDependencies": {
+    "@tanstack/react-virtual": "^3.14.13",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/yauzl": "^3.4.0",
+    "@types/yazl": "^3.3.1",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "43.7.5",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.25.12",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.7",
+    "vitest": "^3.2.7",
+    "zustand": "^5.0.15"
+  }
+}
