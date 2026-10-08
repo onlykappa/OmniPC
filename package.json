@@ -25,6 +25,7 @@
     "dist:dir": "npm run build && electron-builder --win --x64 --dir"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.132.1",
     "7zip-bin": "^5.2.0",
     "better-sqlite3": "^13.0.3",
     "yauzl": "^3.2.0",

@@ -20,7 +20,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   aiEnabled: false,
   aiProvider: 'none',
   aiApiKey: '',
-  aiModel: 'claude-sonnet-5-5',
+  aiModel: 'claude-opus-5-5',
   hotkeys: {
     modifier: 'Select',
     bindings: {

@@ -1,0 +1,99 @@
+{
+  "emulatorId": "dolphin",
+  "description": "Dolphin log/panic-alert signatures. Strings verified against Dolphin master source (Core/Boot/Boot.cpp, VideoBackends/D3D12, VideoBackends/Vulkan).",
+  "rules": [
+    {
+      "id": "dolphin.invalid-disc",
+      "title": "Dolphin does not recognise the game file",
+      "category": "library",
+      "severity": "problem",
+      "confidence": "high",
+      "exitCodes": [],
+      "patterns": ["is an invalid GCM/ISO file, or is not a GC/Wii ISO", "Could not recognize file "],
+      "probableCause": "The file is not a valid GameCube/Wii image (corrupt, truncated, or a different console's game).",
+      "fix": null,
+      "manual": ["Verify the game file (Dolphin can verify dumps from its game properties).", "Re-dump or re-copy the game."],
+      "references": []
+    },
+    {
+      "id": "dolphin.file-missing",
+      "title": "The game file does not exist",
+      "category": "library",
+      "severity": "problem",
+      "confidence": "high",
+      "exitCodes": [],
+      "patterns": ["The specified file \".*\" does not exist", "Files specified in the M3U file", "No paths found in the M3U file"],
+      "probableCause": "The game was moved/deleted, its drive is disconnected, or a multi-disc playlist points at missing discs.",
+      "fix": { "actionId": "library.rescan", "label": "Rescan the library", "safety": "safe", "params": {} },
+      "manual": ["Reconnect the drive that holds your games."],
+      "references": []
+    },
+    {
+      "id": "dolphin.d3d12-failed",
+      "title": "Direct3D 12 failed to start in Dolphin",
+      "category": "graphics",
+      "severity": "problem",
+      "confidence": "high",
+      "exitCodes": [],
+      "patterns": ["d3d12\\.dll could not be loaded", "Failed to create D3D12 context", "Failed to create D3D12 global resources"],
+      "probableCause": "Your GPU or driver does not support Dolphin's Direct3D 12 backend.",
+      "fix": { "actionId": "emulator.setRenderer", "label": "Switch to Direct3D 11", "safety": "low", "params": { "renderer": "d3d11" } },
+      "manual": ["Update your graphics driver."],
+      "references": []
+    },
+    {
+      "id": "dolphin.swapchain-failed",
+      "title": "Dolphin could not create its game window",
+      "category": "graphics",
+      "severity": "problem",
+      "confidence": "medium",
+      "exitCodes": [],
+      "patterns": ["Failed to create D3D swap chain"],
+      "probableCause": "The Direct3D renderer could not attach to the window, often due to a driver or overlay conflict.",
+      "fix": { "actionId": "emulator.setRenderer", "label": "Switch to Vulkan", "safety": "low", "params": { "renderer": "vulkan" } },
+      "manual": ["Disable screen overlays (recording/FPS tools) and try again."],
+      "references": []
+    },
+    {
+      "id": "dolphin.vulkan-failed",
+      "title": "Vulkan failed to start in Dolphin",
+      "category": "graphics",
+      "severity": "problem",
+      "confidence": "high",
+      "exitCodes": [],
+      "patterns": ["Vulkan: Missing required extension", "Vulkan: Failed to load required", "Vulkan: Failed to find an acceptable (graphics|present) queue", "Vulkan: No extensions supported"],
+      "probableCause": "Your GPU driver's Vulkan support is missing or incomplete.",
+      "fix": { "actionId": "emulator.setRenderer", "label": "Switch to Direct3D 11", "safety": "low", "params": { "renderer": "d3d11" } },
+      "manual": ["Update your graphics driver."],
+      "references": []
+    },
+    {
+      "id": "dolphin.ipl-missing",
+      "title": "GameCube IPL not found",
+      "category": "bios",
+      "severity": "warning",
+      "confidence": "high",
+      "exitCodes": [],
+      "patterns": ["Cannot start the game, because the GC IPL could not be found", "Cannot find the GC IPL"],
+      "probableCause": "Dolphin was told to boot through the GameCube main menu (IPL) but no IPL is installed.",
+      "fix": { "actionId": "emulator.regenerateConfig", "label": "Re-apply OmniDeck defaults (skips the IPL)", "safety": "low", "params": { "scope": "all" } },
+      "userSupplied": true,
+      "manual": ["Either add an IPL dumped from your own GameCube in BIOS & Firmware, or disable 'Skip main menu' changes."],
+      "references": []
+    },
+    {
+      "id": "dolphin.ipl-bad",
+      "title": "GameCube IPL is not a known good dump",
+      "category": "bios",
+      "severity": "warning",
+      "confidence": "high",
+      "exitCodes": [],
+      "patterns": ["The IPL file is not a known good dump"],
+      "probableCause": "The IPL file is damaged or modified.",
+      "fix": null,
+      "userSupplied": true,
+      "manual": ["Re-dump the IPL from your own console, or remove it (Dolphin works without one)."],
+      "references": []
+    }
+  ]
+}
