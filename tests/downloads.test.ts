@@ -51,6 +51,7 @@ describe('trusted sources', () => {
 
   it('turns rolling tags into comparable versions', () => {
     expect(releaseVersion({ tag_name: 'v2.8.2' }, {})).toBe('2.8.2');
+    expect(releaseVersion({ tag_name: 'v.0.19.0' }, {})).toBe('0.19.0'); // shadPS4 tag style
     const a = releaseVersion({ tag_name: 'latest' }, { updated_at: '2026-10-07T12:34:56Z' });
     const b = releaseVersion({ tag_name: 'latest' }, { updated_at: '2026-10-09T08:00:00Z' });
     expect(a).toBe('latest-20261007.1234');

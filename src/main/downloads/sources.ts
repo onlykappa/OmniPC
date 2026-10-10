@@ -81,7 +81,7 @@ export function releaseVersion(rel: Pick<GhRelease, 'tag_name' | 'published_at'>
     const hash = /-([0-9a-f]{7,40})$/i.exec(rel.tag_name)?.[1];
     return `${t.slice(0, 4)}.${t.slice(4, 6)}.${t.slice(6, 8)}.${t.slice(8, 12)}${hash ? `-${hash}` : ''}`;
   }
-  if (/\d/.test(rel.tag_name)) return rel.tag_name.replace(/^v/, '');
+  if (/\d/.test(rel.tag_name)) return rel.tag_name.replace(/^v\.?/i, '');
   const stamp = asset.updated_at ?? rel.published_at ?? '';
   return stamp ? `${rel.tag_name}-${stamp.slice(0, 16).replace(/[-:]/g, '').replace('T', '.')}` : rel.tag_name;
 }
