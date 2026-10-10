@@ -432,7 +432,7 @@ export class CemuAdapter implements EmulatorAdapter {
     };
     const cleanup = overrides.length ? async () => void (await this.restoreJournal()) : undefined;
     if (overrides.length) notes.push(`Per-game profile applied for this session only (${overrides.length} overrides); the overridden settings.xml values are restored when Cemu exits.`);
-    return { command: executable, args, cwd: dirname(executable), logFile: this.logFile(), prepare, cleanup, notes };
+    return { command: executable, args, targetArgs: 2, cwd: dirname(executable), logFile: this.logFile(), prepare, cleanup, notes };
   }
 
   private journalPath(): string {

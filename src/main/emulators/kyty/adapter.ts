@@ -321,6 +321,7 @@ export class KytyAdapter implements EmulatorAdapter {
     return {
       command: executable,
       args,
+      targetArgs: 2,
       cwd,
       logFile,
       prepare: async () => {

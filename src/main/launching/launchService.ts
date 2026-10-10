@@ -118,7 +118,7 @@ export class LaunchService {
     if (!existsSync(exe)) {
       return { ok: false, launchId: null, error: omniError('EMULATOR_MISSING', `${adapter.manifest.name}'s executable is missing.`, { detected: [exe], probableCause: 'The emulator folder was deleted or quarantined by antivirus.', omniCanFix: { actionId: 'emulator.reinstall', label: `Reinstall ${adapter.manifest.name}`, safety: 'high', params: { emulatorId: emuId }, description: 'Settings and saves are kept.' } }) };
     }
-    const bios = (await adapter.biosStatus()).find((b) => b.systemId === game.system_id);
+    const bios = (await adapter.biosStatus()).find((b) => b.systemId === game.system_id && b.required && b.status !== 'found');
     if (bios?.required && bios.status !== 'found') {
       return { ok: false, launchId: null, error: omniError('BIOS_MISSING', `${bios.label} is ${bios.status === 'invalid' ? 'not valid' : 'missing'}.`, { detected: [`Checked ${bios.expectedLocation}`], probableCause: `${adapter.manifest.name} cannot start ${sys?.name} games without a BIOS.`, userAction: ['Import a BIOS dumped from your own console in Settings > BIOS & Firmware.', 'Automatic repair is unavailable because the BIOS must be supplied by you.'] }) };
     }
@@ -142,7 +142,7 @@ export class LaunchService {
       // Custom emulator args go before the game argument terminator.
       const extra = splitArgs(custom.customArgs);
       const idx = cmd.args.findIndex((a) => a === '--' || a === '-e');
-      cmd.args.splice(idx === -1 ? cmd.args.length - 1 : idx, 0, ...extra);
+      cmd.args.splice(idx === -1 ? Math.max(0, cmd.args.length - (cmd.targetArgs ?? 1)) : idx, 0, ...extra);
     }
     return this.spawnSession(cmd, { gameId, gameTitle: game.title, emulatorId: emuId, version, routeReason: reason, preflight });
   }

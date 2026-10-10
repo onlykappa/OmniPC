@@ -43,6 +43,11 @@ export interface LaunchCommand {
   args: string[];
   cwd: string;
   env?: Record<string, string>;
+  /**
+   * How many trailing args form the game target (default 1). Emulator-level
+   * custom args are inserted before them, e.g. 2 for "-dvd_path <game>".
+   */
+  targetArgs?: number;
   /** Emulator log written during this session (for failure analysis). */
   logFile: string | null;
   /** Steps executed right before spawning (e.g. session config overrides). */
