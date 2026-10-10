@@ -13,12 +13,14 @@ describe('emulator manifests & registry', () => {
   });
 
   it('marks only real integrations as implemented', () => {
-    expect(reg.implemented().map((a) => a.manifest.id).sort()).toEqual(['dolphin', 'duckstation', 'pcsx2']);
-    expect(reg.get('rpcs3')?.manifest.implemented).toBe(false);
+    expect(reg.implemented().map((a) => a.manifest.id).sort()).toEqual(['dolphin', 'duckstation', 'kyty', 'pcsx2', 'ppsspp', 'rpcs3']);
+    expect(reg.get('xenia')?.manifest.implemented).toBe(false);
   });
 
   it('every system has at least one emulator in the registry', () => {
-    for (const s of SYSTEMS) expect(reg.forSystem(s.id).length, s.id).toBeGreaterThan(0);
+    // ps4 is recognised in the library but has no integrated emulator yet.
+    for (const s of SYSTEMS.filter((x) => x.emulators.length)) expect(reg.forSystem(s.id).length, s.id).toBeGreaterThan(0);
+    expect(reg.forSystem('ps5')[0].manifest.id).toBe('kyty');
   });
 
   it('routes systems to the preferred emulator first', () => {

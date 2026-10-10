@@ -162,6 +162,19 @@ export const ACTIONS: RepairAction[] = [
     },
   },
   {
+    id: 'emulator.installFirmware',
+    label: 'Install console firmware',
+    safety: 'low',
+    async run(params, d) {
+      const a = requireEmulator(params, d) as ReturnType<typeof requireEmulator> & { installFirmware?: (exe: string) => Promise<{ ok: boolean; installedVersion: string | null; notes: string[] }> };
+      const exe = d.emulators.executableFor(a.manifest.id);
+      if (!a.installFirmware || !exe) throw new OmniFailure({ code: 'NOT_SUPPORTED', whatHappened: `${a.manifest.name} has no firmware installer or is not installed.` });
+      const r = await a.installFirmware(exe);
+      if (!r.ok) throw new OmniFailure({ code: 'FIRMWARE_INSTALL_FAILED', whatHappened: `${a.manifest.name} firmware was not installed.`, detected: r.notes });
+      return { message: `${a.manifest.name} firmware ${r.installedVersion ?? ''} installed`.replace(/\s+/g, ' '), details: r.notes, backupIds: [], undo: null };
+    },
+  },
+  {
     id: 'emulator.reinstall',
     label: 'Reinstall emulator',
     safety: 'high',

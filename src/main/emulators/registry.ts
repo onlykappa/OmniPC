@@ -8,17 +8,17 @@ import type { EmulatorAdapter } from './adapter';
 import { Pcsx2Adapter } from './pcsx2/adapter';
 import { DolphinAdapter } from './dolphin/adapter';
 import { DuckStationAdapter } from './duckstation/adapter';
+import { KytyAdapter } from './kyty/adapter';
+import { Rpcs3Adapter } from './rpcs3/adapter';
+import { PpssppAdapter } from './ppsspp/adapter';
 import { PlannedAdapter } from './planned';
 import retroarch from './manifests/retroarch.json';
-import rpcs3 from './manifests/rpcs3.json';
-import ppsspp from './manifests/ppsspp.json';
 import cemu from './manifests/cemu.json';
 import melonds from './manifests/melonds.json';
 import xenia from './manifests/xenia.json';
 import xemu from './manifests/xemu.json';
-import kyty from './manifests/kyty.json';
 
-const PLANNED = [retroarch, rpcs3, ppsspp, cemu, melonds, xenia, xemu, kyty] as unknown as EmulatorManifest[];
+const PLANNED = [retroarch, cemu, melonds, xenia, xemu] as unknown as EmulatorManifest[];
 
 export function validateManifest(m: EmulatorManifest): string[] {
   const errors: string[] = [];
@@ -33,6 +33,9 @@ export function validateManifest(m: EmulatorManifest): string[] {
     for (const h of m.download.allowedHosts) if (/[/:]/.test(h)) errors.push(`allowedHosts entry "${h}" must be a bare host name`);
     if (m.download.kind === 'versioned-url' && (!/^[\w.-]+\/[\w.-]+$/.test(m.download.repo ?? '') || !/^https:\/\//.test(m.download.urlTemplate ?? ''))) errors.push('versioned-url needs repo and an https urlTemplate');
     if (m.download.kind === 'github-release' && !/^[\w.-]+\/[\w.-]+$/.test(m.download.repo ?? '')) errors.push('github-release needs repo "owner/name"');
+    if (m.download.versionPattern) {
+      try { new RegExp(m.download.versionPattern); } catch { errors.push('invalid versionPattern'); }
+    }
     for (const p of m.download.assetPatterns ?? []) {
       try { new RegExp(p); } catch { errors.push(`invalid asset pattern ${p}`); }
     }
@@ -45,7 +48,7 @@ export class AdapterRegistry {
   private adapters = new Map<string, EmulatorAdapter>();
 
   constructor(paths: AppPaths, extra: EmulatorAdapter[] = []) {
-    const all: EmulatorAdapter[] = [new Pcsx2Adapter(paths), new DolphinAdapter(paths), new DuckStationAdapter(paths), ...PLANNED.map((m) => new PlannedAdapter(m, paths)), ...extra];
+    const all: EmulatorAdapter[] = [new Pcsx2Adapter(paths), new DolphinAdapter(paths), new DuckStationAdapter(paths), new KytyAdapter(paths), new Rpcs3Adapter(paths), new PpssppAdapter(paths), ...PLANNED.map((m) => new PlannedAdapter(m, paths)), ...extra];
     for (const a of all) {
       const errors = validateManifest(a.manifest);
       if (errors.length) throw new Error(`Invalid manifest for ${a.manifest.id}: ${errors.join('; ')}`);

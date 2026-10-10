@@ -75,7 +75,12 @@ function cpuOk(name: string, features: string[]): boolean {
  * "latest"/"preview") get the asset build time appended so updates compare
  * correctly: "latest-20261007.1234".
  */
-export function releaseVersion(rel: Pick<GhRelease, 'tag_name' | 'published_at'>, asset: Pick<GhAsset, 'updated_at'>): string {
+export function releaseVersion(rel: Pick<GhRelease, 'tag_name' | 'published_at'>, asset: Pick<GhAsset, 'updated_at'>, from: 'tag' | 'published-at' = 'tag'): string {
+  if (from === 'published-at' && rel.published_at) {
+    const t = rel.published_at.slice(0, 16).replace(/[-:]/g, '').replace('T', '');
+    const hash = /-([0-9a-f]{7,40})$/i.exec(rel.tag_name)?.[1];
+    return `${t.slice(0, 4)}.${t.slice(4, 6)}.${t.slice(6, 8)}.${t.slice(8, 12)}${hash ? `-${hash}` : ''}`;
+  }
   if (/\d/.test(rel.tag_name)) return rel.tag_name.replace(/^v/, '');
   const stamp = asset.updated_at ?? rel.published_at ?? '';
   return stamp ? `${rel.tag_name}-${stamp.slice(0, 16).replace(/[-:]/g, '').replace('T', '.')}` : rel.tag_name;
@@ -83,7 +88,7 @@ export function releaseVersion(rel: Pick<GhRelease, 'tag_name' | 'published_at'>
 
 export class GitHubReleaseSource implements TrustedSource {
   readonly label: string;
-  constructor(private readonly repo: string, private readonly patterns: string[], private readonly exclude: string[], private readonly allowedHosts: string[]) {
+  constructor(private readonly repo: string, private readonly patterns: string[], private readonly exclude: string[], private readonly allowedHosts: string[], private readonly versionFrom: 'tag' | 'published-at' = 'tag', private readonly versionPattern?: string) {
     if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) throw new Error(`invalid GitHub repo ${repo}`);
     this.label = `GitHub Releases (github.com/${repo})`;
   }
@@ -119,7 +124,7 @@ export class GitHubReleaseSource implements TrustedSource {
       if (!hostAllowed(asset.browser_download_url, this.allowedHosts)) continue;
       const digest = asset.digest && /^sha256:[0-9a-f]{64}$/i.test(asset.digest) ? asset.digest.slice(7).toLowerCase() : null;
       return {
-        version: releaseVersion(rel, asset),
+        version: (this.versionPattern && new RegExp(this.versionPattern, 'i').exec(asset.name)?.[1]) || releaseVersion(rel, asset, this.versionFrom),
         url: asset.browser_download_url,
         fileName: asset.name,
         sizeBytes: asset.size ?? null,
@@ -212,7 +217,7 @@ export class VersionedUrlSource implements TrustedSource {
 export function sourceForManifest(m: EmulatorManifest): TrustedSource | null {
   const d = m.download;
   if (d.kind === 'versioned-url' && d.repo && d.urlTemplate) return new VersionedUrlSource(d.repo, d.urlTemplate, d.allowedHosts);
-  if (d.kind === 'github-release' && d.repo) return new GitHubReleaseSource(d.repo, d.assetPatterns ?? [], d.assetExclude ?? [], d.allowedHosts);
+  if (d.kind === 'github-release' && d.repo) return new GitHubReleaseSource(d.repo, d.assetPatterns ?? [], d.assetExclude ?? [], d.allowedHosts, d.versionFrom, d.versionPattern);
   if (d.kind === 'dolphin-update') return new DolphinUpdateSource(d.track ?? 'beta', d.allowedHosts);
   return null;
 }

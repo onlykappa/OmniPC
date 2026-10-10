@@ -106,6 +106,14 @@ export class ImportService {
 
   private async importBios(c: SetupImportCandidate): Promise<string[]> {
     const out: string[] = [];
+    if (c.biosDirs?.length) {
+      for (const { dir, systemId } of c.biosDirs) {
+        for (const f of existsSync(dir) ? await walkFiles(dir, 1) : []) {
+          await this.bios.import(systemId as never, f).then(() => out.push(`BIOS imported for ${systemId}: ${f}`)).catch((e) => out.push(`Skipped ${f}: ${(e as Error).message}`));
+        }
+      }
+      return out.length ? out : ['No BIOS files found to import'];
+    }
     const dirs = c.source === 'emudeck' ? [join(c.details.find((d) => d.startsWith('BIOS: '))?.slice(6) ?? '')] : c.source === 'pcsx2' ? [await this.pcsx2BiosDir(c.path)] : [join(c.path, 'GC')];
     for (const dir of dirs) {
       if (!dir || !existsSync(dir)) continue;
@@ -135,7 +143,7 @@ export class ImportService {
     const pcsx2Mem = pcsx2.saveLocations()[0].path;
     const dolphinGc = join(dolphin.paths().saves, 'GC');
     const dolphinWii = join(dolphin.paths().saves, 'Wii');
-    const copies: [string, string, string][] = [];
+    const copies: [string, string, string][] = (c.saveCopies ?? []).map((s) => [s.from, s.to, s.label]);
     if (c.source === 'pcsx2') {
       const doc = await loadIni(join(c.path, 'inis', 'PCSX2.ini'));
       const v = doc.get('Folders', 'MemoryCards');

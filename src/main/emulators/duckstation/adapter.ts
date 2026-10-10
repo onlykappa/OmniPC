@@ -545,6 +545,11 @@ export class DuckStationAdapter implements EmulatorAdapter {
       details: [`Settings: ${ini}`, `BIOS folder: ${bios}`, `Memory cards: ${mem}`, `Save states: ${states}`],
       importable: { settings: true, saves: existsSync(mem) || existsSync(states), bios: existsSync(bios), romPaths: romPaths.length > 0, useInstallation: false },
       romPaths,
+      saveCopies: [
+        { from: mem, to: join(this.paths().saves, 'memcards'), label: 'DuckStation memory cards' },
+        { from: states, to: join(this.paths().saves, 'savestates'), label: 'DuckStation save states' },
+      ],
+      biosDirs: [{ dir: bios, systemId: 'ps1' }],
     };
   }
 

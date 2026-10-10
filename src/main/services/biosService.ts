@@ -64,6 +64,7 @@ export class BiosService {
       if (!info.valid) throw new OmniFailure({ code: 'BIOS_INVALID', whatHappened: 'That file is not a valid PlayStation 2 BIOS.', detected: [info.description], userAction: ['Choose the BIOS image dumped from your PS2 (usually a 4 MB .bin file).'] });
       description = info.description;
     }
+    if (systemId === 'ps1' && st.size !== 512 * 1024) throw new OmniFailure({ code: 'BIOS_INVALID', whatHappened: 'A PlayStation BIOS must be exactly 512 KB.', detected: [`File size ${st.size} bytes`], userAction: ['Choose the BIOS image dumped from your PS1 (e.g. SCPH-1001.bin).'] });
     if (systemId === 'gc' && st.size !== 2 * 1024 * 1024) throw new OmniFailure({ code: 'BIOS_INVALID', whatHappened: 'A GameCube IPL must be exactly 2 MB.', detected: [`File size ${st.size} bytes`] });
     const dir = this.paths.systemBiosDir(systemId);
     await mkdir(dir, { recursive: true });

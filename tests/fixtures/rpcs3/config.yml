@@ -1,0 +1,43 @@
+Core:
+  PPU Decoder: Recompiler (LLVM)
+  PPU Threads: 2
+  SPU Decoder: Recompiler (LLVM)
+  Libraries Control: []
+  Libraries LLE:
+    - libfs.sprx
+    - libsysutil.sprx
+  HLE lwmutex: false
+  SPU Block Size: Safe
+VFS:
+  Enable /host_root/: false
+  Initialize Directories: true
+  Disk cache maximum size (MB): 5120
+Video:
+  Renderer: OpenGL
+  Resolution: 1280x720
+  Aspect ratio: 16:9
+  Frame limit: Auto
+  MSAA: Auto
+  VSync Mode: Disabled
+  Resolution Scale: 100
+  Anisotropic Filter Override: 0
+  Vulkan:
+    Adapter: ""
+    Exclusive Fullscreen Mode: Automatic
+  Performance Overlay:
+    Enabled: false
+    Font: n023055ms.ttf
+Audio:
+  Renderer: Cubeb
+  Audio Channels: Stereo
+System:
+  License Area: SCEE
+  Language: English (US)
+  Process ARGV: {}
+Miscellaneous:
+  Automatically start games after boot: true
+  Exit RPCS3 when process finishes: false
+  Start games in fullscreen mode: false
+  GDB Server: 127.0.0.1:2345
+  Window Title Format: "FPS: %F | %R | %V | %T [%t]"
+Log: {}

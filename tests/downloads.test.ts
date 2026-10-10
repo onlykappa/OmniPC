@@ -55,6 +55,17 @@ describe('trusted sources', () => {
     const b = releaseVersion({ tag_name: 'latest' }, { updated_at: '2026-10-09T08:00:00Z' });
     expect(a).toBe('latest-20261007.1234');
     expect(compareVersions(b, a)).toBe(1);
+    // Several KytyPS5 builds per day: order by publish time, not by commit hash.
+    const early = releaseVersion({ tag_name: 'KytyPS5-2026-10-10-f3836bb', published_at: '2026-10-10T03:10:00Z' }, {}, 'published-at');
+    const late = releaseVersion({ tag_name: 'KytyPS5-2026-10-10-307fdcf', published_at: '2026-10-10T05:45:00Z' }, {}, 'published-at');
+    expect(late).toBe('2026.10.10.0545-307fdcf');
+    expect(compareVersions(late, early)).toBe(1);
+  });
+
+  it('can read the version from the asset name (RPCS3 build-<hash> tags)', async () => {
+    const src = new GitHubReleaseSource('RPCS3/rpcs3-binaries-win', ['_win64_msvc\\.7z$'], ['\\.sha256$'], HOSTS, 'tag', '^rpcs3-v([\\d.]+-\\d+-[0-9a-f]+)_win64');
+    const rel = await src.resolveLatest({ channel: 'stable', cpuFeatures: [], fetchImpl: fakeFetch({ 'https://api.github.com/repos/RPCS3/rpcs3-binaries-win/releases/latest': () => Response.json({ tag_name: 'build-8f2fe1a9', prerelease: false, draft: false, assets: [{ name: 'rpcs3-v0.0.43-20262-8f2fe1a9_win64_msvc.7z.sha256', browser_download_url: 'https://github.com/a/x.sha256', size: 1 }, { name: 'rpcs3-v0.0.43-20262-8f2fe1a9_win64_msvc.7z', browser_download_url: 'https://github.com/a/x.7z', size: 1 }] }) }) });
+    expect(rel.version).toBe('0.0.43-20262-8f2fe1a9');
   });
 
   it('reports offline errors in plain language', async () => {

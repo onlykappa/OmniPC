@@ -177,6 +177,14 @@ export interface EmulatorManifest {
   download: {
     kind: 'github-release' | 'dolphin-update' | 'versioned-url' | 'none';
     repo?: string;
+    /**
+     * github-release: how the version is derived. 'tag' (default) uses the tag;
+     * 'published-at' uses the publish time (YYYY.MM.DD.HHMM) plus the tag's trailing
+     * commit hash, for projects that ship several dated builds per day.
+     */
+    versionFrom?: 'tag' | 'published-at';
+    /** github-release: regex whose first group extracts the version from the asset name (overrides versionFrom). */
+    versionPattern?: string;
     /** versioned-url: download URL with a {version} placeholder. */
     urlTemplate?: string;
     track?: string;
@@ -695,12 +703,16 @@ export interface AppInfo {
 
 export interface SetupImportCandidate {
   id: string;
-  source: 'pcsx2' | 'dolphin' | 'emudeck' | 'retroarch' | 'rpcs3' | 'cemu' | 'duckstation';
+  source: 'pcsx2' | 'dolphin' | 'emudeck' | 'retroarch' | 'rpcs3' | 'cemu' | 'duckstation' | 'ppsspp' | 'kyty' | 'melonds' | 'xenia' | 'xemu';
   label: string;
   path: string;
   details: string[];
   importable: { settings: boolean; saves: boolean; bios: boolean; romPaths: boolean; useInstallation: boolean };
   romPaths: string[];
+  /** Save folders to copy (never overwriting OmniDeck files), declared by the adapter. */
+  saveCopies?: { from: string; to: string; label: string }[];
+  /** BIOS folders whose files are offered to the BIOS importer for a system. */
+  biosDirs?: { dir: string; systemId: string }[];
 }
 
 export interface AiContextPreview {
