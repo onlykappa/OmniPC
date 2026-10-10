@@ -1,27 +1,65 @@
 {
   "id": "melonds",
   "name": "melonDS",
-  "systems": [
-    "nds"
-  ],
+  "systems": ["nds"],
   "website": "https://melonds.kuribo64.net",
   "repository": "https://github.com/melonDS-emu/melonDS",
   "license": "GPL-3.0",
-  "implemented": false,
-  "plannedNote": "The melonDS adapter is planned. Its manifest is declared so the library can recognise nds games, but OmniDeck does not yet install, configure or launch melonDS. You can still point OmniDeck at an existing melonDS installation in a future release.",
+  "implemented": true,
   "download": {
-    "kind": "none",
-    "allowedHosts": []
+    "kind": "github-release",
+    "repo": "melonDS-emu/melonDS",
+    "assetPatterns": ["^melonDS-[\\w.]+-windows-x86_64\\.zip$"],
+    "assetExclude": ["aarch64", "arm64"],
+    "allowedHosts": ["github.com", "api.github.com", "objects.githubusercontent.com", "release-assets.githubusercontent.com"]
   },
   "executable": "melonDS.exe",
-  "supportedExtensions": [],
+  "supportedExtensions": [".nds", ".dsi", ".ids", ".srl"],
   "dependencies": [],
-  "configFiles": [],
-  "logFiles": [],
-  "saveDirs": [],
-  "biosRequirements": [],
-  "notes": [
-    "Not implemented in this build."
+  "configFiles": [
+    { "label": "Main settings (melonDS.toml, next to melonDS.exe)", "path": "{app}/melonDS.toml", "format": "other" }
   ],
-  "assumptions": []
+  "logFiles": [],
+  "saveDirs": [
+    { "label": "Game saves (.sav)", "path": "{saves}/saves" },
+    { "label": "Save states (.ml1-.ml8)", "path": "{saves}/states" }
+  ],
+  "biosRequirements": [
+    {
+      "systemId": "nds",
+      "label": "DS BIOS and firmware (optional)",
+      "required": false,
+      "directory": "{bios}/nds",
+      "filenames": ["bios7.bin", "bios9.bin", "firmware.bin"],
+      "validator": "size",
+      "sizes": [16384, 4096, 131072, 262144, 524288],
+      "note": "Optional: melonDS has a built-in FreeBIOS. For best compatibility and Wi-Fi, dump bios7.bin (16 KB), bios9.bin (4 KB) and firmware.bin (128/256/512 KB) from your own DS. OmniDeck enables external BIOS mode only when all three are valid, and never downloads BIOS files."
+    }
+  ],
+  "notes": [
+    "OmniDeck downloads the official melonDS Windows x86_64 build from github.com/melonDS-emu/melonDS (a single statically linked melonDS.exe; no Visual C++ runtime needed).",
+    "The official Windows build is portable-only: melonDS.toml (and wfcsettings.bin) always live next to melonDS.exe and there is no option to move them. OmniDeck carries these files over on every update, rollback and uninstall.",
+    "Game saves, save states and cheat files are redirected to the OmniDeck Saves/data folders instead of next to each ROM.",
+    "External DS BIOS mode is enabled only when bios7.bin, bios9.bin and a writable firmware.bin with valid sizes are in BIOS\\nds; otherwise melonDS's built-in FreeBIOS is used (a misconfigured external BIOS would stop every boot at an error dialog). In external mode melonDS writes firmware user settings back into firmware.bin.",
+    "Controller bindings use melonDS's raw SDL joystick indices for an Xbox-compatible pad (A/B/X/Y by label, L/R on the bumpers, D-pad plus left stick for the D-pad). Use the profile's Nintendo layout option for position-based A/B/X/Y. Right stick and LT bindings assume SDL's RAWINPUT axis order.",
+    "melonDS hotkeys are single inputs, not combinations: OmniDeck binds fast-forward, fullscreen and DS volume to the hotkey's action button only when the DS pad does not use that button (e.g. fast-forward on RT), plus swap screens on R3 and microphone (blow) on L3.",
+    "melonDS has no exit hotkey, batch mode, deadzone or rumble setting: close the window (Alt+F4) or stop the game from OmniDeck; stick-as-D-pad triggers at half deflection.",
+    "Per-game profiles are applied to melonDS.toml for the session only and restored when the game exits.",
+    "Zip/7z archives are not listed as supported: an archive containing several ROMs makes melonDS ask which one to load. DSiWare (.dsi) needs DSi mode and a DSi NAND configured in melonDS itself."
+  ],
+  "assumptions": [
+    "Verified against melonDS-emu/melonDS tag 1.1 (b86390e, 2025-11-18; latest tag per git ls-remote) and master @ 906e9eb (2026-08-24). Relevant frontend files are unchanged in meaning between the two except where noted.",
+    "Release asset melonDS-1.1-windows-x86_64.zip (releases/expanded_assets/1.1; also windows-aarch64, macOS, ubuntu, appimage, BSD zips). The zip contains only melonDS.exe at its root (43.5 MB). Its import table has UCRT api-ms-win-crt-* DLLs but no VCRUNTIME140/MSVCP140, so no VC++ redistributable is required. FileVersion/ProductVersion resource = '1.1'. PE subsystem = Windows GUI.",
+    "Config location (src/frontend/qt_sdl/main.cpp pathInit): emuDirectory = <exe dir>/portable if that folder exists; else, with WIN32_PORTABLE (CMakeLists.txt option PORTABLE defaults ON for WIN32), the exe directory; non-portable builds use QStandardPaths::ConfigLocation + '/melonDS'. Platform::GetLocalFilePath resolves relative names against emuDirectory. No CLI option or env var changes it.",
+    "Config file: melonDS.toml (Config.cpp kConfigFile), parsed with toml11 4.2; if missing, legacy melonDS.ini (+ melonDS.<n>.ini) is imported (LoadLegacy). Config::Load swallows toml::syntax_error and starts EMPTY, and Config::Save (called e.g. from MainWindow::closeEvent) rewrites the whole file, so a broken file loses all settings. Typed getters (Table::GetInt/GetBool/GetString) reset a value of the wrong TOML type to its default, so OmniDeck writes ints/bools/strings with the right types.",
+    "Keys used (Config.cpp LegacyFile + EmuInstance.cpp): global Emu.ExternalBIOSEnable, DS.BIOS7Path, DS.BIOS9Path, DS.FirmwarePath, Emu.DirectBoot (default true), 3D.Renderer (0 software, 1 OpenGL, 2 OpenGL compute; EmuInstance.h renderer3D_*), 3D.GL.ScaleFactor (1-16), Screen.VSync, LimitFPS; per instance Instance0.SaveFilePath, SavestatePath, CheatFilePath (EmuInstance::getAssetPath uses them as folders; empty = ROM folder), Instance0.JoystickID, Instance0.Joystick.<A|B|Select|Start|Right|Left|Up|Down|R|L|X|Y|HK_*>, Instance0.Window0.ScreenAspectTop/Bot (Screen.h aspectRatios ids: 0 4:3, 4 5:3, 1 16:9, 2 21:9, 3 window).",
+    "BIOS validation (EmuInstance::verifySetup/verifyDSBIOS/verifyDSFirmware): with Emu.ExternalBIOSEnable the ARM9 BIOS must be 0x1000 bytes, ARM7 0x4000 bytes, and the DS firmware 0x20000 (accepted, not bootable), 0x40000 or 0x80000 bytes AND writable; any failure is a modal error on boot (Window.cpp). Without external BIOS, FreeBIOS and a generated firmware are used.",
+    "Joystick encoding (EmuInstanceInput.cpp joystickButtonDown, InputConfig/MapButton.h): -1 = unmapped; low 16 bits = button index, or 0x100|(hat<<4)|dir with dir 1 up/2 right/4 down/8 left, 0xFFFF = none; bit 16 set = axis with (dir<<20)|(axis<<24), dir 0 positive (> 16384), 1 negative (< -16384), 2 trigger (> 0). Both parts are OR-ed. melonDS uses the raw SDL_Joystick API (SDL_JoystickOpen(JoystickID)), not SDL_GameController.",
+    "UNVERIFIED in melonDS source (depends on SDL2's Windows joystick drivers): an Xbox-compatible pad exposes buttons A0 B1 X2 Y3 LB4 RB5 Back6 Start7 LS8 RS9 Guide10 and the D-pad as hat 0 under both the XInput and RAWINPUT drivers; axes are LeftX0 LeftY1 (down positive) for both, RightX2 RightY3 LT4 RT5 under RAWINPUT (XInput driver: LT2 RightX3 RightY4 RT5). OmniDeck assumes the RAWINPUT order; default bindings only use buttons, hat 0, left-stick axes and RT (axis 5 in both).",
+    "Hotkeys (EmuInstanceInput.cpp hotkeyNames, EmuThread.cpp): HK_FastForward (hold), HK_FullscreenToggle, HK_VolumeUp/HK_VolumeDown (DS console volume), HK_SwapScreens, HK_Mic, HK_Lid, HK_Pause, HK_Reset, ... Each is a single joystick value, so chords are impossible. There is no quit or save-state hotkey (save states are keyboard shortcuts Shift+F1-F8 / F1-F8 in Window.cpp).",
+    "Rumble (inputRumbleStart) is driven only by the emulated Slot-2 Rumble Pak and has no setting; stick thresholds are fixed at +-16384.",
+    "CLI (CLI.cpp ManageArgs, QCommandLineParser): positional <nds> [gba]; -b/--boot auto|always|never (auto = boot if a ROM is given; anything else exits with an error), -f/--fullscreen, -a/--archive-file, -A/--archive-file-gba, -h/--help. Unknown options make QCommandLineParser show an error box and exit, so OmniDeck drops them. There is no --version flag, so the smoke test never runs the GUI executable.",
+    "First-run prompts: none in melonDS 1.1 (no setup wizard, no update check, no confirm-on-exit; Config::Load only errors when the config folder is not writable). Remaining startup dialogs: BIOS verification errors (avoided by enabling external BIOS only with valid files), archive member selection (archives not offered), ROM-not-found.",
+    "melonDS 1.1 Windows builds pass argv through SDL's WinMain as UTF-8 before Qt's CommandLineToArgvW hack; master (main.cpp, after 1.1) fixed this, so ROM paths with non-ASCII characters may fail to load on 1.1 (not reproduced)."
+  ]
 }

@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { AdapterRegistry, validateManifest } from '../src/main/emulators/registry';
 import { AppPaths } from '../src/main/core/paths';
+import { PlannedAdapter } from '../src/main/emulators/planned';
 import { SYSTEMS } from '../src/shared/systems';
 import { tempDir } from './helpers';
 
@@ -13,8 +14,8 @@ describe('emulator manifests & registry', () => {
   });
 
   it('marks only real integrations as implemented', () => {
-    expect(reg.implemented().map((a) => a.manifest.id).sort()).toEqual(['cemu', 'dolphin', 'duckstation', 'kyty', 'pcsx2', 'ppsspp', 'rpcs3']);
-    expect(reg.get('xenia')?.manifest.implemented).toBe(false);
+    for (const a of reg.all()) expect(a.manifest.implemented, a.manifest.id).toBe(!(a instanceof PlannedAdapter));
+    expect(reg.implemented().map((a) => a.manifest.id)).toEqual(expect.arrayContaining(['cemu', 'dolphin', 'duckstation', 'kyty', 'pcsx2', 'ppsspp', 'rpcs3', 'xenia', 'melonds']));
   });
 
   it('every system has at least one emulator in the registry', () => {
@@ -34,7 +35,8 @@ describe('emulator manifests & registry', () => {
   });
 
   it('planned adapters refuse to install or launch', async () => {
-    await expect(reg.require('xenia').buildLaunch({} as never, '', {} as never, null, null)).rejects.toThrow(/not implemented/);
+    const planned = new PlannedAdapter({ ...reg.require('pcsx2').manifest, id: 'future', implemented: false }, new AppPaths(t.dir, t.dir));
+    await expect(planned.buildLaunch()).rejects.toThrow(/not implemented/);
   });
   afterAll(t.cleanup);
 });

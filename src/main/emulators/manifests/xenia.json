@@ -7,21 +7,77 @@
   "website": "https://xenia.jp",
   "repository": "https://github.com/xenia-canary/xenia-canary",
   "license": "BSD-3-Clause",
-  "implemented": false,
-  "plannedNote": "The Xenia Canary adapter is planned. Its manifest is declared so the library can recognise x360 games, but OmniDeck does not yet install, configure or launch Xenia Canary. You can still point OmniDeck at an existing Xenia Canary installation in a future release.",
+  "implemented": true,
   "download": {
-    "kind": "none",
-    "allowedHosts": []
+    "kind": "github-release",
+    "repo": "xenia-canary/xenia-canary",
+    "assetPatterns": [
+      "^xenia_canary_windows_?\\.(7z|zip)$"
+    ],
+    "assetExclude": [
+      "linux",
+      "AppImage"
+    ],
+    "allowedHosts": [
+      "github.com",
+      "api.github.com",
+      "objects.githubusercontent.com",
+      "release-assets.githubusercontent.com"
+    ],
+    "versionFrom": "published-at"
   },
   "executable": "xenia_canary.exe",
-  "supportedExtensions": [],
-  "dependencies": [],
-  "configFiles": [],
-  "logFiles": [],
-  "saveDirs": [],
+  "supportedExtensions": [
+    ".iso",
+    ".xex",
+    ".zar"
+  ],
+  "dependencies": [
+    "vcredist-x64"
+  ],
+  "configFiles": [
+    {
+      "label": "Xenia settings (xenia-canary.config.toml)",
+      "path": "{data}/xenia-canary.config.toml",
+      "format": "other"
+    }
+  ],
+  "logFiles": [
+    {
+      "label": "Emulator log (xenia.log)",
+      "path": "{data}/logs/xenia.log"
+    }
+  ],
+  "saveDirs": [
+    {
+      "label": "Profiles, saves, DLC and title updates (content)",
+      "path": "{saves}"
+    }
+  ],
   "biosRequirements": [],
   "notes": [
-    "Not implemented in this build."
+    "OmniDeck starts xenia_canary.exe with --storage_root (settings in the OmniDeck data folder), --content_root (profiles, saves, DLC and title updates in the OmniDeck Saves folder), --cache_root and --log_file, so updates and rollbacks never touch settings or saves. The game path is passed last; closing the Xenia window ends the session.",
+    "Xenia needs no Xbox 360 firmware or keys. Disc images (.iso), executables (default.xex), .zar archives and STFS/GoD containers are supported; original Xbox games are not.",
+    "Create a Xenia profile once (open Xenia from OmniDeck without a game, Profiles > Create profile). Until a profile exists Xenia shows a 'No Profiles Found' window and games cannot save.",
+    "Renderer: Direct3D 12 (default, like upstream) or Vulkan. Resolution scale writes draw_resolution_scale_x/y (1x = 720p, up to 3x); higher scales need a lot of VRAM and break some effects.",
+    "Controllers: Xbox controllers use the native XInput driver; DualSense/DualShock/Switch Pro/generic pads use SDL with the standard Xbox layout. Xenia has no gamepad button remapping and no controller selection (players follow connection order); OmniDeck configures rumble and stick dead zones. Xenia's controller hotkeys (Guide + button, fixed) stay disabled.",
+    "Per-game profiles are passed as command-line cvar overrides; Xenia's own per-title configs (data/config/<TITLEID>.config.toml) keep working underneath. F11 toggles fullscreen, Esc leaves it.",
+    "Requires a CPU with AVX and the Microsoft Visual C++ x64 runtime."
   ],
-  "assumptions": []
+  "assumptions": [
+    "Verified against xenia-canary/xenia-canary commit 6e2caa5c6e0c44a83a6fbd50eb3001cfd536f35b (2026-10-09).",
+    "Releases (.github/workflows/Orchestrator.yml job release + Create_release.yml): every push to canary_experimental creates a release in xenia-canary/xenia-canary itself ('gh release create' with --latest, REPO=github.repository), tag = 7-char commit hash, title <hash>_canary_experimental. Confirmed on github.com/xenia-canary/xenia-canary/releases: latest c3ec0ba (2026-10-10) with assets xenia_canary_windows.7z and xenia_canary_linux.AppImage. The older xenia-canary/xenia-canary-releases repo stopped at 02d2cb5 (2026-03-24, asset xenia_canary_windows_.zip), so it is not used; the asset pattern still accepts the old .zip naming.",
+    "Windows asset (.github/workflows/Windows_x86.yml 'Prepare artifacts'): 7z a xenia_canary_windows.7z xenia_canary.exe LICENSE — the exe sits at the archive root; no DLLs are shipped. CMakeLists.txt uses CMake's default MSVC runtime (/MD, dynamic), hence vcredist-x64, and /arch:AVX (base/main_init_win.cc refuses CPUs without AVX).",
+    "Tags are bare commit hashes and cannot be ordered, so download.versionFrom = published-at (YYYY.MM.DD.HHMM). The exe has no VERSIONINFO (app/main_resources.rc holds only the icon); the build string '<branch>@<commit> on <date>' is compiled in (app/emulator_window.cc base_title_) and shown by the smoke test.",
+    "app/xenia_main.cc EmulatorApp::OnInitialize: storage_root = --storage_root, else the exe folder when cvars::portable (transient, default TRUE on Windows) or portable.txt exists, else Documents\\Xenia (base/filesystem_win.cc GetUserFolder). content_root defaults to <storage_root>/content, cache_root to <storage_root>/cache_host; relative values are resolved against storage_root. config::SetupConfig(storage_root) then loads <storage_root>/xenia-canary.config.toml (config.cc config_name).",
+    "config.cc: --config <file> (CmdVar) loads that file instead when it exists; ReadConfig is followed by SaveConfig, which rewrites the whole file as sorted '[Category]' tables with 'name = value<pad>\\t# description' lines, so OmniDeck patches values in place and accepts Xenia's reformatting. A config without [Config] defaults_date is treated as pre-2021 and every cvar with an UPDATE_from_* entry is reset (ReadConfig -> IConfigVarUpdate::ApplyUpdates(0)); OmniDeck writes defaults_date = 2026040912 (base/cvar.h kLastCommittedUpdateDate) into files it creates.",
+    "Startup prompts: (1) a TOML type mismatch triggers a blocking 'invalid types' message box (config.cc ReadConfig), so managed values are written with the cvar's exact type and inspectConfig flags wrong types; (2) a TOML parse error is a FatalError (config.cc ParseConfig), so inspectConfig validates syntax and duplicate keys; (3) NoProfileDialog (app/profile_dialogs.cc, opened in EmulatorWindow::OnEmulatorInitialized) is an in-window ImGui window shown while no profile exists — it does not block RunTitle and cannot be disabled by config, so OmniDeck reports it as an info finding. There is no update checker, telemetry prompt or exit confirmation in Xenia Canary. Discord rich presence (General.discord, default true) is turned off.",
+    "Command line (base/cvar.cc ParseLaunchArguments, cxxopts): every config cvar is also a --name[=value] option; the positional option 'target' is the game path (xenia_main.cc AddPositionalOption). Command-line values take precedence over the per-title and global config (base/cvar.h ConfigVar::UpdateValue) and are not written back by SaveConfig (config_value_ only), so per-game overrides are passed as flags. Paths are stored with forward slashes as TOML literal strings (CommandVar<path>::ToString, toml_internal::EscapeString).",
+    "Logging is initialised (InitializeWin32App -> base/logging.cc InitializeLogging) before the config is read, so log_file only works on the command line; default is <exe folder>/xenia.log. OmniDeck passes --log_file.",
+    "Cvars used (category = TOML table): GPU.gpu [any,d3d12,vulkan,null] (xenia_main.cc), GPU.draw_resolution_scale_x/_y int32 1-7 (gpu/texture_cache.cc, kMaxDrawResolutionScaleAlongAxis = 7), GPU.vsync bool and GPU.framerate_limit uint64 (gpu/gpu_flags.cc), Display.fullscreen bool (app/emulator_window.cc, applied in OnEmulatorInitialized), Display.present_letterbox bool (ui/presenter.cc), Storage.content_root/cache_root path, General.discord bool, HID.hid [any,nop,sdl,keyboard,xinput], HID.vibration bool, HID.left/right_stick_deadzone_percentage double 0-1 (hid/input_system.cc), Config.defaults_date uint32.",
+    "Input (xenia_main.cc CreateInputDrivers/Factory::CreateAll): hid=any creates SDL + keyboard and skips XInput; hid=xinput creates XInput + keyboard. There are no gamepad button binding cvars (only HID.Key keyboard bindings, hid/keyboard/keyboard_binding_table.inc) and no device selection; Guide+button controller hotkeys are a fixed table gated by General.controller_hotkeys (default false), so OmniDeck exposes no hotkeys.",
+    "Data written under storage_root: xconfig.settings (kernel/kernel_state.cc), recent.toml (app/emulator_window.cc), patches/ (patcher), plugins/ (emulator.cc), cache/, cache0/, cache1/ guest partitions (xenia_main.cc mount_cache), config/<TITLEID>.config.toml (config.cc LoadGameConfig). Profiles: <content_root>/<XUID>/FFFE07D1/00010000/<XUID> (kernel/xam/profile_manager.cc GetProfilePath); saves: <content_root>/<XUID>/<TitleID>/00000001 (kernel/xam/content_manager.cc).",
+    "Launchable formats (emulator.cc Emulator::LaunchPath/GetFileSignature): XEX/ELF, STFS LIVE/CON/PIRS packages, XISO disc images and ZArchive (.zar); XBE (original Xbox) is rejected; .7z/.zip/.rar archives are refused (emulator_window.cc RunTitle).",
+    "No non-interactive self-test exists: --help prints only with a console, otherwise opens a message box and waits (base/cvar.cc), so the smoke test is static only."
+  ]
 }
