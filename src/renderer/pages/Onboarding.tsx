@@ -11,7 +11,7 @@ import { useStore } from '../lib/store';
 import { Button, Chip, JobSteps, Panel, Segmented, Spinner } from '../components/ui';
 
 const CHOICES: { id: SystemId; note?: string }[] = [
-  { id: 'ps2' }, { id: 'gc' }, { id: 'wii' }, { id: 'ps1' }, { id: 'ps3' }, { id: 'psp' }, { id: 'wiiu' }, { id: 'nds' }, { id: 'xbox' }, { id: 'x360' }, { id: 'snes', note: 'Retro systems (RetroArch)' }, { id: 'ps4', note: 'experimental' },
+  { id: 'ps2' }, { id: 'gc' }, { id: 'wii' }, { id: 'ps1' }, { id: 'ps3' }, { id: 'psp' }, { id: 'wiiu' }, { id: 'nds' }, { id: 'xbox' }, { id: 'x360' }, { id: 'snes', note: 'Retro systems (RetroArch)' }, { id: 'ps4' }, { id: 'ps5', note: 'experimental' },
 ];
 const STEPS = ['Welcome', 'Computer', 'Systems', 'Games', 'Controller', 'Configuration', 'Install'];
 

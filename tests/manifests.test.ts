@@ -15,12 +15,12 @@ describe('emulator manifests & registry', () => {
 
   it('marks only real integrations as implemented', () => {
     for (const a of reg.all()) expect(a.manifest.implemented, a.manifest.id).toBe(!(a instanceof PlannedAdapter));
-    expect(reg.implemented().map((a) => a.manifest.id)).toEqual(expect.arrayContaining(['cemu', 'dolphin', 'duckstation', 'kyty', 'pcsx2', 'ppsspp', 'rpcs3', 'xenia', 'melonds', 'xemu', 'retroarch']));
+    expect(reg.implemented().map((a) => a.manifest.id)).toEqual(expect.arrayContaining(['cemu', 'dolphin', 'duckstation', 'kyty', 'pcsx2', 'ppsspp', 'rpcs3', 'xenia', 'melonds', 'xemu', 'retroarch', 'shadps4']));
   });
 
   it('every system has at least one emulator in the registry', () => {
-    // ps4 is recognised in the library but has no integrated emulator yet.
-    for (const s of SYSTEMS.filter((x) => x.emulators.length)) expect(reg.forSystem(s.id).length, s.id).toBeGreaterThan(0);
+    for (const s of SYSTEMS) expect(reg.forSystem(s.id).length, s.id).toBeGreaterThan(0);
+    expect(reg.forSystem('ps4')[0].manifest.id).toBe('shadps4');
     expect(reg.forSystem('ps5')[0].manifest.id).toBe('kyty');
   });
 

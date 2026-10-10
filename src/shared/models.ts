@@ -703,7 +703,7 @@ export interface AppInfo {
 
 export interface SetupImportCandidate {
   id: string;
-  source: 'pcsx2' | 'dolphin' | 'emudeck' | 'retroarch' | 'rpcs3' | 'cemu' | 'duckstation' | 'ppsspp' | 'kyty' | 'melonds' | 'xenia' | 'xemu';
+  source: 'pcsx2' | 'dolphin' | 'emudeck' | 'retroarch' | 'rpcs3' | 'cemu' | 'duckstation' | 'ppsspp' | 'kyty' | 'melonds' | 'xenia' | 'xemu' | 'shadps4';
   label: string;
   path: string;
   details: string[];

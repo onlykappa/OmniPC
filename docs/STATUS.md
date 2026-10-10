@@ -17,6 +17,7 @@ implemented is labelled *planned* or disabled, never a button that silently does
 | **Dolphin**: install (official update service), update, rollback, repair, reset, uninstall, config generation, GC pad + Wii Remote/Nunchuk, hotkeys, per-game `-C` overrides, smoke test, IPL handling, log rules | ✅ |
 | **DuckStation** (PS1), **PPSSPP** (PSP), **RPCS3** (PS3, incl. firmware install), **Cemu** (Wii U), **melonDS** (DS), **Xenia Canary** (Xbox 360): install, update, rollback, repair, reset, uninstall, config generation with first-run prompts suppressed, controller + hotkeys (within each emulator's limits), save folders under OmniPC, BIOS/firmware/keys status | ✅ (not yet run on Windows) |
 | **xemu** (Xbox, user-supplied MCPX/BIOS/HDD) and **RetroArch** (NES, SNES, N64, GB/GBC/GBA, Genesis, Arcade; cores downloaded per system) | ✅ (not yet run on Windows) |
+| **shadPS4** (PS4): GUI-less core launched by OmniPC, saves under OmniPC Saves, optional firmware modules/fonts from BIOS/ps4, controller + hotkeys | ✅ (not yet run on Windows) |
 | **KytyPS5** (PS5, experimental upstream): install from daily releases, CLI launch of game folders, saves under OmniPC, Vulkan check | ✅ (not yet run on Windows) |
 | Folder-format games: PS3 `PS3_GAME/USRDIR/EBOOT.BIN`, PS4/PS5 `eboot.bin` + `sce_sys` | ✅ |
 | Launch router, process monitoring, play history, crash-loop protection, failure recovery screen | ✅ |
@@ -50,7 +51,6 @@ on Windows is the next milestone.
 
 ## Planned (declared, explicitly disabled in the UI)
 
-- PS4: games are recognised, but no PS4 emulator is integrated (KytyPS5 runs PS5 titles only).
 - In-game overlay drawn on top of emulators. Today: universal hotkeys map to each emulator's
   own features (exit, save/load state, volume, PCSX2 pause menu) and OmniPC shows a session
   bar with "Force close" when focused.

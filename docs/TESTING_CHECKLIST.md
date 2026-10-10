@@ -33,7 +33,7 @@ Note the commit shown on the run (e.g. `d165b17`) so we know which build you tes
 | KytyPS5 | PS5 | Ported, **experimental** (limited compatibility) | nothing; needs a Vulkan 1.3 GPU |
 | xemu | Xbox | Ported | MCPX boot ROM (512 B), flash BIOS, HDD image (.qcow2) → `BIOS\xbox`; CPU with AVX2 |
 | RetroArch | NES, SNES, N64, GB/GBC/GBA, Genesis, Arcade | Ported (cores download on install) | nothing; optional `gba_bios.bin` → `BIOS\gba`, `disksys.rom` → `BIOS\nes` |
-| — | PS4 | Games are recognised, **no emulator yet** (KytyPS5 is PS5-only) | — |
+| shadPS4 | PS4 | Ported | nothing required; optional firmware modules (`.sprx`) + fonts → `BIOS\ps4`; CPU with AVX2, Vulkan GPU |
 
 OmniPC never downloads BIOS, firmware or keys. Use files from your own consoles.
 
@@ -73,6 +73,8 @@ Do these for every row marked "Ported". It's fine to skip emulators you don't ca
 - **KytyPS5:** select a PS5 game *folder* (the one containing `eboot.bin` and `sce_sys\param.json`).
   A console window next to the game is normal. Many games won't boot yet; that's KytyPS5, not OmniPC.
 - **PPSSPP:** no volume hotkeys (PPSSPP has none).
+- **shadPS4:** pick a PS4 game *folder* (with `eboot.bin` and `sce_sys\param.sfo`). Some games
+  need firmware modules from your own PS4 in `BIOS\ps4`. Exit hotkey opens shadPS4's quit menu.
 - **xemu:** all three files must be in `BIOS\xbox` or OmniPC won't launch. Your Xbox game saves
   live inside the HDD image, so back it up. Menu is Guide or Back+Start (xemu's own, not remappable).
 - **RetroArch:** install also downloads one core per system (NES mesen, SNES snes9x, N64
@@ -85,7 +87,7 @@ Do these for every row marked "Ported". It's fine to skip emulators you don't ca
 ## 3. Library checks
 - [ ] Add your games folder (Settings → Library or onboarding). Games appear under the right systems.
 - [ ] PS3 folder games (`PS3_GAME\USRDIR\EBOOT.BIN`) show with their real title.
-- [ ] PS4/PS5 game folders show with their real title (PS4 has no emulator yet).
+- [ ] PS4/PS5 game folders show with their real title.
 - [ ] `.pkg` files are **not** listed as PS3 games (expected).
 
 ---
@@ -114,6 +116,7 @@ Cemu         |  |  |  |  |  |  |
 melonDS      |  |  |  |  |  |  |
 Xenia Canary |  |  |  |  |  |  |
 KytyPS5      |  |  |  |  |  |  |
+shadPS4      |  |  |  |  |  |  |
 
 Exact text of any error / "Needs attention" check:
 
@@ -129,4 +132,4 @@ BIOS, keys or saves) that you can attach.
 
 ## Still to do on my side
 1. Fix whatever your report turns up.
-2. Optional next emulator: shadPS4 for PS4 games, if you want it.
+2. Linux / Steam Deck version (planned for 1.1).

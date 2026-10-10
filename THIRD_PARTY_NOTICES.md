@@ -36,6 +36,7 @@ its own license:
 | Xenia Canary | BSD-3-Clause | GitHub Releases of `xenia-canary/xenia-canary` |
 | xemu | GPL-2.0 | GitHub Releases of `xemu-project/xemu` |
 | RetroArch | GPL-3.0 (each libretro core has its own license) | `buildbot.libretro.com` (stable build; cores from the nightly core directory), version from `libretro/RetroArch` tags |
+| shadPS4 | GPL-2.0-or-later | GitHub Releases of `shadps4-emu/shadPS4` (emulator core) |
 | KytyPS5 | GPL-2.0 | GitHub Releases of `KytyPS5/KytyPS5` |
 
 ## Data read at runtime (not distributed)

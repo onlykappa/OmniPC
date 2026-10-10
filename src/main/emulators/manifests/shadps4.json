@@ -1,0 +1,131 @@
+{
+  "id": "shadps4",
+  "name": "shadPS4",
+  "systems": [
+    "ps4"
+  ],
+  "website": "https://shadps4.net/",
+  "repository": "https://github.com/shadps4-emu/shadPS4",
+  "license": "GPL-2.0-or-later",
+  "implemented": true,
+  "download": {
+    "kind": "github-release",
+    "repo": "shadps4-emu/shadPS4",
+    "assetPatterns": [
+      "^shadps4-win64-sdl-\\d+\\.\\d+\\.\\d+\\.zip$"
+    ],
+    "assetExclude": [
+      "linux",
+      "macos",
+      "ubuntu"
+    ],
+    "versionPattern": "^shadps4-win64-sdl-(\\d+\\.\\d+\\.\\d+)\\.zip$",
+    "allowedHosts": [
+      "github.com",
+      "api.github.com",
+      "objects.githubusercontent.com",
+      "release-assets.githubusercontent.com"
+    ]
+  },
+  "executable": "shadPS4.exe",
+  "supportedExtensions": [
+    ".bin",
+    ".elf"
+  ],
+  "dependencies": [
+    "vcredist-x64"
+  ],
+  "configFiles": [
+    {
+      "label": "shadPS4 settings (config.json)",
+      "path": "{data}/user/config.json",
+      "format": "json"
+    },
+    {
+      "label": "Controller bindings (input_config/default.ini)",
+      "path": "{data}/user/input_config/default.ini",
+      "format": "other"
+    },
+    {
+      "label": "Hotkeys (input_config/global.ini)",
+      "path": "{data}/user/input_config/global.ini",
+      "format": "other"
+    }
+  ],
+  "logFiles": [
+    {
+      "label": "Game log (shad_log.txt)",
+      "path": "{data}/user/log/shad_log.txt"
+    },
+    {
+      "label": "Startup log (shadps4.log)",
+      "path": "{data}/user/log/shadps4.log"
+    }
+  ],
+  "saveDirs": [
+    {
+      "label": "Game saves (user 1)",
+      "path": "{saves}/1000/savedata"
+    },
+    {
+      "label": "Trophies (user 1)",
+      "path": "{saves}/1000/trophy"
+    },
+    {
+      "label": "All PS4 user folders",
+      "path": "{saves}"
+    }
+  ],
+  "biosRequirements": [
+    {
+      "systemId": "ps4",
+      "label": "PS4 firmware modules (optional)",
+      "required": false,
+      "directory": "{bios}/ps4",
+      "filenames": [
+        "libSceLibcInternal.sprx",
+        "libSceNgs2.sprx",
+        "libSceFont.sprx",
+        "libSceFontFt.sprx",
+        "libSceRtc.sprx",
+        "libSceJpegEnc.sprx",
+        "libScePngEnc.sprx",
+        "libSceAvPlayer.sprx",
+        "libSceUlt.sprx",
+        "libSceJson.sprx",
+        "libSceJson2.sprx",
+        "libSceAudiodec.sprx",
+        "libSceAt9Enc.sprx"
+      ],
+      "validator": "any-file",
+      "note": "Optional .sprx modules dumped from your own PS4 (shadPS4 README 'Firmware files'). OmniPC points shadPS4's sys_modules folder here; system fonts go in fonts\\font and fonts\\font2. OmniPC never downloads firmware."
+    }
+  ],
+  "notes": [
+    "shadPS4 is an early PlayStation 4 emulator: some games are playable, many are not yet, and compatibility changes between releases. See https://github.com/shadps4-compatibility/shadps4-game-compatibility.",
+    "Requires a GPU and driver with Vulkan 1.3 and a CPU with AVX2 (x86-64-v3).",
+    "OmniPC installs the shadPS4 core (shadPS4.exe, no Qt launcher) and launches games directly with -g <game>/eboot.bin. Games are PS4 folder dumps (eboot.bin with sce_sys/param.sfo next to it).",
+    "Emulator data lives in the OmniPC data folder for shadPS4 (portable 'user' folder); saves and trophies live in the OmniPC Saves folder (General.home_dir).",
+    "Firmware modules (.sprx) and system fonts are optional and must be dumped from your own console; OmniPC points shadPS4 at BIOS/ps4 and never downloads them.",
+    "Controller: the universal profile is written to input_config/default.ini (gamepad lines only; keyboard bindings are kept). Hotkeys (modifier + button) open the quit dialog, toggle fullscreen, change volume, take a screenshot or open the in-game settings. Rumble cannot be turned off and the player-1 device cannot be chosen.",
+    "Per-game profiles use shadPS4's own custom_configs/<TITLE_ID>.json (fullscreen, vsync, window size)."
+  ],
+  "assumptions": [
+    "Verified against shadps4-emu/shadPS4 main @ 811bfcd (CMakeLists.txt version 0.19.1-dev); latest stable tag v.0.19.0.",
+    "Releases: stable releases (tags v.X.Y.Z, e.g. v.0.19.0) are created manually and marked Latest; CI (.github/workflows/build.yml job 'pre-release') publishes 'Pre-release-shadPS4-<date>-<hash>' releases with prerelease: true, so /releases/latest returns the stable release. v.0.19.0 assets (releases/expanded_assets/v.0.19.0): shadps4-win64-sdl-0.19.0.zip, shadps4-linux-sdl-0.19.0.zip, shadps4-macos-sdl-0.19.0.zip. The Windows artifact is build/shadPS4.exe (build.yml windows-sdl 'Upload Windows SDL artifact'); the zip contents of the stable asset were not inspected, the installer locates shadPS4.exe anywhere in the archive.",
+    "Windows build: clang-cl, default (dynamic) MSVC runtime -> Visual C++ x64 redistributable; -march=x86-64-v3 (CMakeLists.txt) -> AVX2 required. src/dist/shadps4.rc gives shadPS4.exe a VERSIONINFO of MAJOR.MINOR.PATCH.0.",
+    "CLI (src/main.cpp, CLI11): -g/--game <path or title id> (also positional), -f/--fullscreen true|false, -p/--patch, -i/--ignore-game-patch, -b/--big-picture, --config-clean, --config-global, --show-fps, --add-game-folder, --override-root, --log-append, -- <guest args>. No args -> modal 'This is a CLI application' message box (OmniPC always passes args). --help is CLI11's built-in flag: prints usage and exits 0 before logging/config load.",
+    "Game target: an existing path is used directly; a directory gets /eboot.bin appended and the parent folder is mounted as /app0 (src/emulator.cpp Run). The title ID comes from sce_sys/param.sfo CONTENT_ID[7..16] or TITLE_ID.",
+    "User data folder (src/common/path_util.cpp UserPaths, static init): <current working directory>/user if it exists, else %APPDATA%\\shadPS4 on Windows. OmniPC creates Emulators/shadps4/data/user and starts shadPS4 with cwd = data. Subfolders: log, screenshots, shader, data, temp, sys_modules, download, captures, cheats, patches, game_data, custom_trophy, custom_configs, cache, fonts, trophy, home, custom_modules, licenses.",
+    "Settings are JSON, not TOML: user/config.json with groups General/Network/Log/Debug/Input/Audio/GPU/Vulkan (src/core/emulator_settings.h/.cpp). Load merges file values over defaults; Save keeps unknown keys. A parse or type error aborts startup (Load -> UNREACHABLE_MSG), so OmniPC type-checks managed keys.",
+    "Startup dialogs: (1) 'Config Migration' message box when user/config.json is missing but a legacy user/config.toml exists (EmulatorSettingsImpl::Load) - OmniPC always writes config.json first. (2) 'Save Migration' message box whenever <home_dir>/1000 does not exist (UserManager::CreateDefaultUsers -> AskMigrationOption, run on every UserSettings.Load) - OmniPC pre-creates <home>/1000..1003 with savedata/trophy/inputs. General.show_splash is set false (default false). The core has no update checker and no other message boxes outside Big Picture mode.",
+    "Paths: General.home_dir (PS4 home: <home>/<user id>/savedata/<TITLE_ID>, <home>/<user id>/trophy; save_instance.cpp, user_manager.cpp) -> OmniPC Saves/shadps4. General.sys_modules_dir (libs.cpp InitHLELibs, sysmodule_internal.cpp, linker.cpp libSceLibcInternal.sprx; per-game modules in <dir>/<TITLE_ID>) -> BIOS/ps4. General.font_dir (emulator.cpp mounts <dir>/font and <dir>/font2) -> BIOS/ps4/fonts. Empty values fall back to user/home, user/sys_modules, user/fonts.",
+    "Graphics keys: GPU.full_screen (bool), GPU.full_screen_mode ('Windowed'|'Fullscreen'|'Fullscreen (Borderless)'; anything but 'Fullscreen' gives desktop fullscreen, sdl_window.cpp), GPU.present_mode 'Mailbox' (default)|'Fifo'|'Immediate' (vk_swapchain.cpp), GPU.window_width/height (u32), GPU.internal_screen_width/height (u32 video-out resolution reported to the game, video_out.cpp RegisterLib; default 1280x720). There is no internal-resolution upscaler setting besides FSR (left to the user).",
+    "Per-game: user/custom_configs/<TITLE_ID>.json, loaded after the global config when the game starts (EmulatorSettingsImpl::Load(serial)); only GetOverrideableFields keys apply (GPU.full_screen, present_mode, window_width/height ... but not internal_screen_*). Partial files are valid. --config-clean/--config-global bypass them.",
+    "Logs: user/log/shadps4.log during startup, then user/log/shad_log.txt for the game (Log.separate=true would use <TITLE_ID>.log instead; OmniPC sets false) (common/logging/log.cpp Setup/Switch, emulator.cpp).",
+    "Input (src/input/input_handler.cpp/.h): user/input_config/default.ini is used for every game when Input.use_unified_input_config is true (default), else <TITLE_ID>.ini copied from default.ini; global.ini is loaded for all games. Line format 'output = input[, input[, input]]' with optional ':gamepad' suffixes; gamepad input tokens cross/circle/square/triangle/l1/r1/l2/r2/l3/r3/options/back/pad_*/axis_*; 'analog_deadzone = leftjoystick, inner, outer' (1..127). Multiple lines per output are all active; multi-key bindings take priority. Guide/stick directions have no button token.",
+    "Hotkeys (string_to_hotkey_map): hotkey_quit (opens the quit overlay), hotkey_fullscreen, hotkey_volume_up/down, hotkey_screenshot_with_overlays, hotkey_emulator_settings, hotkey_pause, hotkey_show_fps, ... Upstream appends keyboard defaults to global.ini only for hotkey outputs that have no line yet, so OmniPC writes the keyboard default next to each controller chord. There is no save-state or fast-forward.",
+    "Window close (SDL_EVENT_QUIT) ends the process (emulator.cpp Run -> quick_exit). A game-requested restart relaunches shadPS4 as a new process and the original exits (Emulator::Relaunch).",
+    "No rumble on/off setting and no player-1 device selection in the core (controller.cpp); Input.default_controller_id is not used by the core."
+  ]
+}

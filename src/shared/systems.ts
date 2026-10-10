@@ -107,11 +107,10 @@ export const SYSTEMS: SystemDefinition[] = [
     year: 2013,
     // Folder-format games: the library adds <game>/eboot.bin when <game>/sce_sys/param.sfo exists.
     extensions: [],
-    folderHints: ['ps4', 'playstation4', 'playstation 4'],
-    bios: 'none',
-    biosNote: 'No supported PS4 emulator yet. KytyPS5 runs PS5 games only.',
-    // Recognised in the library; no integrated emulator yet.
-    emulators: [],
+    folderHints: ['ps4', 'playstation4', 'playstation 4', 'shadps4'],
+    bios: 'optional',
+    biosNote: 'Optional: PS4 firmware modules (.sprx) and system fonts dumped from your own console. shadPS4 runs many games without them.',
+    emulators: ['shadps4'],
     accent: '#00439c',
     folderGames: true,
   },

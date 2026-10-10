@@ -29,6 +29,7 @@ controller once for every emulator, and when something breaks, tells you why and
 | PlayStation 2 | PCSX2 | PS2 BIOS |
 | PlayStation 3 | RPCS3 | PS3 system software (`PS3UPDAT.PUP` from Sony) |
 | PlayStation Portable | PPSSPP | — |
+| PlayStation 4 | shadPS4 | — (firmware modules optional; AVX2 CPU, Vulkan GPU) |
 | PlayStation 5 *(experimental)* | KytyPS5 | — (Vulkan 1.3 GPU) |
 | GameCube · Wii | Dolphin | — |
 | Wii U | Cemu | Keys for encrypted dumps (or dump decrypted) |
