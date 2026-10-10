@@ -7,7 +7,7 @@ import { cp, mkdir, readdir, rename, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { CustomEmulatorSettings, EmulatorDetailsDto, EmulatorSettings, EmulatorStatus, HardwareProfile, HealthState, HotkeyConfig, UniversalControllerProfile } from '@shared/models';
 import type { AdapterRegistry } from '../emulators/registry';
-import type { EmulatorAdapter, SmokeTestResult } from '../emulators/adapter';
+import type { ComponentInstaller, EmulatorAdapter, SmokeTestResult } from '../emulators/adapter';
 import { expandManifestPath } from '../emulators/adapter';
 import type { EmulatorRepo } from '../database/emulatorRepo';
 import type { OpsRepo } from '../database/opsRepo';
@@ -155,7 +155,7 @@ export class EmulatorManager {
   private requireImplemented(id: string): EmulatorAdapter {
     const a = this.d.registry.require(id);
     if (!a.manifest.implemented) {
-      throw new OmniFailure({ code: 'ADAPTER_NOT_IMPLEMENTED', whatHappened: `${a.manifest.name} support is planned but not implemented in this build.`, userAction: ['PCSX2 (PS2) and Dolphin (GameCube/Wii) are fully supported today.'] });
+      throw new OmniFailure({ code: 'ADAPTER_NOT_IMPLEMENTED', whatHappened: `${a.manifest.name} support is planned but not implemented in this build.`, userAction: ['Watch for an OmniDeck update.'] });
     }
     return a;
   }
@@ -278,17 +278,23 @@ export class EmulatorManager {
       ctx.step('Installing files');
       const previousVersion = row.version;
       const active = this.d.emuRepo.activeVersion(id);
+      // User data that portable-only emulators keep next to the executable:
+      // from the outgoing build, or from what an uninstall preserved.
+      let carryFrom: string | null = this.preservedDir(id);
       if (existsSync(p.app) && (await readdir(p.app)).length) {
         const rollbackDir = join(this.d.paths.emulatorRollbackDir(id), (previousVersion ?? 'previous').replace(/[^\w.\-]/g, '_'));
         await rm(rollbackDir, { recursive: true, force: true });
         await moveDir(p.app, rollbackDir);
+        carryFrom = rollbackDir;
         if (active) this.d.emuRepo.setVersionStatus(active.id, 'rollback', rollbackDir);
         else if (previousVersion) this.d.emuRepo.addVersion({ emulator_id: id, version: previousVersion, installed_at: row.installed_at ?? new Date().toISOString(), source_url: null, sha256: null, status: 'rollback', path: rollbackDir });
         await this.pruneRollbacks(id, 2);
       }
       await moveDir(root, p.app);
+      await this.carryPersistent(a, carryFrom, p.app);
       const exe = await a.findExecutable(p.app);
       if (!exe) throw new OmniFailure({ code: 'EXE_NOT_FOUND', whatHappened: `${a.manifest.executable} was not found after installation.` });
+      if (a.prepareInstall) for (const n of await a.prepareInstall(p.app)) ctx.message(n);
       this.d.emuRepo.addVersion({ emulator_id: id, version: rel.version, installed_at: new Date().toISOString(), source_url: rel.url, sha256: dl.sha256, status: 'active', path: p.app });
       this.d.emuRepo.setInstalled(id, { state: 'installed', version: rel.version, installDir: p.app, executable: exe });
       this.d.emuRepo.setLatest(id, rel.version);
@@ -310,6 +316,12 @@ export class EmulatorManager {
       const res = await a.applyConfig(this.configInput(id), 'all');
       if (res.changed.length) this.d.ops.addChange('config.generated', id, `${a.manifest.name} configuration ${reason === 'install' ? 'created' : 'refreshed'} (${res.changed.length} values)`);
       ctx.stepDone(`${res.changed.length} setting(s) written${res.notes.length ? ` — ${res.notes.join(' ')}` : ''}`);
+    }
+
+    if (a.installComponents) {
+      ctx.step('Installing additional components');
+      const notes = await a.installComponents(this.componentInstaller(a, ctx), this.configInput(id));
+      ctx.stepDone(notes.join(' ') || 'Nothing else needed');
     }
 
     const result = await this.healthTest(id, ctx);
@@ -369,6 +381,8 @@ export class EmulatorManager {
       await rm(failedDir, { recursive: true, force: true });
       if (existsSync(p.app)) await moveDir(p.app, failedDir);
       await moveDir(cand.path, p.app);
+      await this.carryPersistent(a, failedDir, p.app);
+      if (a.prepareInstall) await a.prepareInstall(p.app);
       const active = this.d.emuRepo.activeVersion(id);
       if (active) this.d.emuRepo.setVersionStatus(active.id, 'rollback', failedDir);
       this.d.emuRepo.setVersionStatus(cand.id, 'active', p.app);
@@ -435,6 +449,8 @@ export class EmulatorManager {
       const row = this.d.emuRepo.get(id);
       if (row.install_state === 'installed') {
         ctx.step('Removing program files (settings, saves and BIOS are kept)');
+        const kept = await this.preservePersistent(a);
+        if (kept.length) ctx.message(`Kept user data from the program folder in ${this.preservedDir(id)}: ${kept.join(', ')}`);
         await rm(a.paths().app, { recursive: true, force: true });
       } else {
         ctx.stepSkipped('Remove program files', 'External installation left untouched');
@@ -496,6 +512,50 @@ export class EmulatorManager {
     const notes: string[] = [];
     for (const a of this.d.registry.implemented()) notes.push(...(await a.recoverSession().catch(() => [])));
     return notes;
+  }
+
+  /** Where user data from the program folder is kept between uninstall and reinstall. */
+  preservedDir(id: string): string {
+    return join(this.d.registry.require(id).paths().data, 'preserved-app-data');
+  }
+
+  /** Copies portable user data (saves, config) from a previous app dir into the new one. */
+  private async carryPersistent(a: EmulatorAdapter, from: string | null, to: string): Promise<void> {
+    if (!from || !a.persistentAppPaths) return;
+    for (const rel of a.persistentAppPaths()) {
+      const src = join(from, rel);
+      if (!existsSync(src)) continue;
+      await cp(src, join(to, rel), { recursive: true, force: true });
+    }
+    if (from === this.preservedDir(a.manifest.id)) await rm(from, { recursive: true, force: true });
+  }
+
+  /** Moves portable user data out of the app dir before it is deleted. Never deletes it. */
+  private async preservePersistent(a: EmulatorAdapter): Promise<string[]> {
+    if (!a.persistentAppPaths) return [];
+    const kept: string[] = [];
+    const dest = this.preservedDir(a.manifest.id);
+    for (const rel of a.persistentAppPaths()) {
+      const src = join(a.paths().app, rel);
+      if (!existsSync(src)) continue;
+      await mkdir(join(dest, rel, '..'), { recursive: true });
+      await cp(src, join(dest, rel), { recursive: true, force: true });
+      kept.push(rel);
+    }
+    return kept;
+  }
+
+  private componentInstaller(a: EmulatorAdapter, ctx: JobContext): ComponentInstaller {
+    return {
+      download: async (o) => {
+        const dl = await this.d.downloads.download({ name: o.name, url: o.url, version: 'component', sourceLabel: a.manifest.name, fileName: o.fileName, allowedHosts: a.manifest.download.allowedHosts, expectedSha256: o.expectedSha256 ?? null, expectedSize: null }, ctx.signal);
+        return dl.path;
+      },
+      extract: async (archive, dest) => { await extractArchive(archive, dest); },
+      cleanup: (f) => this.d.downloads.cleanup(f),
+      progress: (m) => ctx.message(m),
+      signal: ctx.signal,
+    };
   }
 
   async installedSize(id: string): Promise<number> {

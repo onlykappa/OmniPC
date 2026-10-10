@@ -121,6 +121,34 @@ export interface EmulatorAdapter {
   recoverSession(): Promise<string[]>;
   /** Finds pre-existing installations of this emulator on the PC. */
   detectExistingSetups(): Promise<SetupImportCandidate[]>;
+
+  /**
+   * Optional: runs after program files are placed in `appDir` (install,
+   * update, rollback), e.g. to write a portable-mode marker. Returns notes.
+   */
+  prepareInstall?(appDir: string): Promise<string[]>;
+  /**
+   * Optional: paths relative to the app dir that hold user data for emulators
+   * that can only keep data next to their executable. They are carried over on
+   * update/rollback and moved to the data folder (never deleted) on uninstall.
+   */
+  persistentAppPaths?(): string[];
+  /**
+   * Optional: extra downloads after the main install (e.g. RetroArch cores).
+   * Every URL must be on the manifest's allowedHosts; nothing downloaded is executed.
+   */
+  installComponents?(installer: ComponentInstaller, input: ConfigInput): Promise<string[]>;
+}
+
+export interface ComponentInstaller {
+  /** Downloads `url` (allowedHosts-checked, SHA-256 recorded/verified) and returns the local file. */
+  download(opts: { name: string; url: string; fileName: string; expectedSha256?: string | null }): Promise<string>;
+  /** Extracts an archive with path sanitising. */
+  extract(archive: string, dest: string): Promise<void>;
+  /** Removes a downloaded temp file. */
+  cleanup(file: string): Promise<void>;
+  progress(message: string): void;
+  signal?: AbortSignal;
 }
 
 export interface AdapterDeps {

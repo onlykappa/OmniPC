@@ -3,7 +3,8 @@
 // file was classified.
 
 import { inflateRawSync, inflateSync } from 'node:zlib';
-import { basename, dirname, extname } from 'node:path';
+import { basename, dirname, extname, join } from 'node:path';
+import { existsSync } from 'node:fs';
 import type { FileHandle } from 'node:fs/promises';
 import { readFile } from 'node:fs/promises';
 import { getSystem, systemsForExtension, systemsForFolderName, type SystemId } from '@shared/systems';
@@ -211,7 +212,59 @@ export async function parseM3u(path: string): Promise<string[]> {
  * Identify a file. `folderChain` is the list of parent folder names (nearest
  * first) used as hints for ambiguous formats.
  */
+/**
+ * Folder-format games booted through their executable:
+ *   PS4  <game>/eboot.bin + <game>/sce_sys/param.sfo (PS5: sce_sys/param.json)
+ *   PS3  <game>/PS3_GAME/USRDIR/EBOOT.BIN + PS3_GAME/PARAM.SFO (disc), or
+ *        <TITLEID>/USRDIR/EBOOT.BIN + <TITLEID>/PARAM.SFO (installed/PSN)
+ */
+export async function identifyFolderGame(path: string): Promise<Identification | null> {
+  if (basename(path).toLowerCase() !== 'eboot.bin') return null;
+  const dir = dirname(path);
+  const folderTitle = basename(dir);
+  const make = (systemId: SystemId, title: string, serial: string | null, evidence: string): Identification => {
+    const parsed = parseGameFileName(title);
+    return { systemId, title, baseTitle: parsed.baseTitle, region: serial ? regionFromPsSerial(serial) : null, serial, discNumber: null, confidence: 'high', evidence: [evidence], internalTitle: title };
+  };
+  const sfo = async (file: string) => parseSfo(await readFile(file).catch(() => Buffer.alloc(0)));
+  const ps4Sfo = join(dir, 'sce_sys', 'param.sfo');
+  if (existsSync(ps4Sfo)) {
+    const p = await sfo(ps4Sfo);
+    const serial = typeof p.TITLE_ID === 'string' ? p.TITLE_ID : null;
+    return make('ps4', (typeof p.TITLE === 'string' && p.TITLE) || folderTitle, serial, 'eboot.bin with sce_sys/param.sfo (PlayStation 4 game folder)');
+  }
+  const ps5Json = join(dir, 'sce_sys', 'param.json');
+  if (existsSync(ps5Json)) {
+    let title = folderTitle;
+    let serial: string | null = null;
+    try {
+      const j = JSON.parse(await readFile(ps5Json, 'utf8')) as { titleId?: string; localizedParameters?: Record<string, { titleName?: string }> & { defaultLanguage?: string } };
+      serial = j.titleId ?? null;
+      const lp = j.localizedParameters;
+      const lang = lp?.defaultLanguage;
+      const name = lang && typeof lp?.[lang] === 'object' ? (lp[lang] as { titleName?: string }).titleName : undefined;
+      if (name) title = name;
+    } catch {
+      /* folder name is used */
+    }
+    return make('ps5', title, serial, 'eboot.bin with sce_sys/param.json (PlayStation 5 game folder)');
+  }
+  if (basename(dir).toUpperCase() === 'USRDIR') {
+    const gameDir = dirname(dir);
+    const ps3Sfo = [join(gameDir, 'PARAM.SFO'), join(gameDir, 'param.sfo')].find((f) => existsSync(f));
+    if (ps3Sfo) {
+      const p = await sfo(ps3Sfo);
+      const serial = typeof p.TITLE_ID === 'string' ? p.TITLE_ID : null;
+      const outer = basename(gameDir).toUpperCase() === 'PS3_GAME' ? basename(dirname(gameDir)) : basename(gameDir);
+      return make('ps3', (typeof p.TITLE === 'string' && p.TITLE) || outer, serial, 'USRDIR/EBOOT.BIN with PARAM.SFO (PlayStation 3 game folder)');
+    }
+  }
+  return null;
+}
+
 export async function identifyFile(path: string, folderChain: string[]): Promise<Identification> {
+  const folderGame = await identifyFolderGame(path);
+  if (folderGame) return folderGame;
   const ext = extname(path).toLowerCase();
   const parsed = parseGameFileName(basename(path));
   const evidence: string[] = [];

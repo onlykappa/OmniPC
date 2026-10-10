@@ -60,7 +60,7 @@ export async function validateGameFile(path: string, systemId: SystemId | null, 
     if (systemId === 'gc' && sizeBytes < GC_FULL_SIZE && sizeBytes % 2048 !== 0) warn('GameCube image is smaller than a full disc and not sector aligned; it may be truncated.');
     if (systemId === 'wii' && sizeBytes !== WII_SL_SIZE && sizeBytes !== WII_DL_SIZE && sizeBytes > 1_000_000_000 && sizeBytes < WII_SL_SIZE) warn('Wii image is not a standard disc size. This is normal for scrubbed/NKit images but can indicate a truncated dump.');
   }
-  if (ext === '.bin' && sizeBytes % 2352 !== 0 && sizeBytes % 2048 !== 0) warn('BIN size is not a multiple of a CD sector size; the dump may be incomplete.');
+  if (ext === '.bin' && basename(path).toLowerCase() !== 'eboot.bin' && sizeBytes % 2352 !== 0 && sizeBytes % 2048 !== 0) warn('BIN size is not a multiple of a CD sector size; the dump may be incomplete.');
   if (['.zip', '.7z', '.rar'].includes(ext) && systemId && !['arcade'].includes(systemId)) {
     warn('Game is inside a compressed archive. Most disc-based emulators cannot run archived images directly.');
   }

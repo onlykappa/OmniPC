@@ -6,3 +6,4 @@ export function rvz(id: string, title: string, wii?: boolean): Buffer;
 export function ps2Bios(romver?: string): Buffer;
 export function write(path: string, data: string | Buffer): void;
 export function fakeEmulatorScript(): string;
+export function sfo(entries: Record<string, string>): Buffer;

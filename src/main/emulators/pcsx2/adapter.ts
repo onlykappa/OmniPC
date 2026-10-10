@@ -27,6 +27,9 @@ import { readFile } from 'node:fs/promises';
 
 export const PCSX2_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
+/** pcsx2/VMManager.cpp SETTINGS_VERSION; checked against [UI] SettingsVersion at startup. */
+export const PCSX2_SETTINGS_VERSION = 1;
+
 /** GSRendererType enum values (pcsx2/Config.h). */
 export const PCSX2_RENDERERS = { auto: -1, d3d11: 3, d3d12: 15, vulkan: 14, opengl: 12, software: 13 } as const;
 
@@ -179,6 +182,10 @@ export class Pcsx2Adapter implements EmulatorAdapter {
     if (scope === 'all' || scope === 'paths') {
       for (const [s, k, v] of this.managedPathValues()) set(s, k, v);
       // First-run and update prompts would interrupt controller-only use.
+      // Without a matching UI.SettingsVersion PCSX2 shows a modal "Settings failed
+      // to load" prompt on startup (QtHost.cpp InitializeConfig), which hangs
+      // -testconfig and batch launches.
+      set('UI', 'SettingsVersion', PCSX2_SETTINGS_VERSION);
       set('UI', 'SetupWizardIncomplete', false);
       set('UI', 'ConfirmShutdown', false);
       set('UI', 'HideMouseCursor', true);
@@ -229,6 +236,8 @@ export class Pcsx2Adapter implements EmulatorAdapter {
         const actual = doc.get(s, k) ?? null;
         if (!actual || actual.toLowerCase() !== v.toLowerCase()) drift.push({ file: ini, key: `${s}.${k}`, expected: v, actual, critical: k === 'Bios' || k === 'MemoryCards' });
       }
+      const sv = doc.get('UI', 'SettingsVersion') ?? null;
+      if (sv !== String(PCSX2_SETTINGS_VERSION)) drift.push({ file: ini, key: 'UI.SettingsVersion', expected: String(PCSX2_SETTINGS_VERSION), actual: sv, critical: true });
       if (doc.get('UI', 'SetupWizardIncomplete') === 'true') drift.push({ file: ini, key: 'UI.SetupWizardIncomplete', expected: 'false', actual: 'true', critical: false });
     }
     return { files: [{ label: 'PCSX2.ini', path: ini, exists, parseOk: exists && fmt.ok, issues: fmt.issues }], drift };

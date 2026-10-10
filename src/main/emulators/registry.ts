@@ -16,8 +16,9 @@ import cemu from './manifests/cemu.json';
 import melonds from './manifests/melonds.json';
 import xenia from './manifests/xenia.json';
 import xemu from './manifests/xemu.json';
+import kyty from './manifests/kyty.json';
 
-const PLANNED = [retroarch, duckstation, rpcs3, ppsspp, cemu, melonds, xenia, xemu] as unknown as EmulatorManifest[];
+const PLANNED = [retroarch, duckstation, rpcs3, ppsspp, cemu, melonds, xenia, xemu, kyty] as unknown as EmulatorManifest[];
 
 export function validateManifest(m: EmulatorManifest): string[] {
   const errors: string[] = [];
@@ -30,6 +31,7 @@ export function validateManifest(m: EmulatorManifest): string[] {
     if (m.download.kind === 'none') errors.push('implemented adapters need a download source');
     if (!m.download.allowedHosts.length) errors.push('download.allowedHosts must list trusted hosts');
     for (const h of m.download.allowedHosts) if (/[/:]/.test(h)) errors.push(`allowedHosts entry "${h}" must be a bare host name`);
+    if (m.download.kind === 'versioned-url' && (!/^[\w.-]+\/[\w.-]+$/.test(m.download.repo ?? '') || !/^https:\/\//.test(m.download.urlTemplate ?? ''))) errors.push('versioned-url needs repo and an https urlTemplate');
     if (m.download.kind === 'github-release' && !/^[\w.-]+\/[\w.-]+$/.test(m.download.repo ?? '')) errors.push('github-release needs repo "owner/name"');
     for (const p of m.download.assetPatterns ?? []) {
       try { new RegExp(p); } catch { errors.push(`invalid asset pattern ${p}`); }

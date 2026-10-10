@@ -167,8 +167,40 @@ export class DolphinUpdateSource implements TrustedSource {
   }
 }
 
+/**
+ * Version from the official repo's latest GitHub release tag, binary from the
+ * project's own download server (e.g. RetroArch: buildbot.libretro.com).
+ * `urlTemplate` may contain {version}.
+ */
+export class VersionedUrlSource implements TrustedSource {
+  readonly label: string;
+  constructor(private readonly repo: string, private readonly urlTemplate: string, private readonly allowedHosts: string[]) {
+    if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) throw new Error(`invalid GitHub repo ${repo}`);
+    this.label = `${new URL(urlTemplate.replace('{version}', '0')).hostname} (version from github.com/${repo})`;
+  }
+
+  async resolveLatest(ctx: SourceContext): Promise<ReleaseInfo> {
+    const f = ctx.fetchImpl ?? fetch;
+    let tag: string;
+    try {
+      const r = await f(`https://api.github.com/repos/${this.repo}/releases/latest`, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'OmniDeck-PC', 'X-GitHub-Api-Version': '2022-11-28' } });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      tag = ((await r.json()) as GhRelease).tag_name;
+    } catch (err) {
+      throw new OmniFailure({ code: 'SOURCE_UNREACHABLE', whatHappened: `Could not check github.com/${this.repo} for the latest version.`, detected: [(err as Error).message], probableCause: 'You may be offline or the GitHub API rate limit was reached.', userAction: ['Check your internet connection and try again in a few minutes.'], technical: String(err) });
+    }
+    const version = tag.replace(/^v/, '');
+    if (!/^[\w.-]+$/.test(version)) throw new OmniFailure({ code: 'NO_MATCHING_ASSET', whatHappened: `Unexpected version tag "${tag}" from github.com/${this.repo}.` });
+    const url = this.urlTemplate.replace('{version}', version);
+    if (!hostAllowed(url, this.allowedHosts)) throw new OmniFailure({ code: 'NO_MATCHING_ASSET', whatHappened: `The download URL ${url} is not on a trusted host.` });
+    const fileName = decodeURIComponent(new URL(url).pathname.split('/').pop() ?? 'download');
+    return { version, url, fileName, sizeBytes: null, sha256: null, publishedAt: null, sourceLabel: this.label, notesUrl: `https://github.com/${this.repo}/releases/tag/${tag}` };
+  }
+}
+
 export function sourceForManifest(m: EmulatorManifest): TrustedSource | null {
   const d = m.download;
+  if (d.kind === 'versioned-url' && d.repo && d.urlTemplate) return new VersionedUrlSource(d.repo, d.urlTemplate, d.allowedHosts);
   if (d.kind === 'github-release' && d.repo) return new GitHubReleaseSource(d.repo, d.assetPatterns ?? [], d.assetExclude ?? [], d.allowedHosts);
   if (d.kind === 'dolphin-update') return new DolphinUpdateSource(d.track ?? 'beta', d.allowedHosts);
   return null;

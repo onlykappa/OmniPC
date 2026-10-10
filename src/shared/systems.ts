@@ -9,6 +9,8 @@ export type SystemId =
   | 'ps1'
   | 'ps2'
   | 'ps3'
+  | 'ps4'
+  | 'ps5'
   | 'psp'
   | 'gc'
   | 'wii'
@@ -46,6 +48,8 @@ export interface SystemDefinition {
   ambiguousExtensions?: string[];
   /** Multi-disc capable (affects grouping in the library). */
   multiDisc?: boolean;
+  /** Games are folders booted through eboot.bin rather than single image files. */
+  folderGames?: boolean;
 }
 
 export const SYSTEMS: SystemDefinition[] = [
@@ -90,8 +94,40 @@ export const SYSTEMS: SystemDefinition[] = [
     folderHints: ['ps3', 'playstation3', 'playstation 3', 'rpcs3'],
     bios: 'firmware',
     biosNote: 'Official PS3 system software (PS3UPDAT.PUP) installed into RPCS3. Obtain it from Sony.',
+    // Disc/PSN folders are added through PS3_GAME/USRDIR/EBOOT.BIN.
+    folderGames: true,
     emulators: ['rpcs3'],
     accent: '#2b2f3a',
+  },
+  {
+    id: 'ps4',
+    name: 'PlayStation 4',
+    shortName: 'PS4',
+    manufacturer: 'Sony',
+    year: 2013,
+    // Folder-format games: the library adds <game>/eboot.bin when <game>/sce_sys/param.sfo exists.
+    extensions: [],
+    folderHints: ['ps4', 'playstation4', 'playstation 4', 'kyty'],
+    bios: 'firmware',
+    biosNote: 'Kyty uses system modules you dump from your own PS4 for some games. OmniDeck never downloads them.',
+    emulators: ['kyty'],
+    accent: '#00439c',
+    folderGames: true,
+  },
+  {
+    id: 'ps5',
+    name: 'PlayStation 5',
+    shortName: 'PS5',
+    manufacturer: 'Sony',
+    year: 2020,
+    // Folder-format homebrew: <game>/eboot.bin with <game>/sce_sys/param.json.
+    extensions: [],
+    folderHints: ['ps5', 'playstation5', 'playstation 5'],
+    bios: 'none',
+    biosNote: 'Kyty only runs a few PS5 homebrew programs.',
+    emulators: ['kyty'],
+    accent: '#e6e6e6',
+    folderGames: true,
   },
   {
     id: 'psp',

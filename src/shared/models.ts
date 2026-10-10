@@ -175,8 +175,10 @@ export interface EmulatorManifest {
   implemented: boolean;
   plannedNote?: string;
   download: {
-    kind: 'github-release' | 'dolphin-update' | 'none';
+    kind: 'github-release' | 'dolphin-update' | 'versioned-url' | 'none';
     repo?: string;
+    /** versioned-url: download URL with a {version} placeholder. */
+    urlTemplate?: string;
     track?: string;
     assetPatterns?: string[];
     assetExclude?: string[];

@@ -1,0 +1,20 @@
+{
+  "id": "kyty",
+  "name": "Kyty",
+  "systems": ["ps4", "ps5"],
+  "website": "https://github.com/InoriRus/Kyty",
+  "repository": "https://github.com/InoriRus/Kyty",
+  "license": "MIT",
+  "implemented": false,
+  "plannedNote": "The Kyty adapter (experimental PS4/PS5) is being integrated. OmniDeck already recognises PS4/PS5 game folders but does not yet install or launch Kyty.",
+  "download": { "kind": "none", "allowedHosts": [] },
+  "executable": "fc_script.exe",
+  "supportedExtensions": [],
+  "dependencies": [],
+  "configFiles": [],
+  "logFiles": [],
+  "saveDirs": [],
+  "biosRequirements": [],
+  "notes": ["Not implemented in this build."],
+  "assumptions": []
+}

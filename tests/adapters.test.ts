@@ -32,6 +32,8 @@ describe('PCSX2 adapter', () => {
     expect(ini.get('EmuCore/GS', 'Renderer')).toBe('14');
     expect(ini.get('EmuCore/GS', 'upscale_multiplier')).toBe('3');
     expect(ini.get('UI', 'SetupWizardIncomplete')).toBe('false');
+    // Missing SettingsVersion makes PCSX2 show a blocking "settings failed to load" prompt.
+    expect(ini.get('UI', 'SettingsVersion')).toBe('1');
     expect(ini.get('AutoUpdater', 'CheckAtStartup')).toBe('false');
     expect(ini.get('Pad1', 'Cross')).toBe('SDL-0/FaceSouth');
     expect(ini.get('Pad1', 'L2')).toBe('SDL-0/+LeftTrigger');
@@ -63,6 +65,11 @@ describe('PCSX2 adapter', () => {
     writeFileSync(a.iniPath(), doc.toString());
     const insp = await a.inspectConfig();
     expect(insp.drift.find((d) => d.key === 'Folders.Bios')?.critical).toBe(true);
+    doc.delete('UI', 'SettingsVersion');
+    writeFileSync(a.iniPath(), doc.toString());
+    expect((await a.inspectConfig()).drift.find((d) => d.key === 'UI.SettingsVersion')?.critical).toBe(true);
+    await a.applyConfig({ settings, controller, hotkeys, hardware: null }, 'paths');
+    expect((await a.inspectConfig()).drift).toEqual([]);
   });
 
   it('builds a batch-mode launch with -datapath and the game after "--"', async () => {

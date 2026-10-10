@@ -139,3 +139,28 @@ if (mode === 'crash') { process.exit(3221225477); }
 setTimeout(() => { say('Shutting down cleanly'); process.exit(0); }, Number(process.env.FAKE_EMU_MS || 5200));
 `;
 }
+
+/** Minimal PARAM.SFO with string entries (PS3/PS4/PSP format). */
+export function sfo(entries) {
+  const keys = Object.keys(entries);
+  let keyTable = Buffer.alloc(0);
+  let dataTable = Buffer.alloc(0);
+  const index = Buffer.alloc(16 * keys.length);
+  keys.forEach((k, i) => {
+    const data = Buffer.from(`${entries[k]}\0`, 'utf8');
+    index.writeUInt16LE(keyTable.length, i * 16);
+    index.writeUInt16LE(0x0204, i * 16 + 2);
+    index.writeUInt32LE(data.length, i * 16 + 4);
+    index.writeUInt32LE(data.length, i * 16 + 8);
+    index.writeUInt32LE(dataTable.length, i * 16 + 12);
+    keyTable = Buffer.concat([keyTable, Buffer.from(`${k}\0`, 'utf8')]);
+    dataTable = Buffer.concat([dataTable, data]);
+  });
+  const header = Buffer.alloc(20);
+  header.writeUInt32BE(0x00505346, 0);
+  header.writeUInt32LE(0x0101, 4);
+  header.writeUInt32LE(20 + index.length, 8);
+  header.writeUInt32LE(20 + index.length + keyTable.length, 12);
+  header.writeUInt32LE(keys.length, 16);
+  return Buffer.concat([header, index, keyTable, dataTable]);
+}

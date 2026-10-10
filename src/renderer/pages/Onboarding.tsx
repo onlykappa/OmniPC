@@ -11,7 +11,7 @@ import { useStore } from '../lib/store';
 import { Button, Chip, JobSteps, Panel, Segmented, Spinner } from '../components/ui';
 
 const CHOICES: { id: SystemId; note?: string }[] = [
-  { id: 'ps2' }, { id: 'gc' }, { id: 'wii' }, { id: 'ps3', note: 'planned' }, { id: 'psp', note: 'planned' }, { id: 'wiiu', note: 'planned' }, { id: 'x360', note: 'planned' }, { id: 'nds', note: 'planned' }, { id: 'ps1', note: 'planned' }, { id: 'snes', note: 'Retro (planned)' },
+  { id: 'ps2' }, { id: 'gc' }, { id: 'wii' }, { id: 'ps1' }, { id: 'ps3' }, { id: 'psp' }, { id: 'wiiu' }, { id: 'nds' }, { id: 'xbox' }, { id: 'x360' }, { id: 'snes', note: 'Retro systems (RetroArch)' }, { id: 'ps4', note: 'experimental' },
 ];
 const STEPS = ['Welcome', 'Computer', 'Systems', 'Games', 'Controller', 'Configuration', 'Install'];
 
@@ -105,7 +105,7 @@ export function Onboarding(props: { onDone: () => void }) {
         {step === 4 && (
           <Panel title="Controller">
             {connected.length === 0 ? <p className="muted">No controller detected yet. Connect one and press any button. You can also continue with keyboard and mouse.</p> : connected.map((p) => <div key={p.index} className="row"><span className="dot ok" /><strong>{describePad(p).name}</strong><Chip>{describePad(p).api}</Chip><span className="small faint">Press buttons to test: {p.buttons.filter((b) => b.pressed).length ? 'input received ✓' : 'waiting…'}</span></div>)}
-            <p className="small faint">OmniDeck creates a universal profile and maps it into PCSX2 and Dolphin automatically. Default exit combo: Select + Start.</p>
+            <p className="small faint">OmniDeck creates a universal profile and maps it into every installed emulator automatically. Default exit combo: Select + Start.</p>
           </Panel>
         )}
         {step === 5 && (

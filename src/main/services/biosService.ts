@@ -24,15 +24,16 @@ export class BiosService {
         covered.add(s.systemId);
       }
     }
-    // Systems whose adapters are planned: show where files go and what is there.
+    // Systems no adapter reports on: show where files go and what is there.
     for (const sys of SYSTEMS) {
       if (covered.has(sys.id) || sys.bios === 'none') continue;
+      const implemented = !!this.registry.get(sys.emulators[0])?.manifest.implemented;
       const dir = this.paths.systemBiosDir(sys.id);
       const files: BiosStatus['files'] = [];
       if (existsSync(dir)) {
         for (const f of await readdir(dir)) {
           const st = await stat(join(dir, f)).catch(() => null);
-          if (st?.isFile()) files.push({ path: join(dir, f), sizeBytes: st.size, valid: st.size > 0, description: 'Present (not validated: emulator support is planned)' });
+          if (st?.isFile()) files.push({ path: join(dir, f), sizeBytes: st.size, valid: st.size > 0, description: implemented ? 'Present (not validated)' : 'Present (not validated: emulator support is planned)' });
         }
       }
       out.push({
@@ -45,7 +46,7 @@ export class BiosService {
         expectedLocation: dir,
         status: files.length ? 'found' : sys.bios === 'optional' ? 'not_applicable' : 'missing',
         files,
-        note: `${sys.biosNote} (The ${sys.emulators[0]} integration is planned; OmniDeck currently only records these files.)`,
+        note: implemented ? sys.biosNote : `${sys.biosNote} (The ${sys.emulators[0]} integration is planned; OmniDeck currently only records these files.)`,
       });
     }
     return out;

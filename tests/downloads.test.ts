@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { EventBus } from '../src/main/core/events';
 import { DownloadManager } from '../src/main/downloads/downloadManager';
-import { DolphinUpdateSource, GitHubReleaseSource, hostAllowed, pickAsset } from '../src/main/downloads/sources';
+import { DolphinUpdateSource, GitHubReleaseSource, VersionedUrlSource, hostAllowed, pickAsset } from '../src/main/downloads/sources';
 import { tempDir } from './helpers';
 
 const t = tempDir();
@@ -58,6 +58,22 @@ describe('trusted sources', () => {
     const rel = await src.resolveLatest({ channel: 'stable', cpuFeatures: [], fetchImpl: fakeFetch({ 'https://dolphin-emu.org/update/latest/beta/': () => Response.json({ shortrev: '2509', hash: 'abc', artifacts: [{ system: 'macOS', url: 'https://dl.dolphin-emu.org/x.dmg' }, { system: 'Windows x64', url: 'https://dl.dolphin-emu.org/releases/2509/dolphin-2509-x64.7z' }] }) }) });
     expect(rel.version).toBe('2509');
     expect(rel.fileName).toBe('dolphin-2509-x64.7z');
+  });
+});
+
+describe('versioned-url source', () => {
+  const template = 'https://buildbot.libretro.com/stable/{version}/windows/x86_64/RetroArch.7z';
+  it('takes the version from the official repo tag and builds the official download URL', async () => {
+    const src = new VersionedUrlSource('libretro/RetroArch', template, ['api.github.com', 'buildbot.libretro.com']);
+    const rel = await src.resolveLatest({ channel: 'stable', cpuFeatures: [], fetchImpl: fakeFetch({ 'https://api.github.com/repos/libretro/RetroArch/releases/latest': () => Response.json({ tag_name: 'v1.21.0', prerelease: false, draft: false, assets: [] }) }) });
+    expect(rel).toMatchObject({ version: '1.21.0', url: 'https://buildbot.libretro.com/stable/1.21.0/windows/x86_64/RetroArch.7z', fileName: 'RetroArch.7z', sha256: null });
+  });
+
+  it('refuses tags that would change the URL path and untrusted hosts', async () => {
+    const evil = fakeFetch({ 'https://api.github.com/repos/libretro/RetroArch/releases/latest': () => Response.json({ tag_name: '../../x', assets: [] }) });
+    await expect(new VersionedUrlSource('libretro/RetroArch', template, ['buildbot.libretro.com']).resolveLatest({ channel: 'stable', cpuFeatures: [], fetchImpl: evil })).rejects.toThrow(/Unexpected version/);
+    const ok = fakeFetch({ 'https://api.github.com/repos/libretro/RetroArch/releases/latest': () => Response.json({ tag_name: 'v1.0', assets: [] }) });
+    await expect(new VersionedUrlSource('libretro/RetroArch', template, ['github.com']).resolveLatest({ channel: 'stable', cpuFeatures: [], fetchImpl: ok })).rejects.toThrow(/trusted host/);
   });
 });
 

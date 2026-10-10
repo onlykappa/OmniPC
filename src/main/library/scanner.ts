@@ -65,6 +65,23 @@ export async function collectCandidates(root: string, opts: { excludeDirs?: stri
         if (target.endsWith('.cue')) for (const t of await parseCueFiles(resolve(dir, f))) components.add(resolve(dirname(resolve(dir, f)), t).toLowerCase());
       }
     }
+    // Folder-format games (PS4/PS5 dumps, PS3 disc/PSN folders): add only the
+    // boot executable and do not walk their data files.
+    const eboot = entries.find((e) => e.isFile() && e.name.toLowerCase() === 'eboot.bin');
+    const hasDir = (n: string) => entries.some((e) => e.isDirectory() && e.name.toLowerCase() === n);
+    if (eboot && hasDir('sce_sys')) {
+      files.push({ path: join(dir, eboot.name), folderChain: chain });
+      return;
+    }
+    const ps3Game = entries.find((e) => e.isDirectory() && e.name.toUpperCase() === 'PS3_GAME');
+    const ps3Usr = ps3Game ? join(dir, ps3Game.name, 'USRDIR') : hasDir('usrdir') && entries.some((e) => e.isFile() && e.name.toUpperCase() === 'PARAM.SFO') ? join(dir, entries.find((e) => e.name.toLowerCase() === 'usrdir')!.name) : null;
+    if (ps3Usr) {
+      const bootName = (await readdir(ps3Usr).catch(() => [] as string[])).find((n) => n.toUpperCase() === 'EBOOT.BIN');
+      if (bootName) {
+        files.push({ path: join(ps3Usr, bootName), folderChain: chain });
+        return;
+      }
+    }
     for (const e of entries) {
       const full = join(dir, e.name);
       if (e.isDirectory()) {
