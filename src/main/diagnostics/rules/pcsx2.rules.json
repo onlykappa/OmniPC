@@ -1,0 +1,111 @@
+{
+  "emulatorId": "pcsx2",
+  "description": "PCSX2 log signatures. Strings verified against PCSX2 v2.8.2 source (VMManager.cpp, ps2/BiosTools.cpp, GS/GS.cpp, GS/Renderers/DX12).",
+  "rules": [
+    {
+      "id": "pcsx2.bios-missing",
+      "title": "PlayStation 2 BIOS not found",
+      "category": "bios",
+      "severity": "problem",
+      "confidence": "high",
+      "exitCodes": [],
+      "patterns": ["Unable to auto locate a BIOS image", "PCSX2 requires a PlayStation 2 BIOS"],
+      "probableCause": "No valid PS2 BIOS is in the BIOS folder PCSX2 is configured to use.",
+      "fix": null,
+      "userSupplied": true,
+      "manual": ["Dump the BIOS from your own PlayStation 2 and add it in Settings > BIOS & Firmware.", "OmniPC cannot download BIOS files for legal reasons."],
+      "references": ["https://pcsx2.net/docs/setup/bios/"]
+    },
+    {
+      "id": "pcsx2.bios-path-stale",
+      "title": "PCSX2 is configured with a BIOS that no longer exists",
+      "category": "bios",
+      "severity": "warning",
+      "confidence": "high",
+      "exitCodes": [],
+      "patterns": ["Configured BIOS '.*' does not exist"],
+      "probableCause": "The BIOS file was moved or renamed after PCSX2 was configured.",
+      "fix": { "actionId": "emulator.regenerateConfig", "label": "Re-apply OmniPC folder settings", "safety": "low", "params": { "scope": "paths" } },
+      "manual": [],
+      "references": []
+    },
+    {
+      "id": "pcsx2.cdvd-open-failed",
+      "title": "PCSX2 could not open the game file",
+      "category": "library",
+      "severity": "problem",
+      "confidence": "high",
+      "exitCodes": [],
+      "patterns": ["Failed to open CDVD '"],
+      "probableCause": "The game file is missing, unreadable, on a disconnected drive, or not a valid disc image.",
+      "fix": { "actionId": "library.rescan", "label": "Rescan the library", "safety": "safe", "params": {} },
+      "manual": ["Check that the drive holding the game is connected.", "Re-dump or re-copy the game if the file is damaged."],
+      "references": []
+    },
+    {
+      "id": "pcsx2.gs-init-failed",
+      "title": "PCSX2's graphics renderer failed to start",
+      "category": "graphics",
+      "severity": "problem",
+      "confidence": "high",
+      "exitCodes": [],
+      "patterns": ["Failed to create render device", "Failed to initialize GS", "Failed to create GS device", "Failed to create new renderer"],
+      "probableCause": "The selected renderer is not supported by your GPU or driver.",
+      "fix": { "actionId": "emulator.setRenderer", "label": "Switch to Direct3D 11", "safety": "low", "params": { "renderer": "d3d11" } },
+      "manual": ["Update your graphics driver."],
+      "references": []
+    },
+    {
+      "id": "pcsx2.d3d12-agility",
+      "title": "Direct3D 12 is not usable on this system",
+      "category": "graphics",
+      "severity": "problem",
+      "confidence": "high",
+      "exitCodes": [],
+      "patterns": ["D3D12: Agility SDK configuration is not available", "D3D12: CreateRootSignature\\(\\) failed"],
+      "probableCause": "PCSX2's Direct3D 12 renderer failed to initialise on this GPU/driver.",
+      "fix": { "actionId": "emulator.setRenderer", "label": "Switch to Direct3D 11", "safety": "low", "params": { "renderer": "d3d11" } },
+      "manual": [],
+      "references": []
+    },
+    {
+      "id": "pcsx2.pad-init-failed",
+      "title": "PCSX2 failed to initialise the controller",
+      "category": "controllers",
+      "severity": "problem",
+      "confidence": "medium",
+      "exitCodes": [],
+      "patterns": ["Failed to initialize PAD"],
+      "probableCause": "The controller configuration in PCSX2.ini is invalid.",
+      "fix": { "actionId": "controller.reapply", "label": "Rebuild controller mapping", "safety": "low", "params": {} },
+      "manual": [],
+      "references": []
+    },
+    {
+      "id": "pcsx2.spu2-init-failed",
+      "title": "PCSX2 could not start audio",
+      "category": "configuration",
+      "severity": "problem",
+      "confidence": "medium",
+      "exitCodes": [],
+      "patterns": ["Failed to initialize SPU2"],
+      "probableCause": "No working audio output device, or the configured audio backend is unavailable.",
+      "fix": null,
+      "manual": ["Check that a playback device is enabled in Windows Sound settings."],
+      "references": []
+    },
+    {
+      "id": "pcsx2.bios-unreadable",
+      "title": "PCSX2 could not read part of the BIOS",
+      "category": "bios",
+      "severity": "warning",
+      "confidence": "medium",
+      "exitCodes": [],
+      "patterns": ["BIOS Warning: .* could not be read"],
+      "probableCause": "The BIOS file or its companion files are locked or have restrictive permissions.",
+      "fix": null,
+      "manual": ["Make sure the BIOS files are not read-protected or open in another program."],
+      "references": []
+    }
+  ]
+}

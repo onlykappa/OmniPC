@@ -1,0 +1,30 @@
+[general]
+show_welcome = false
+games_dir = 'D:\Games\Xbox'
+
+[general.updates]
+check = false
+
+[input]
+gamepad_mappings = [
+    { gamepad_id = '030000005e0400008e02000000007200', enable_rumble = false, controller_mapping = { a = 0}},
+    { gamepad_id = "03000000de280000ff11000001000000" }
+    ]
+
+[input.bindings]
+port1_driver = 'usb-xbox-gamepad'
+port1 = '030000005e0400008e02000000007200'
+
+[display]
+renderer = 'VULKAN'
+
+[display.window]
+last_width = 1920
+last_height = 1080
+
+[display.ui]
+scale = 1.5
+
+[sys.files]
+bootrom_path = 'C:\old\mcpx_1.0.bin'
+dvd_path = 'D:\Games\Xbox\Halo, CE.iso'

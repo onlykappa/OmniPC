@@ -1,0 +1,71 @@
+{
+  "emulatorId": "*",
+  "description": "Emulator-independent signatures: Windows exit codes and common loader errors.",
+  "rules": [
+    {
+      "id": "generic.dll-not-found",
+      "title": "A required runtime library is missing",
+      "category": "dependencies",
+      "severity": "problem",
+      "confidence": "high",
+      "exitCodes": [-1073741515],
+      "patterns": ["VCRUNTIME140(_1)?\\.dll", "MSVCP140(_\\d)?\\.dll"],
+      "probableCause": "The Microsoft Visual C++ 2015-2022 runtime (x64) is missing or outdated, or the emulator folder is incomplete.",
+      "fix": { "actionId": "dependency.vcredist", "label": "Install the Visual C++ runtime", "safety": "high", "params": {} },
+      "manual": ["Install the latest Microsoft Visual C++ Redistributable (x64) from https://aka.ms/vs/17/release/vc_redist.x64.exe."],
+      "references": ["https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist"]
+    },
+    {
+      "id": "generic.illegal-instruction",
+      "title": "This emulator build is not compatible with your CPU",
+      "category": "emulators",
+      "severity": "problem",
+      "confidence": "high",
+      "exitCodes": [-1073741795],
+      "patterns": [],
+      "probableCause": "The emulator was built for CPU instructions (for example AVX2) that your processor does not support.",
+      "fix": { "actionId": "emulator.reinstall", "label": "Reinstall a compatible build", "safety": "high", "params": {} },
+      "manual": ["Reinstall the emulator; OmniPC selects a build that matches your CPU."],
+      "references": []
+    },
+    {
+      "id": "generic.access-violation",
+      "title": "The emulator crashed",
+      "category": "emulators",
+      "severity": "problem",
+      "confidence": "low",
+      "exitCodes": [-1073741819, -1073740940, -1073740791],
+      "patterns": [],
+      "probableCause": "Crashes like this are most often caused by the graphics renderer or driver, a corrupt shader cache, or a bad game dump. The exit code alone cannot tell which.",
+      "fix": null,
+      "manual": ["Try a different renderer for this game (Game > Settings > Renderer).", "Update your graphics driver.", "If only one game crashes, verify the game file."],
+      "references": []
+    },
+    {
+      "id": "generic.dll-init-failed",
+      "title": "A system component failed to start",
+      "category": "dependencies",
+      "severity": "problem",
+      "confidence": "medium",
+      "exitCodes": [-1073741502],
+      "patterns": [],
+      "probableCause": "A DLL failed to initialise. This is commonly caused by graphics driver problems or security software blocking the emulator.",
+      "fix": null,
+      "manual": ["Update your graphics driver.", "If you use third-party antivirus, allow the OmniPC Emulators folder."],
+      "references": []
+    },
+    {
+      "id": "generic.vulkan-missing",
+      "title": "Vulkan is not available",
+      "category": "graphics",
+      "severity": "problem",
+      "confidence": "high",
+      "exitCodes": [],
+      "patterns": ["vulkan-1\\.dll", "Failed to (load|create) Vulkan (instance|library)", "vkCreateInstance failed", "VK_ERROR_INCOMPATIBLE_DRIVER"],
+      "probableCause": "The Vulkan renderer is selected but no working Vulkan driver is installed.",
+      "fix": { "actionId": "emulator.setRenderer", "label": "Switch to Direct3D 11", "safety": "low", "params": { "renderer": "d3d11" } },
+      "manual": ["Install the latest graphics driver from your GPU vendor, or use a Direct3D renderer."],
+      "references": []
+    }
+  ]
+}

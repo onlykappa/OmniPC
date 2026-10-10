@@ -1,0 +1,10 @@
+node_modules/
+dist/
+release/
+coverage/
+*.log
+.DS_Store
+.vite/
+/tmp/
+*.tsbuildinfo
+smoke-shots/

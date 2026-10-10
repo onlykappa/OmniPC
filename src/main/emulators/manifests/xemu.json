@@ -1,0 +1,117 @@
+{
+  "id": "xemu",
+  "name": "xemu",
+  "systems": [
+    "xbox"
+  ],
+  "website": "https://xemu.app",
+  "repository": "https://github.com/xemu-project/xemu",
+  "license": "GPL-2.0",
+  "implemented": true,
+  "download": {
+    "kind": "github-release",
+    "repo": "xemu-project/xemu",
+    "assetPatterns": [
+      "^xemu-[\\d.]+-windows-x86_64\\.zip$"
+    ],
+    "assetExclude": [
+      "-dbg-",
+      "-pdb\\.zip$",
+      "arm64",
+      "aarch64"
+    ],
+    "allowedHosts": [
+      "github.com",
+      "api.github.com",
+      "objects.githubusercontent.com",
+      "release-assets.githubusercontent.com"
+    ],
+    "versionPattern": "^xemu-([\\d.]+)-windows-x86_64\\.zip$"
+  },
+  "executable": "xemu.exe",
+  "supportedExtensions": [
+    ".iso",
+    ".xiso"
+  ],
+  "dependencies": [],
+  "configFiles": [
+    {
+      "label": "Settings (xemu.toml)",
+      "path": "{data}/xemu.toml",
+      "format": "other"
+    }
+  ],
+  "logFiles": [
+    {
+      "label": "Emulator log (xemu.log)",
+      "path": "{data}/xemu.log"
+    }
+  ],
+  "saveDirs": [
+    {
+      "label": "EEPROM and screenshots",
+      "path": "{saves}"
+    },
+    {
+      "label": "Xbox hard disk image (game saves and snapshots)",
+      "path": "{bios}/xbox"
+    }
+  ],
+  "biosRequirements": [
+    {
+      "systemId": "xbox",
+      "label": "Xbox MCPX boot ROM",
+      "required": true,
+      "directory": "{bios}/xbox",
+      "validator": "size",
+      "sizes": [
+        512
+      ],
+      "note": "512-byte MCPX boot ROM (e.g. mcpx_1.0.bin) dumped from your own Xbox. OmniPC never downloads it."
+    },
+    {
+      "systemId": "xbox",
+      "label": "Xbox flash BIOS",
+      "required": true,
+      "directory": "{bios}/xbox",
+      "validator": "size",
+      "sizes": [
+        262144,
+        1048576
+      ],
+      "note": "Flash BIOS image (256 KB or 1 MB .bin) dumped from your own Xbox. OmniPC never downloads it."
+    },
+    {
+      "systemId": "xbox",
+      "label": "Xbox hard disk image",
+      "required": true,
+      "directory": "{bios}/xbox",
+      "validator": "any-file",
+      "note": "Your own xemu hard disk image (.qcow2). It holds the dashboard, game saves and snapshots. OmniPC never downloads it."
+    }
+  ],
+  "notes": [
+    "OmniPC starts xemu with -config_path <data>\\xemu.toml, -full-screen and -dvd_path <game>, so xemu boots the disc straight away and closing the window powers off the emulated Xbox and exits xemu.",
+    "The first-boot window (general.show_welcome) and the Windows update check (general.updates.check) are disabled: with the first-boot window enabled xemu does not load the flash BIOS or start the game.",
+    "Put the MCPX boot ROM (512 bytes), the flash BIOS (256 KB or 1 MB) and your hard disk image (.qcow2) in the OmniPC BIOS\\xbox folder; OmniPC points sys.files.bootrom_path/flashrom_path/hdd_path at them before every launch. eeprom.bin is kept in Saves\\xemu (xemu creates one if it is missing).",
+    "Game saves and xemu snapshots are stored inside the hard disk image, so back up the .qcow2 file.",
+    "xemu remembers button remaps per controller (SDL GUID). OmniPC applies remaps and rumble to every controller xemu has already seen; connect the controller and start xemu once first. xemu has no stick deadzone setting, and its menu is opened with Guide or Back+Start.",
+    "Official x86_64 builds require a CPU with AVX2 (x86-64-v3).",
+    "The OpenGL shader cache is kept in xemu's own folder (%APPDATA%\\xemu\\xemu\\shaders) because xemu has no setting to move it."
+  ],
+  "assumptions": [
+    "Verified against xemu master at commit 478b4f496102379c7eaa7f3ec10e714a703c4300 (tagged pre-release; latest stable tag v0.8.136) and genconfig 42f85f9a2457e61d7e32542c07723565a284fcd6 (subprojects/genconfig.wrap).",
+    "Release assets (releases/expanded_assets/v0.8.136): xemu-0.8.136-windows-x86_64.zip, plus -dbg-, -pdb.zip, arm64, macOS, AppImage and xemu-win-x86_64-release.zip (a copy, .github/workflows/release.yml). build.sh package_wincross copies qemu-system-i386w.exe to dist/xemu.exe with LICENSE.txt; .github/workflows/build-windows.yml zips dist flat without *.pdb. The build is a static mingw cross build (x86_64-w64-mingw32.static), so no MSVC runtime dependency.",
+    "build-windows.yml builds the x86_64 release with -Dx86_version=3 (meson_options.txt: required x86_64 architecture level), i.e. AVX2/FMA/BMI2; the debug configuration does not set it.",
+    "ui/xemu.c main(): '-config_path <file>' sets the settings file (xemu_settings_set_path) before xemu_settings_load(); a TOML parse error shows an SDL message box and exits; atexit(xemu_settings_save) rewrites the file on exit. On Windows without a parent console stdout/stderr go to 'xemu.log' opened relative to the working directory, and the log starts with 'xemu_version: <version>'.",
+    "ui/xemu-settings.cc: portable mode when xemu.toml exists next to the exe (SDL_GetBasePath); otherwise the base path is SDL_GetPrefPath(\"xemu\",\"xemu\") (%APPDATA%\\xemu\\xemu\\). -config_path does not change the base path, which holds the default eeprom.bin and the GL shader cache (hw/xbox/nv2a/pgraph/gl/shaders.c: <base>shaders, <base>shader_cache_list).",
+    "genconfig cnode.h: update_from_table ignores unknown keys with a warning, rejects wrong types per key (Enum/String need strings, Integer needs an integer), enums are matched case-sensitively; generate_delta_toml writes only values that differ from defaults, with [a.b] headers and arrays of inline tables. OmniPC therefore treats a missing key as the default and writes default-valued keys only when another value is present.",
+    "config_spec.yml keys: general.show_welcome (default true), general.updates.check (true), general.screenshot_dir, sys.files.{bootrom_path, flashrom_path, eeprom_path, hdd_path, dvd_path}, display.renderer [NULL, OPENGL, VULKAN] (OPENGL), display.quality.surface_scale (1), display.window.fullscreen_on_startup (false), display.window.vsync (true), display.ui.fit [center, scale, stretch] (scale), display.ui.aspect_ratio [native, auto, 4x3, 16x9] (auto), input.auto_bind (true), input.allow_vibration (deprecated, true), input.gamepad_mappings[] {gamepad_id, enable_rumble, controller_mapping {a..dpad_right, axis_*, invert_axis_*}}. The internal resolution menu offers 1x-10x (ui/xui/main-menu.cc).",
+    "First-run prompts: ui/xui/main.cc opens the First Boot window when general.show_welcome is true and runs the Windows update check when it is false and general.updates.check is true; system/vl.c qemu_init sets autostart=0 and skips the flash ROM while show_welcome is true. Closing the window or SDL_EVENT_QUIT powers off without confirmation (ui/xemu.c).",
+    "system/vl.c qemu_init: bootrom must be exactly 512 bytes, flash ROM must open, EEPROM must be 256 bytes (generated with xbox_eeprom_generate when missing), hdd_path is attached as '-drive index=0,media=disk', the DVD drive uses sys.files.dvd_path unless '-dvd_path <file>' is given; remaining argv are passed to QEMU, where a bare path would become a disk drive. '-full-screen' is the QEMU option (qemu-options.hx) read in ui/xemu.c display_init. hw/xbox/xbox.c accepts flash images whose size is a multiple of 64 KB.",
+    "Disc images: ui/xui/actions.cc and popup-menu.cc accept *.iso and *.xiso. Hard disk images: the System settings file picker filters .qcow2 (ui/xui/main-menu.cc); qcow2 files start with 'QFI\\xfb'.",
+    "Controllers (ui/xemu-input.c): mappings are keyed by the SDL joystick GUID, which OmniPC cannot predict, and created by xemu when a controller is first seen; controller_mapping values are SDL3 SDL_GamepadButton/SDL_GamepadAxis indices (south=0 ... dpad_right=14; leftx=0 ... right trigger=5); Y axes are inverted unless invert_axis_*_y is set; lshoulder/rshoulder drive the White/Black buttons (ui/xemu-input.h, hw/xbox/xid.c). There is no deadzone setting. The menu opens on Guide or Back+Start (ui/xui/main.cc), which is not configurable.",
+    "version.rc puts XEMU_VERSION in the VERSIONINFO FileVersion string. xemu has no option that reports its version and exits before the SDL/OpenGL window is created (QEMU's -version is parsed in qemu_init after display_very_early_init), so the smoke test does not execute it.",
+    "Not verified on a real Windows machine: the exact zip contents beyond xemu.exe/LICENSE.txt, and the toml++ string style (OmniPC reads both literal and basic strings and writes literal strings)."
+  ]
+}

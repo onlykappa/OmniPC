@@ -1,0 +1,120 @@
+{
+  "id": "rpcs3",
+  "name": "RPCS3",
+  "systems": [
+    "ps3"
+  ],
+  "website": "https://rpcs3.net",
+  "repository": "https://github.com/RPCS3/rpcs3",
+  "license": "GPL-2.0",
+  "implemented": true,
+  "download": {
+    "kind": "github-release",
+    "repo": "RPCS3/rpcs3-binaries-win",
+    "assetPatterns": [
+      "_win64_msvc\\.7z$"
+    ],
+    "assetExclude": [
+      "\\.sha256$",
+      "\\.asc$",
+      "\\.sig$"
+    ],
+    "allowedHosts": [
+      "github.com",
+      "api.github.com",
+      "objects.githubusercontent.com",
+      "release-assets.githubusercontent.com"
+    ],
+    "versionPattern": "^rpcs3-v([\\d.]+-\\d+-[0-9a-f]+)_win64"
+  },
+  "executable": "rpcs3.exe",
+  "supportedExtensions": [
+    ".bin",
+    ".iso",
+    ".self",
+    ".elf"
+  ],
+  "dependencies": [
+    "vcredist-x64"
+  ],
+  "configFiles": [
+    {
+      "label": "Main settings (config.yml)",
+      "path": "{data}/config/config.yml",
+      "format": "yaml"
+    },
+    {
+      "label": "Virtual file system (vfs.yml)",
+      "path": "{data}/config/vfs.yml",
+      "format": "yaml"
+    },
+    {
+      "label": "Controller (input_configs/global/Default.yml)",
+      "path": "{data}/config/input_configs/global/Default.yml",
+      "format": "yaml"
+    },
+    {
+      "label": "GUI settings (CurrentSettings.ini)",
+      "path": "{data}/GuiConfigs/CurrentSettings.ini",
+      "format": "ini"
+    }
+  ],
+  "logFiles": [
+    {
+      "label": "Emulator log (RPCS3.log)",
+      "path": "{data}/log/RPCS3.log"
+    }
+  ],
+  "saveDirs": [
+    {
+      "label": "PS3 HDD (saves, installed games, trophies)",
+      "path": "{saves}/dev_hdd0"
+    },
+    {
+      "label": "Virtual USB stick",
+      "path": "{saves}/dev_usb000"
+    },
+    {
+      "label": "Save states",
+      "path": "{data}/savestates"
+    }
+  ],
+  "biosRequirements": [
+    {
+      "systemId": "ps3",
+      "label": "PS3 system firmware",
+      "required": true,
+      "directory": "{bios}/ps3",
+      "filenames": [
+        "PS3UPDAT.PUP"
+      ],
+      "validator": "any-file",
+      "note": "Download PS3UPDAT.PUP from Sony's official PlayStation website and place it here, then use \"Install firmware\" (OmniPC runs rpcs3 --installfw). OmniPC never downloads firmware."
+    }
+  ],
+  "notes": [
+    "OmniPC launches RPCS3 with --no-gui (and --fullscreen) so closing the game closes RPCS3; \"Exit RPCS3 when process finishes\" is enabled for games that quit to the XMB.",
+    "All RPCS3 configuration lives in the OmniPC data folder through the RPCS3_CONFIG_DIR environment variable, and the PS3 HDD (dev_hdd0, which holds saves and installed games) is redirected to the OmniPC Saves folder through vfs.yml, so updates and rollbacks never touch settings or saves.",
+    "Folder games are launched through PS3_GAME/USRDIR/EBOOT.BIN; disc images (.iso) and game folders are also accepted. PSN .pkg files must be installed through RPCS3 (File > Install Packages) and are not launch targets.",
+    "Press the PS button (Guide), or the OmniPC menu hotkey, to open RPCS3's home menu (exit game, save state, settings).",
+    "PPU/SPU recompiler and shader caches are kept in the data folder (data/cache) because RPCS3 has no setting to move them; clearing them is safe but the first boot afterwards recompiles."
+  ],
+  "assumptions": [
+    "Verified against RPCS3 source at commit 8f2fe1a99caef5d6e1eb9e4579f1d6169cf4b771 (v0.0.43-20262), matching release tag build-8f2fe1a99caef5d6e1eb9e4579f1d6169cf4b771 of RPCS3/rpcs3-binaries-win.",
+    "Release assets are named rpcs3-v<version>-<build>-<hash>_win64_msvc.7z with a sibling .7z.sha256 (releases/expanded_assets/build-8f2fe1a9...). The archive holds rpcs3.exe, Qt6*.dll, qt6/plugins, GuiConfigs, Icons, fonts and config/input_configs/gamecontrollerdb.txt, and no MSVC runtime DLLs (hence vcredist-x64). Release tags are build-<commit>, not version numbers.",
+    "Utilities/File.cpp fs::get_config_dir(): a 'portable' folder next to the exe wins; otherwise on Windows the RPCS3_CONFIG_DIR environment variable is used, backslashes become slashes and the value is cut after its LAST slash, so OmniPC passes the data folder WITH a trailing separator. get_config_dir(true) adds 'config/'; fs::get_log_dir() = <dir>/log/; fs::get_cache_dir() = <dir> on Windows.",
+    "Emu/System.cpp Emulator::Init: config.yml = get_config_dir(true)+'config.yml' (a legacy <dir>/config.yml is moved there); a missing or empty file is replaced with defaults. Utilities/Config.cpp cfg::decode (strict=false) ignores unknown keys and keeps defaults for missing ones, so OmniPC merges only the keys it manages.",
+    "Emu/vfs_config.h keys: '$(EmulatorDir)', '/dev_hdd0/', '/dev_hdd1/', '/dev_flash/', '/dev_flash2/', '/dev_flash3/', '/dev_bdvd/', '/games/', '/app_home/', and the device map '/dev_usb***/' -> '/dev_usb000' -> {Path, Serial, VID, PID} (Utilities/Config.cpp encode/decode type::device). vfs_config.cpp cfg_vfs::get substitutes $(EmulatorDir) and appends a trailing '/'. The file is get_config_dir(true)+'vfs.yml'.",
+    "Emu/system_config.h: Video 'Renderer' (Vulkan|OpenGL|Null), 'Resolution Scale' (percent 25-800), 'Aspect ratio' (4:3|16:9), 'Stretch To Display Area', 'VSync Mode' (Disabled|Adaptive|Full), 'Frame limit' (Off|30|50|60|120|Display|Auto|PS3 Native|Infinite); Miscellaneous 'Exit RPCS3 when process finishes', 'Automatically start games after boot', 'Start games in fullscreen mode'. Enum strings from Emu/system_config_types.cpp.",
+    "rpcs3.cpp run_rpcs3 options: --no-gui, --fullscreen (only valid with --no-gui), --config <path> (cfg_mode::config_override), --input-config, --installfw <path>, --installpkg, --version (QCommandLineParser::addVersionOption). The boot path is the first positional argument; arguments after '--' are passed to the game. --installfw refuses --no-gui and asks for confirmation in the main window (main_window::InstallPup).",
+    "Emu/System.cpp Emulator::Load: with --config (config_override) ONLY that file is applied on top of defaults (the global config.yml and the per-title custom_configs/config_<SERIAL>.yml are skipped), so OmniPC builds the per-game file from config.yml + custom config + overrides.",
+    "First-run prompts (rpcs3qt/gui_settings.h, rpcs3qt/gui_application.cpp, main_window.cpp, gs_frame.cpp): welcome_dialog is shown by gui_application::exec even with --no-gui unless [main_window] infoBoxEnabledWelcome=false; gs_frame asks 'Exit Game?' on close unless confirmationBoxExitGame=false; the update check runs unless [Meta] checkUpdateStart=false. The file is <config dir>/GuiConfigs/CurrentSettings.ini (rpcs3qt/settings.cpp GetSettingsDir). The experimental-build warning only appears for non-release builds; official binaries are release builds.",
+    "Startup refuses temp, archive and OneDrive locations for the config dir (rpcs3.cpp, get_one_drive_paths reads HKCU\\Software\\Microsoft\\OneDrive\\Accounts\\Personal UserFolder); OmniPC approximates the OneDrive check with the OneDrive environment variables.",
+    "Controllers (Emu/Io/pad_config.h, Emu/Io/pad_config.cpp, Input/pad_thread.cpp): input_configs/global/<name>.yml with 'Player 1 Input' -> Handler, Device, Config {Cross, Circle, ..., 'Left Stick Up', 'PS Button', 'Left Stick Deadzone', 'Large Vibration Motor Multiplier', ...}; the global config used is active_input_configurations.yml 'Active Configurations'.global, falling back to Default.yml. Buttons are ','-separated alternatives of '&'-joined combos (cfg_pad::get_combos).",
+    "Handler names from Emu/Io/pad_config_types.cpp (XInput, DualShock 4, DualSense); device names from m_name_string + 1-based index ('XInput Pad #1', 'DS4 Pad #1', 'DualSense Pad #1'); button tokens from button_list in Input/xinput_pad_handler.cpp (A, B, LB, LT, LS, Back, Guide, 'LS Y+', ...) and ds4/dualsense_pad_handler.cpp (Cross, L1, Options, Share, 'PS Button', ...). Stick deadzones are in thumb_max units (XInput 32767, DS4/DualSense 255). SDL device names are the controller model name + count (Input/sdl_pad_handler.cpp), which OmniPC cannot predict, so other controllers use the XInput handler.",
+    "Pressing the PS button opens the home menu (Input/pad_thread.cpp open_home_menu), which is how OmniPC's 'menu' hotkey is implemented. RPCS3 has no other controller hotkeys.",
+    "Firmware: utils::get_firmware_version (util/sysinfo.cpp) reads dev_flash/vsh/etc/version.txt ('release:04.9200:'); PUP files start with the magic 'SCEUF\\0\\0\\0' (Loader/PUP.cpp). rpcs3.exe has no VERSIONINFO resource (rpcs3.rc), so the version comes from --version or the 'RPCS3 v<version>' line at the top of RPCS3.log.",
+    "Assumption (Qt, not RPCS3): QT_COMMAND_LINE_PARSER_NO_GUI_MESSAGE_BOXES=1 makes QCommandLineParser print --version to stdout instead of a message box on Windows GUI-subsystem builds; the call is bounded by a timeout either way.",
+    "Release tags are build-<commit>, so the version is read from the asset name (rpcs3-v0.0.43-20262-8f2fe1a9_win64_msvc.7z -> 0.0.43-20262-8f2fe1a9); the build number orders updates."
+  ]
+}

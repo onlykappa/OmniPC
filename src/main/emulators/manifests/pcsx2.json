@@ -1,0 +1,50 @@
+{
+  "id": "pcsx2",
+  "name": "PCSX2",
+  "systems": ["ps2"],
+  "website": "https://pcsx2.net",
+  "repository": "https://github.com/PCSX2/pcsx2",
+  "license": "GPL-3.0",
+  "implemented": true,
+  "download": {
+    "kind": "github-release",
+    "repo": "PCSX2/pcsx2",
+    "assetPatterns": ["-windows-x64-AVX2-Qt\\.7z$", "-windows-x64-Qt\\.7z$", "-windows-x64-SSE4-Qt\\.7z$"],
+    "assetExclude": ["symbols"],
+    "allowedHosts": ["github.com", "api.github.com", "objects.githubusercontent.com", "release-assets.githubusercontent.com"]
+  },
+  "executable": "pcsx2-qt.exe",
+  "supportedExtensions": [".iso", ".chd", ".cso", ".zso", ".gz", ".bin", ".cue", ".mdf", ".nrg", ".img", ".elf", ".m3u"],
+  "dependencies": ["vcredist-x64"],
+  "configFiles": [
+    { "label": "Main settings (PCSX2.ini)", "path": "{data}/PCSX2/inis/PCSX2.ini", "format": "ini" }
+  ],
+  "logFiles": [{ "label": "Emulator log (emulog.txt)", "path": "{data}/PCSX2/logs/emulog.txt" }],
+  "saveDirs": [
+    { "label": "Memory cards", "path": "{saves}/memcards" },
+    { "label": "Save states", "path": "{saves}/sstates" },
+    { "label": "Screenshots", "path": "{saves}/snaps" }
+  ],
+  "biosRequirements": [
+    {
+      "systemId": "ps2",
+      "label": "PlayStation 2 BIOS",
+      "required": true,
+      "directory": "{bios}/ps2",
+      "validator": "ps2-romdir",
+      "note": "Dump the BIOS from your own PlayStation 2. Typical files are 4 MB (e.g. SCPH-70012.bin)."
+    }
+  ],
+  "notes": [
+    "OmniPC launches PCSX2 with -nogui (batch mode) so closing the game returns to OmniPC.",
+    "All PCSX2 data is kept outside the program folder via -datapath, so updates and rollbacks never touch settings or saves."
+  ],
+  "assumptions": [
+    "Verified against PCSX2 v2.8.2 source (pcsx2-qt/QtHost.cpp): -batch, -nogui, -fullscreen, -datapath, -logfile and -testconfig exist in the stable release.",
+    "-gamecfg (per-game INI override) only exists in v2.9 nightlies; on older builds OmniPC applies per-game overrides by writing them into the base config for the session and restoring it afterwards.",
+    "Release assets are named pcsx2-v<version>-windows-x64[-AVX2|-SSE4]-Qt.7z (.github/workflows/scripts/releases/rename-release-assets.py).",
+    "With -datapath <dir>, PCSX2 stores data in <dir>/PCSX2 (Pcsx2Config.cpp EmuFolders::SetDataDirectory).",
+    "Settings keys: [Folders] Bios/MemoryCards/Savestates/Snapshots/Cache, [EmuCore/GS] Renderer (int enum), upscale_multiplier, AspectRatio (string), VsyncEnable; [UI] SetupWizardIncomplete, ConfirmShutdown, StartFullscreen; [AutoUpdater] CheckAtStartup; [Logging] EnableFileLogging.",
+    "SDL bindings use the form SDL-<n>/<FaceSouth|LeftShoulder|+LeftTrigger|-LeftY...>; hotkey chords join bindings with ' & '."
+  ]
+}
