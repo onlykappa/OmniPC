@@ -15,6 +15,9 @@ implemented is labelled *planned* or disabled, never a button that silently does
 | Emulator adapter architecture (manifest + adapter + shared lifecycle manager) | ✅ |
 | **PCSX2**: install (GitHub, SHA-256), update, rollback, repair, reset, uninstall, use existing, config generation, controller + hotkeys, per-game profiles, smoke test, BIOS validation, log rules | ✅ |
 | **Dolphin**: install (official update service), update, rollback, repair, reset, uninstall, config generation, GC pad + Wii Remote/Nunchuk, hotkeys, per-game `-C` overrides, smoke test, IPL handling, log rules | ✅ |
+| **DuckStation** (PS1), **PPSSPP** (PSP), **RPCS3** (PS3, incl. firmware install), **Cemu** (Wii U), **melonDS** (DS), **Xenia Canary** (Xbox 360): install, update, rollback, repair, reset, uninstall, config generation with first-run prompts suppressed, controller + hotkeys (within each emulator's limits), save folders under OmniDeck, BIOS/firmware/keys status | ✅ (not yet run on Windows) |
+| **KytyPS5** (PS5, experimental upstream): install from daily releases, CLI launch of game folders, saves under OmniDeck, Vulkan check | ✅ (not yet run on Windows) |
+| Folder-format games: PS3 `PS3_GAME/USRDIR/EBOOT.BIN`, PS4/PS5 `eboot.bin` + `sce_sys` | ✅ |
 | Launch router, process monitoring, play history, crash-loop protection, failure recovery screen | ✅ |
 | OmniDoctor: 16 checks, real health score, rule knowledge base, log analysis, change correlation, confidence/evidence, repairs with safety levels, repair history + undo, repair-all-safe, automatic safe repairs | ✅ |
 | Config backups (compare/restore/delete), save backups/restore, storage relocation | ✅ |
@@ -34,6 +37,8 @@ implemented is labelled *planned* or disabled, never a button that silently does
 - The Electron app was launched headless (Linux/Xvfb) with a seeded library and every main page rendered.
 - An unpacked Windows build (`electron-builder --win --dir`) was produced.
 
+See [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md) for the Windows test plan.
+
 **Not yet verified on a physical Windows PC with the real emulators:** the actual PCSX2/Dolphin
 downloads (the development sandbox could not reach GitHub/dolphin-emu.org), real controller
 input inside the emulators, PowerShell hardware queries on real hardware, window-detection
@@ -44,8 +49,9 @@ on Windows is the next milestone.
 
 ## Planned (declared, explicitly disabled in the UI)
 
-- Adapters: RetroArch, DuckStation, RPCS3, PPSSPP, Cemu, melonDS, Xenia Canary, xemu. Their
-  systems are recognised in the library; Install/Play explain that support is planned.
+- Adapters in progress: RetroArch and xemu (their systems are recognised; Install/Play explain
+  that support is planned until they land).
+- PS4: games are recognised, but no PS4 emulator is integrated (KytyPS5 runs PS5 titles only).
 - In-game overlay drawn on top of emulators. Today: universal hotkeys map to each emulator's
   own features (exit, save/load state, volume, PCSX2 pause menu) and OmniDeck shows a session
   bar with "Force close" when focused.
