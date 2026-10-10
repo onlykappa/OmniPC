@@ -8,6 +8,7 @@ import { defaultProfile } from '../src/main/controllers/translate';
 import { DEFAULT_SETTINGS } from '../src/main/database/settingsRepo';
 import type { HardwareProfile } from '../src/shared/models';
 import { tempDir } from './helpers';
+import { processRunner } from '../src/main/platform/exec';
 
 const t = tempDir();
 afterAll(t.cleanup);
@@ -176,9 +177,16 @@ describe('shadPS4 adapter', () => {
     mkdirSync(paths.emulatorAppDir('shadps4'), { recursive: true });
     writeFileSync(exe, '');
     expect(await a.findExecutable(paths.emulatorAppDir('shadps4'))).toBe(exe);
-    const r = await a.smokeTest(exe);
-    expect(r.checks.every((c) => c.ok)).toBe(true);
-    if (process.platform !== 'win32') expect(r.ran).toBe(false);
+    // The stand-in exe is empty: simulate shadPS4's CLI11 --help output instead of running it.
+    const realRun = processRunner.run;
+    processRunner.run = async () => ({ code: 0, signal: null, stdout: 'shadPS4\nOptions:\n  -g,--game TEXT\n', stderr: '', timedOut: false, error: null });
+    try {
+      const r = await a.smokeTest(exe);
+      expect(r.checks.every((c) => c.ok), JSON.stringify(r.checks)).toBe(true);
+      expect(r.ran).toBe(process.platform === 'win32');
+    } finally {
+      processRunner.run = realRun;
+    }
     expect(a.saveLocations()[0].path).toBe(join(paths.emulatorSaveDir('shadps4'), '1000', 'savedata'));
   });
 });
