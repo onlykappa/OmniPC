@@ -13,7 +13,7 @@ describe('emulator manifests & registry', () => {
   });
 
   it('marks only real integrations as implemented', () => {
-    expect(reg.implemented().map((a) => a.manifest.id).sort()).toEqual(['dolphin', 'pcsx2']);
+    expect(reg.implemented().map((a) => a.manifest.id).sort()).toEqual(['dolphin', 'duckstation', 'pcsx2']);
     expect(reg.get('rpcs3')?.manifest.implemented).toBe(false);
   });
 

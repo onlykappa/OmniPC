@@ -1,27 +1,62 @@
 {
   "id": "duckstation",
   "name": "DuckStation",
-  "systems": [
-    "ps1"
-  ],
+  "systems": ["ps1"],
   "website": "https://www.duckstation.org",
   "repository": "https://github.com/stenzek/duckstation",
   "license": "CC-BY-NC-ND-4.0 (source-available; official builds only)",
-  "implemented": false,
-  "plannedNote": "The DuckStation adapter is planned. Its manifest is declared so the library can recognise ps1 games, but OmniDeck does not yet install, configure or launch DuckStation. You can still point OmniDeck at an existing DuckStation installation in a future release.",
+  "implemented": true,
   "download": {
-    "kind": "none",
-    "allowedHosts": []
+    "kind": "github-release",
+    "repo": "stenzek/duckstation",
+    "assetPatterns": ["^duckstation-windows-x64-release\\.zip$"],
+    "assetExclude": ["symbols", "installer", "sse2", "arm64"],
+    "allowedHosts": ["github.com", "api.github.com", "objects.githubusercontent.com", "release-assets.githubusercontent.com"]
   },
   "executable": "duckstation-qt-x64-ReleaseLTCG.exe",
-  "supportedExtensions": [],
-  "dependencies": [],
-  "configFiles": [],
-  "logFiles": [],
-  "saveDirs": [],
-  "biosRequirements": [],
-  "notes": [
-    "Not implemented in this build."
+  "supportedExtensions": [".cue", ".bin", ".img", ".iso", ".chd", ".ecm", ".mds", ".ccd", ".pbp", ".m3u", ".psexe", ".ps-exe", ".psf", ".minipsf"],
+  "dependencies": ["vcredist-x64"],
+  "configFiles": [
+    { "label": "Main settings (settings.ini, portable mode)", "path": "{app}/settings.ini", "format": "ini" }
   ],
-  "assumptions": []
+  "logFiles": [{ "label": "Emulator log (duckstation.log)", "path": "{app}/duckstation.log" }],
+  "saveDirs": [
+    { "label": "Memory cards", "path": "{saves}/memcards" },
+    { "label": "Save states", "path": "{saves}/savestates" },
+    { "label": "Screenshots", "path": "{saves}/screenshots" }
+  ],
+  "biosRequirements": [
+    {
+      "systemId": "ps1",
+      "label": "PlayStation BIOS",
+      "required": true,
+      "directory": "{bios}/ps1",
+      "validator": "size",
+      "sizes": [524288, 4194304, 4089584],
+      "note": "Dump the BIOS from your own PlayStation (e.g. SCPH-1001.bin, 512 KB). DuckStation also accepts a PS2 (4 MB) or PS3 BIOS image. OmniDeck never downloads BIOS files."
+    }
+  ],
+  "notes": [
+    "OmniDeck downloads only the official, unmodified DuckStation build from github.com/stenzek/duckstation (CC-BY-NC-ND-4.0 forbids redistributing modified builds); nothing is repackaged.",
+    "DuckStation can only keep its settings next to the executable (portable mode). OmniDeck writes portable.txt and carries settings.ini over on every update, rollback and uninstall.",
+    "Memory cards, save states and screenshots are redirected to the OmniDeck Saves folder, the BIOS search folder to BIOS\\ps1 and caches to the OmniDeck Cache folder, so they never live in the program folder.",
+    "OmniDeck launches DuckStation with -nogui (no main window, batch mode) so powering off the game returns to OmniDeck.",
+    "DuckStation's own auto-updater is disabled; OmniDeck manages updates and keeps the previous build for rollback.",
+    "Per-game profiles are applied to settings.ini for the session only and restored when the game exits."
+  ],
+  "assumptions": [
+    "Verified against stenzek/duckstation master @ df80597 (2026-10-07) and the 'latest' rolling release (exe FileVersion 0.1.12074).",
+    "Release asset duckstation-windows-x64-release.zip is attached to the rolling release tag 'latest' (.github/workflows/windows-build.yml matrix assetname; confirmed on releases/expanded_assets/latest). That release carries GitHub's 'Latest' badge, so /releases/latest returns it, but its tag_name is the literal 'latest' (no version number).",
+    "The zip has the executable at its root: duckstation-qt-x64-ReleaseLTCG.exe next to resources/, translations/, QtPlugins/, updater.exe (confirmed from the zip listing). The SSE2 asset contains a differently named exe and is not selected.",
+    "The exe imports VCRUNTIME140.dll / MSVCP140.dll / MSVCP140_ATOMIC_WAIT.dll and the zip ships no CRT, so the Visual C++ 2015-2022 x64 runtime is required.",
+    "The x64 build requires SSE4.1 and refuses to start otherwise (src/core/core.cpp Core::PerformEarlyHardwareChecks).",
+    "There is no -datapath/-portable CLI option. DataRoot is the exe directory when portable.txt or settings.ini exists there (src/core/core.cpp Core::SetDataRoot); otherwise Documents\\DuckStation (if it exists) or %LOCALAPPDATA%\\DuckStation. Settings live in <DataRoot>/settings.ini (Core::GetBaseSettingsPath).",
+    "Folder keys (src/core/settings.cpp EmuFolders::LoadConfig): [BIOS] SearchDirectory, [MemoryCards] Directory, [Folders] Cache/Cheats/Covers/GameIcons/GameSettings/InputProfiles/Patches/SaveStates/Screenshots/Shaders/Subchannels/Textures/UserResources/Videos. Relative values resolve against DataRoot; absolute values are used as-is. Other files written directly to DataRoot: playtime.dat, custom_properties.ini (src/core/game_list.cpp), duckstation.log (Settings::UpdateLogConfig, [Logging] LogToFile).",
+    "First-run prompts: the setup wizard runs when [Main] SetupWizardIncomplete is true or when neither SetupWizardIncomplete nor SettingsVersion exists (src/duckstation-qt/qthost.cpp InitializeFoldersAndConfig), also in batch mode, so OmniDeck writes SetupWizardIncomplete=false. Current DuckStation has no settings-version mismatch prompt. Auto update check: [AutoUpdater] CheckAtStartup (mainwindow.cpp startupUpdateCheck). Confirm close: [Main] ConfirmPowerOff (mainwindow.cpp requestShutdown). The achievement-icon migration prompt (qthost.cpp ApplyMigrations) only appears if <Cache>/achievement_images is non-empty, which cannot happen in OmniDeck's fresh Cache folder. The unofficial-build warning never appears for official builds.",
+    "CLI (src/duckstation-qt/qthost.cpp ParseCommandLineParametersAndInitializeConfig): -help, -version, -batch, -nogui (implies batch), -bios, -fastboot, -slowboot, -resume, -state <n>, -statefile <f>, -exe <f>, -fullscreen, -nofullscreen, -bigpicture, -setupwizard, -earlyconsole, -- <file>. Any other dash argument shows a modal 'Unknown parameter' box, so OmniDeck drops unknown custom arguments. -version prints to stderr and exits with code 1 before any settings are loaded.",
+    "Graphics keys: [GPU] Renderer (Automatic, D3D11, D3D12, Vulkan, OpenGL, Software; Settings::ParseRendererName), [GPU] ResolutionScale (1-32), [Display] AspectRatio ('Auto (Game Native)', '4:3', '16:9', 'Stretch To Fill'; Settings::ParseDisplayAspectRatio), [Display] VSync, [Main] EmulationSpeed (0 = unlimited), [Main] StartFullscreen, [BIOS] PatchFastBoot.",
+    "Controller: [Pad1] Type = AnalogController with bindings Up/Down/Left/Right/Triangle/Circle/Cross/Square/Select/Start/Analog/L1/R1/L2/R2/L3/R3/LLeft/LRight/LUp/LDown/RLeft/RRight/RUp/RDown/LargeMotor/SmallMotor and setting AnalogDeadzone (src/core/analog_controller.cpp). [InputSources] SDL/XInput booleans (src/util/input_manager.cpp SetDefaultSourceConfig).",
+    "SDL binding syntax (src/util/sdl_input_source.cpp): SDL-<player index>/<A|B|X|Y|Back|Guide|Start|LeftStick|RightStick|LeftShoulder|RightShoulder|DPadUp|DPadDown|DPadLeft|DPadRight>, axes as +LeftTrigger/+RightTrigger/-LeftX/+LeftX/-LeftY/+LeftY (SDL Y grows downwards), motors SDL-<n>/LargeMotor and SDL-<n>/SmallMotor. The device number is the SDL player index, which matches the XInput slot for Xbox pads.",
+    "Hotkeys live in [Hotkeys] (src/core/hotkeys.cpp): PowerOff, SaveSelectedSaveState, LoadSelectedSaveState, AudioVolumeUp, AudioVolumeDown, OpenPauseMenu, ToggleFastForward, Screenshot, ToggleFullscreen. Chords join bindings with ' & ' (src/util/input_manager.cpp)."
+  ]
 }

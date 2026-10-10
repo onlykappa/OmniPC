@@ -4,8 +4,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { EventBus } from '../src/main/core/events';
 import { DownloadManager } from '../src/main/downloads/downloadManager';
-import { DolphinUpdateSource, GitHubReleaseSource, VersionedUrlSource, hostAllowed, pickAsset } from '../src/main/downloads/sources';
+import { DolphinUpdateSource, GitHubReleaseSource, VersionedUrlSource, hostAllowed, pickAsset, releaseVersion } from '../src/main/downloads/sources';
 import { tempDir } from './helpers';
+import { compareVersions } from '../src/main/emulators/versions';
 
 const t = tempDir();
 afterAll(t.cleanup);
@@ -46,6 +47,14 @@ describe('trusted sources', () => {
     const rel = await src.resolveLatest({ channel: 'stable', cpuFeatures: [], fetchImpl: fakeFetch({ 'https://api.github.com/repos/PCSX2/pcsx2/releases/latest': () => Response.json({ tag_name: 'v2.8.2', prerelease: false, draft: false, assets: [{ name: 'pcsx2-v2.8.2-windows-x64-Qt.7z', browser_download_url: 'https://github.com/PCSX2/pcsx2/releases/download/v2.8.2/pcsx2-v2.8.2-windows-x64-Qt.7z', size: 10, digest: `sha256:${digest}` }] }) }) });
     expect(rel.version).toBe('2.8.2');
     expect(rel.sha256).toBe(digest);
+  });
+
+  it('turns rolling tags into comparable versions', () => {
+    expect(releaseVersion({ tag_name: 'v2.8.2' }, {})).toBe('2.8.2');
+    const a = releaseVersion({ tag_name: 'latest' }, { updated_at: '2026-10-07T12:34:56Z' });
+    const b = releaseVersion({ tag_name: 'latest' }, { updated_at: '2026-10-09T08:00:00Z' });
+    expect(a).toBe('latest-20261007.1234');
+    expect(compareVersions(b, a)).toBe(1);
   });
 
   it('reports offline errors in plain language', async () => {

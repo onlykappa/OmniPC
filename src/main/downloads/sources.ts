@@ -42,7 +42,7 @@ export function hostAllowed(url: string, allowedHosts: string[]): boolean {
   return allowedHosts.some((h) => host === h || (h.startsWith('*.') && host.endsWith(h.slice(1))));
 }
 
-interface GhAsset { name: string; browser_download_url: string; size: number; digest?: string | null }
+interface GhAsset { name: string; browser_download_url: string; size: number; digest?: string | null; updated_at?: string }
 interface GhRelease { tag_name: string; name?: string; prerelease: boolean; draft: boolean; published_at?: string; html_url?: string; assets: GhAsset[] }
 
 function compilePatterns(patterns: string[] | undefined): RegExp[] {
@@ -68,6 +68,17 @@ function cpuOk(name: string, features: string[]): boolean {
   if (/avx2/i.test(name)) return features.length === 0 || features.includes('avx2');
   if (/sse4/i.test(name)) return features.length === 0 || features.includes('sse41');
   return true;
+}
+
+/**
+ * Version string for a release. Rolling tags without digits (DuckStation's
+ * "latest"/"preview") get the asset build time appended so updates compare
+ * correctly: "latest-20261007.1234".
+ */
+export function releaseVersion(rel: Pick<GhRelease, 'tag_name' | 'published_at'>, asset: Pick<GhAsset, 'updated_at'>): string {
+  if (/\d/.test(rel.tag_name)) return rel.tag_name.replace(/^v/, '');
+  const stamp = asset.updated_at ?? rel.published_at ?? '';
+  return stamp ? `${rel.tag_name}-${stamp.slice(0, 16).replace(/[-:]/g, '').replace('T', '.')}` : rel.tag_name;
 }
 
 export class GitHubReleaseSource implements TrustedSource {
@@ -108,7 +119,7 @@ export class GitHubReleaseSource implements TrustedSource {
       if (!hostAllowed(asset.browser_download_url, this.allowedHosts)) continue;
       const digest = asset.digest && /^sha256:[0-9a-f]{64}$/i.test(asset.digest) ? asset.digest.slice(7).toLowerCase() : null;
       return {
-        version: rel.tag_name.replace(/^v/, ''),
+        version: releaseVersion(rel, asset),
         url: asset.browser_download_url,
         fileName: asset.name,
         sizeBytes: asset.size ?? null,
