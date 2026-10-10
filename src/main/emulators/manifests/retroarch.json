@@ -1,34 +1,77 @@
 {
   "id": "retroarch",
   "name": "RetroArch",
-  "systems": [
-    "nes",
-    "snes",
-    "n64",
-    "gb",
-    "gbc",
-    "gba",
-    "genesis",
-    "arcade"
-  ],
+  "systems": ["nes", "snes", "n64", "gb", "gbc", "gba", "genesis", "arcade"],
   "website": "https://www.retroarch.com",
   "repository": "https://github.com/libretro/RetroArch",
-  "license": "GPL-3.0",
-  "implemented": false,
-  "plannedNote": "The RetroArch adapter is planned. Its manifest is declared so the library can recognise nes/snes/n64/gb/gbc/gba/genesis/arcade games, but OmniDeck does not yet install, configure or launch RetroArch. You can still point OmniDeck at an existing RetroArch installation in a future release.",
+  "license": "GPL-3.0 (cores have their own licenses)",
+  "implemented": true,
   "download": {
-    "kind": "none",
-    "allowedHosts": []
+    "kind": "versioned-url",
+    "repo": "libretro/RetroArch",
+    "urlTemplate": "https://buildbot.libretro.com/stable/{version}/windows/x86_64/RetroArch.7z",
+    "allowedHosts": ["api.github.com", "buildbot.libretro.com"]
   },
   "executable": "retroarch.exe",
-  "supportedExtensions": [],
+  "supportedExtensions": [".nes", ".fds", ".unf", ".unif", ".sfc", ".smc", ".fig", ".swc", ".bs", ".z64", ".n64", ".v64", ".gb", ".gbc", ".gba", ".md", ".gen", ".smd", ".32x", ".zip", ".7z"],
   "dependencies": [],
-  "configFiles": [],
-  "logFiles": [],
-  "saveDirs": [],
-  "biosRequirements": [],
-  "notes": [
-    "Not implemented in this build."
+  "configFiles": [
+    { "label": "Main configuration (retroarch.cfg, passed with --config)", "path": "{data}/retroarch.cfg", "format": "other" },
+    { "label": "OmniDeck per-system controller bindings (--appendconfig)", "path": "{data}/omnideck/input-nes.cfg", "format": "other" }
   ],
-  "assumptions": []
+  "logFiles": [{ "label": "RetroArch log (retroarch.log)", "path": "{data}/logs/retroarch.log" }],
+  "saveDirs": [
+    { "label": "Save files (sorted per core)", "path": "{saves}/saves" },
+    { "label": "Save states (sorted per core)", "path": "{saves}/states" },
+    { "label": "Screenshots", "path": "{saves}/screenshots" }
+  ],
+  "biosRequirements": [
+    {
+      "systemId": "gba",
+      "label": "Game Boy Advance BIOS (optional)",
+      "required": false,
+      "directory": "{bios}/retroarch",
+      "filenames": ["gba_bios.bin"],
+      "validator": "size",
+      "sizes": [16384],
+      "note": "mGBA runs games without it. OmniDeck also copies gba_bios.bin from BIOS\\gba into RetroArch's system folder. OmniDeck never downloads BIOS files."
+    },
+    {
+      "systemId": "nes",
+      "label": "Famicom Disk System BIOS (only for .fds games)",
+      "required": false,
+      "directory": "{bios}/retroarch",
+      "filenames": ["disksys.rom"],
+      "validator": "size",
+      "sizes": [8192],
+      "note": "Only Famicom Disk System (.fds) games need it. OmniDeck also copies disksys.rom from BIOS\\nes into RetroArch's system folder."
+    }
+  ],
+  "notes": [
+    "OmniDeck installs the official stable RetroArch build from buildbot.libretro.com (version taken from the latest github.com/libretro/RetroArch release). libretro publishes no checksums, so OmniDeck records the SHA-256 of what it downloaded.",
+    "Cores are downloaded from the official libretro buildbot (nightly/windows/x86_64/latest, the same source as RetroArch's Core Downloader) into Emulators\\retroarch\\data\\cores, so RetroArch updates and rollbacks keep them. Defaults: NES mesen, SNES snes9x, N64 mupen64plus_next, Game Boy/Color gambatte, GBA mgba, Mega Drive/Genesis genesis_plus_gx (32X: picodrive), arcade fbneo. Override per system with the advanced setting core|<system>.",
+    "retroarch.cfg lives in the OmniDeck data folder and is passed with --config; saves, states and screenshots go to the OmniDeck Saves folder, never next to the ROMs.",
+    "RetroArch has one shared system folder for every core. OmniDeck uses BIOS\\retroarch for it and copies known BIOS files (gba_bios.bin, disksys.rom) from the per-system BIOS folders into it.",
+    "Controller bindings are written for the XInput driver. Per-system variants (Nintendo layout swap, per-system overrides) are kept in data\\omnideck\\input-<system>.cfg and appended at launch with --appendconfig.",
+    "config_save_on_exit is off so RetroArch never writes launch-time values back into retroarch.cfg. Use Main Menu > Configuration File > Save Current Configuration, core/game overrides or remap files (stored in data\\config) to keep changes made inside RetroArch.",
+    "Internal resolution and other emulation settings are core options (Quick Menu > Core Options), not managed by OmniDeck.",
+    "PlayStation, PSP and Nintendo DS are not set up through RetroArch: those systems use DuckStation, PPSSPP and melonDS. RetroArch's PS1 cores need a BIOS in the system folder and the PPSSPP core needs extra assets, which OmniDeck does not provision."
+  ],
+  "assumptions": [
+    "Verified against libretro/RetroArch tag v1.22.2 (the GitHub release marked Latest; raw sources for configuration.c, config.def.h, retroarch.c, gfx/video_defines.h, menu/menu_defines.h, version.all) and master @ 01b902b (2026-10-10, settings/ and input/ sources).",
+    "Download URL https://buildbot.libretro.com/stable/<version>/windows/x86_64/RetroArch.7z and its RetroArch-Win64/ top folder holding retroarch.exe: NOT verified from this sandbox (buildbot.libretro.com is blocked). Based on the buildbot's published stable layout and EmuDeck-WE (vars.ps1 $url_ra = .../nightly/windows/x86_64/RetroArch.7z; emuDeckRetroArch.ps1 RetroArch_install moves temp/ra/RetroArch-Win64). OmniDeck's findContentRoot handles the sub-folder. The full RetroArch.7z (not RetroArch_update.7z) is assumed to ship assets/, autoconfig/, info/ and shaders/.",
+    "GitHub tags are 'v1.22.2' style; VersionedUrlSource strips the leading 'v', giving the buildbot folder name '1.22.2'. No upstream checksum exists for buildbot files.",
+    "Core URL https://buildbot.libretro.com/nightly/windows/x86_64/latest/<core>_libretro.dll.zip and core names (mesen, fceumm, snes9x, mupen64plus_next, gambatte, mgba, genesis_plus_gx, picodrive, fbneo, ...) taken from EmuDeck-WE emuDeckRetroArch.ps1 RetroArch_install ($RAcores list + url). Each zip is assumed to hold only <core>_libretro.dll; OmniDeck rejects anything else and checks the MZ header.",
+    "Windows RetroArch and cores are MinGW builds and need no Visual C++ runtime (assumption; no MSVC runtime DLLs are imported by the official buildbot builds).",
+    "retroarch.exe has no VERSIONINFO resource (media/rarch.rc), so the version comes from 'retroarch --version', which prints 'Version: x.y.z' to stdout and exit(0)s in the first argument pass before config/video/input init (retroarch.c retroarch_print_version, case RA_OPT_VERSION). frontend_win32_attach_console (frontend/drivers/platform_win32.c) leaves already-connected pipe handles alone, so piped output is captured.",
+    "CLI (retroarch.c long_options): --config/-c <file>, --appendconfig <file1|file2> (configuration.c config_load_file: '|'-delimited, appended values override the main config), -L/--libretro <core path>, -f/--fullscreen, content path as the last argument. Unknown options print help and retroarch_fail(), so OmniDeck only passes through -v/--verbose, --set-shader, -M/--sram-mode, -e/--entryslot, --subsystem from custom args.",
+    "Default Windows directories are relative to the exe (':\\' prefix, platform_win32.c frontend_win32_env_get): :\\cores, :\\info, :\\system, :\\saves, :\\states, :\\config, :\\config\\remaps, :\\playlists, :\\thumbnails, :\\assets, :\\autoconfig, :\\shaders. OmniDeck redirects savefile_directory, savestate_directory, system_directory, libretro_directory, screenshot_directory, rgui_config_directory, input_remapping_directory, playlist_directory, thumbnails_directory, cache_directory and log_dir (configuration.c SETTING_PATH/SETTING_ARRAY). libretro_info_path stays :\\info (shipped with RetroArch; cores load with -L without .info files).",
+    "savefiles_in_content_dir / savestates_in_content_dir / systemfiles_in_content_dir default false and sort_savefiles_enable / sort_savestates_enable default true (config.def.h), so saves land in Saves\\retroarch\\saves\\<core name>\\.",
+    "Startup/exit prompts: RetroArch has no first-run wizard or update check on Windows. The exit hotkey needs a second press while quit_press_twice (v1.22.2, DEFAULT_QUIT_PRESS_TWICE true) / confirm_quit (master, migrated from quit_press_twice) is true, so both are written false. rgui_show_start_screen (menu_show_start_screen, default true) is turned off. pause_nonactive (default true) is turned off so the game does not freeze when focus is lost at start. quit_on_close_content = 2 (QUIT_ON_CLOSE_CONTENT_CLI, menu/menu_defines.h) exits when content launched from the command line is closed.",
+    "Logging (verbosity.c rarch_log_file_init, retroarch.c): logging to file needs log_verbosity = true and log_to_file = true; with log_to_file_timestamp = false the file is <log_dir>/retroarch.log (FILE_PATH_DEFAULT_EVENT_LOG).",
+    "Graphics keys: video_driver (d3d11, d3d12, vulkan, glcore, gl), video_fullscreen, video_vsync, aspect_ratio_index (gfx/video_defines.h enum aspect_ratio: 4:3=0, 16:9=1, core=22, full=24). Hardware-rendered cores (mupen64plus_next) switch to a compatible driver themselves (driver_switch_enable, default on).",
+    "XInput joypad (input/drivers_joypad/xinput_joypad.c button_index_to_bitmap_code): buttons 0=A 1=B 2=X 3=Y 4=LB 5=RB 6=Start 7=Back 8=L3 9=R3 10=Guide; d-pad is hat h0up/h0down/h0left/h0right; axes 0=LX 1=LY 2=RX 3=RY 4=LT 5=RT, with LY/RY positive = up (so RetroPad l_y_plus/down = '-1'), matching retroarch-joypad-autoconfig xinput/XInput_Controller.cfg. 'nul' clears a bind (configuration.c input_config_parse_joy_axis/button).",
+    "Bind keys (configuration.c input_config_bind_map, input_config_get_prefix): player binds input_player1_<b|a|y|x|l|r|l2|r2|l3|r3|select|start|up|down|left|right|l_x_plus|l_x_minus|l_y_plus|l_y_minus|r_x_plus|r_x_minus|r_y_plus|r_y_minus>_<btn|axis>; meta binds input_<enable_hotkey|exit_emulator|save_state|load_state|volume_up|volume_down|menu_toggle|toggle_fast_forward|screenshot|toggle_fullscreen>_<btn|axis>; input_player1_joypad_index, input_analog_deadzone, input_rumble_gain (0-100), input_hotkey_block_delay. RetroPad positions follow the SNES layout (B bottom, A right, Y left, X top). Explicit binds take precedence over autoconfig profiles; a bind cleared to 'nul' falls back to the autoconfig profile's bind for that slot.",
+    "Per-core overrides (config/<core>/<core>.cfg) are applied after --appendconfig, so a user's own core override still wins over OmniDeck's per-system bindings."
+  ]
 }

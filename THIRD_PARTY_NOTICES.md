@@ -28,10 +28,15 @@ its own license:
 |---|---|---|
 | PCSX2 | GPL-3.0 | GitHub Releases of `PCSX2/pcsx2` |
 | Dolphin | GPL-2.0-or-later | `https://dolphin-emu.org/update/latest/beta/` (official update service) |
-
-Planned integrations (not downloaded by this version): RetroArch (GPL-3.0), DuckStation
-(CC-BY-NC-ND-4.0, source-available), RPCS3 (GPL-2.0), PPSSPP (GPL-2.0+), Cemu (MPL-2.0),
-melonDS (GPL-3.0), Xenia Canary (BSD-3-Clause), xemu (GPL-2.0).
+| DuckStation | CC-BY-NC-ND-4.0 (source-available; official builds only, never redistributed) | GitHub Releases of `stenzek/duckstation` |
+| PPSSPP | GPL-2.0-or-later | GitHub Releases of `hrydgard/ppsspp` |
+| RPCS3 | GPL-2.0 | GitHub Releases of `RPCS3/rpcs3-binaries-win` |
+| Cemu | MPL-2.0 | GitHub Releases of `cemu-project/Cemu` |
+| melonDS | GPL-3.0 | GitHub Releases of `melonDS-emu/melonDS` |
+| Xenia Canary | BSD-3-Clause | GitHub Releases of `xenia-canary/xenia-canary` |
+| xemu | GPL-2.0 | GitHub Releases of `xemu-project/xemu` |
+| RetroArch | GPL-3.0 (each libretro core has its own license) | `buildbot.libretro.com` (stable build; cores from the nightly core directory), version from `libretro/RetroArch` tags |
+| KytyPS5 | GPL-2.0 | GitHub Releases of `KytyPS5/KytyPS5` |
 
 ## Data read at runtime (not distributed)
 

@@ -31,8 +31,8 @@ Note the commit shown on the run (e.g. `d165b17`) so we know which build you tes
 | melonDS | Nintendo DS | Ported | nothing (bios7/bios9/firmware optional → `BIOS\nds`) |
 | Xenia Canary | Xbox 360 | Ported | nothing |
 | KytyPS5 | PS5 | Ported, **experimental** (limited compatibility) | nothing; needs a Vulkan 1.3 GPU |
-| xemu | Xbox | In progress (shows "Planned") | MCPX boot ROM, BIOS, HDD image → `BIOS\xbox` |
-| RetroArch | NES, SNES, N64, GB/GBC/GBA, Genesis, Arcade | In progress (shows "Planned") | nothing for most systems |
+| xemu | Xbox | Ported | MCPX boot ROM (512 B), flash BIOS, HDD image (.qcow2) → `BIOS\xbox`; CPU with AVX2 |
+| RetroArch | NES, SNES, N64, GB/GBC/GBA, Genesis, Arcade | Ported (cores download on install) | nothing; optional `gba_bios.bin` → `BIOS\gba`, `disksys.rom` → `BIOS\nes` |
 | — | PS4 | Games are recognised, **no emulator yet** (KytyPS5 is PS5-only) | — |
 
 OmniDeck never downloads BIOS, firmware or keys. Use files from your own consoles.
@@ -73,6 +73,12 @@ Do these for every row marked "Ported". It's fine to skip emulators you don't ca
 - **KytyPS5:** select a PS5 game *folder* (the one containing `eboot.bin` and `sce_sys\param.json`).
   A console window next to the game is normal. Many games won't boot yet; that's KytyPS5, not OmniDeck.
 - **PPSSPP:** no volume hotkeys (PPSSPP has none).
+- **xemu:** all three files must be in `BIOS\xbox` or OmniDeck won't launch. Your Xbox game saves
+  live inside the HDD image, so back it up. Menu is Guide or Back+Start (xemu's own, not remappable).
+- **RetroArch:** install also downloads one core per system (NES mesen, SNES snes9x, N64
+  mupen64plus_next, GB/GBC gambatte, GBA mgba, Genesis genesis_plus_gx, Arcade fbneo). Check the
+  install log says the cores were installed. If one is missing, **Repair** re-downloads it.
+  Internal resolution is per core (RetroArch menu → Core Options).
 
 ---
 
@@ -98,6 +104,8 @@ Windows version / GPU / CPU:
 
 Emulator | Installed? | Healthy? | Game launched? | Pop-ups? | Controller OK? | Saves OK? | Notes
 PCSX2        |  |  |  |  |  |  |
+xemu         |  |  |  |  |  |  |
+RetroArch    |  |  |  |  |  |  |
 Dolphin      |  |  |  |  |  |  |
 DuckStation  |  |  |  |  |  |  |
 PPSSPP       |  |  |  |  |  |  |
@@ -120,6 +128,5 @@ BIOS, keys or saves) that you can attach.
 ---
 
 ## Still to do on my side
-1. Finish and push **xemu** and **RetroArch** (in progress).
-2. Update `docs/STATUS.md`, `THIRD_PARTY_NOTICES.md` and the user guide for the new emulators.
-3. Fix whatever your report turns up.
+1. Fix whatever your report turns up.
+2. Optional next emulator: shadPS4 for PS4 games, if you want it.

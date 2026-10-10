@@ -64,7 +64,7 @@ export const SYSTEMS: SystemDefinition[] = [
     folderHints: ['ps1', 'psx', 'playstation', 'playstation1', 'psone'],
     bios: 'required',
     biosNote: 'A PlayStation BIOS dumped from your own console (e.g. SCPH-1001).',
-    emulators: ['duckstation', 'retroarch'],
+    emulators: ['duckstation'],
     accent: '#8b9bb4',
     multiDisc: true,
   },
@@ -141,7 +141,7 @@ export const SYSTEMS: SystemDefinition[] = [
     folderHints: ['psp'],
     bios: 'none',
     biosNote: 'No BIOS required.',
-    emulators: ['ppsspp', 'retroarch'],
+    emulators: ['ppsspp'],
     accent: '#5c6b7a',
   },
   {
@@ -196,7 +196,7 @@ export const SYSTEMS: SystemDefinition[] = [
     folderHints: ['nds', 'ds', 'nintendods'],
     bios: 'optional',
     biosNote: 'Optional DS BIOS/firmware (bios7.bin, bios9.bin, firmware.bin). melonDS can use built-in replacements.',
-    emulators: ['melonds', 'retroarch'],
+    emulators: ['melonds'],
     accent: '#c7c7c7',
   },
   {

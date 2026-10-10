@@ -414,6 +414,11 @@ export class EmulatorManager {
       const custom = this.d.emuRepo.getCustom(id);
       const res = await a.applyConfig(this.configInput(id), custom.customConfigActive ? 'paths' : 'all');
       ctx.stepDone(`${res.changed.length} value(s) corrected`);
+      if (a.installComponents) {
+        ctx.step('Checking additional components');
+        const notes = await a.installComponents(this.componentInstaller(a, ctx), this.configInput(id));
+        ctx.stepDone(notes.join(' ') || 'All present');
+      }
       if (res.changed.length) this.d.ops.addChange('config.repaired', id, `${a.manifest.name} configuration repaired (${res.changed.length} values)`, res.changed);
       return this.healthTest(id, ctx);
     }, { lockKey: `emu:${id}` });
