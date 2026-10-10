@@ -9,7 +9,7 @@
 OmniPC installs your emulators, builds one library from all your game folders, maps your
 controller once for every emulator, and when something breaks, tells you why and fixes it.
 
-[![CI](https://github.com/onlykappa/emudeck-pc/actions/workflows/ci.yml/badge.svg)](https://github.com/onlykappa/emudeck-pc/actions/workflows/ci.yml)
+[![CI](https://github.com/onlykappa/OmniPC/actions/workflows/ci.yml/badge.svg)](https://github.com/onlykappa/OmniPC/actions/workflows/ci.yml)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20x64-0078D4)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
