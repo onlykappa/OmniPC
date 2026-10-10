@@ -1,73 +1,184 @@
+<div align="center">
+
+<img src="resources/icon.png" width="96" alt="OmniDeck PC icon">
+
 # OmniDeck PC
 
-**One Windows app for your whole emulation setup.** OmniDeck installs and configures
-emulators for you, builds one library from all your game folders, maps your controller
-once for every emulator, launches games, and — when something breaks — diagnoses the
-problem with evidence and repairs what it safely can.
+**Every console. One app. Zero config files.**
 
-> Status: Version 1 foundation. **PlayStation 2 (PCSX2)**, **GameCube and Wii (Dolphin)**
-> are fully integrated end to end. Other systems are recognised in your library and their
-> adapters are declared, but they are explicitly marked *planned* in the UI and cannot be
-> installed or launched yet. See [docs/STATUS.md](docs/STATUS.md).
+OmniDeck installs your emulators, builds one library from all your game folders, maps your
+controller once for every emulator, and when something breaks, tells you why and fixes it.
 
-## What it does
+[![CI](https://github.com/onlykappa/emudeck-pc/actions/workflows/ci.yml/badge.svg)](https://github.com/onlykappa/emudeck-pc/actions/workflows/ci.yml)
+![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20x64-0078D4)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-- **One-click emulator install** from official sources (GitHub Releases for PCSX2, Dolphin's
-  official update service), SHA-256 verified when upstream publishes a digest, safely extracted,
-  configured for your hardware, and health-tested.
-- **Unified library** across drives: recursive incremental scanning, content-based
-  identification (PS2 `SYSTEM.CNF`, GameCube/Wii disc headers incl. RVZ/WIA/WBFS/GCZ/CISO,
-  PSP `PARAM.SFO`, CHD media type), multi-disc grouping, duplicate detection, file validation,
-  and drive-unavailable handling with automatic re-mapping when a drive returns on a new letter.
-- **Metadata & artwork**: titles and compatibility ratings from the emulators' own bundled
-  databases (offline), optional cover art (GameTDB, PS2 covers, TheGamesDB with your key),
-  cached thumbnails, manual correction that is never overwritten.
-- **Universal controller profile & hotkeys** translated into PCSX2 SDL bindings and Dolphin
-  XInput/SDL bindings; live controller test and remap wizard.
-- **Launch router** with per-game profiles (PCSX2 `-gamecfg` / session overrides, Dolphin `-C`),
-  play history, crash-loop protection and failure recovery.
-- **OmniDoctor**: 16 health checks, a health score computed only from real results, a JSON
-  rule knowledge base matched against emulator logs and Windows exit codes, evidence and
-  confidence for every diagnosis, change correlation ("this started after the update"),
-  repairs with safety levels, backups, history and undo.
-- **Backups everywhere**: config snapshots before every change (compare/restore/delete),
-  save backups, rotating database backups with automatic corruption recovery,
-  emulator rollback to the previous version.
-- **Console Mode**: fullscreen, controller-only navigation of the whole app.
+[**Download**](../../releases/latest) · [User guide](docs/USER_GUIDE.md) · [What works](docs/STATUS.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
 
-## Quick start (development)
+<img src="docs/images/home.png" alt="OmniDeck home screen" width="900">
 
-Requirements: Node.js 22+, npm 10+. Windows 10/11 x64 for the full experience; the app and
-test-suite also run on Linux/macOS (Windows-only features report themselves as unavailable).
+</div>
+
+---
+
+## Supported systems
+
+| System | Emulator | You need to supply |
+|---|---|---|
+| PlayStation | DuckStation | PS1 BIOS |
+| PlayStation 2 | PCSX2 | PS2 BIOS |
+| PlayStation 3 | RPCS3 | PS3 system software (`PS3UPDAT.PUP` from Sony) |
+| PlayStation Portable | PPSSPP | — |
+| PlayStation 5 *(experimental)* | KytyPS5 | — (Vulkan 1.3 GPU) |
+| GameCube · Wii | Dolphin | — |
+| Wii U | Cemu | Keys for encrypted dumps (or dump decrypted) |
+| Nintendo DS | melonDS | — (BIOS optional) |
+| Xbox | xemu | MCPX boot ROM, BIOS, HDD image |
+| Xbox 360 | Xenia Canary | — |
+| NES · SNES · N64 · Game Boy / Color / Advance · Genesis · Arcade | RetroArch | — |
+
+Each emulator is downloaded from its **official** source, checksum-verified when the project
+publishes one, and configured for your hardware. Updates keep the previous version so you can
+roll back in one click.
+
+## Features
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### 🎮 One library
+Point OmniDeck at your game folders, across drives. It identifies games by their contents,
+not just file names: disc headers, `SYSTEM.CNF`, `PARAM.SFO` and PS3/PS5 game folders. It
+groups multi-disc games, flags broken dumps, and remembers games on drives that are unplugged.
+
+</td>
+<td width="50%" valign="top">
+
+<img src="docs/images/library.png" alt="Library">
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+<img src="docs/images/emulators.png" alt="Emulators">
+
+</td>
+<td valign="top">
+
+### ⚙️ Emulators that just work
+One click installs and configures each emulator. OmniDeck turns off first-run wizards,
+update nags and exit confirmations, so games start fullscreen and closing them brings you
+back. Saves live in one OmniDeck folder that survives updates.
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+### 🕹️ Set up your controller once
+Map your controller and hotkeys once (exit, save/load state, fast-forward, volume) and OmniDeck
+writes them into every emulator's own format. There's an optional Nintendo button layout for
+Nintendo systems.
+
+</td>
+<td valign="top">
+
+<img src="docs/images/controllers.png" alt="Controllers">
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+<img src="docs/images/doctor.png" alt="OmniDoctor">
+
+</td>
+<td valign="top">
+
+### 🩺 OmniDoctor
+Health checks with a real score, log analysis, and "this started after the update" detection.
+Every diagnosis shows its evidence and confidence. Repairs are labelled by safety level and
+backed up first, and you can undo them.
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+### 📺 Console Mode
+A fullscreen, controller-only interface for the couch, so you can browse, launch and manage
+everything without a keyboard.
+
+</td>
+<td valign="top">
+
+<img src="docs/images/console-mode.png" alt="Console Mode">
+
+</td>
+</tr>
+</table>
+
+<details>
+<summary><b>More screenshots</b></summary>
+
+<img src="docs/images/systems.png" alt="Systems" width="900">
+
+</details>
+
+## Install
+
+1. Download **OmniDeck-Setup-<version>.exe** from the [latest release](../../releases/latest).
+2. Run it. OmniDeck installs per-user and never runs as Administrator. It asks for elevation
+   only for specific tasks, such as installing the Visual C++ runtime, and explains why.
+3. The first-run wizard scans your PC, asks which systems you want and where your games are,
+   sets up your controller, and installs the emulators.
+4. Put BIOS/firmware files from your own consoles in the folders OmniDeck shows you
+   (**Emulators → BIOS & Firmware**).
+
+Windows SmartScreen may warn about an unsigned installer. Choose **More info → Run anyway**.
+
+## Your files, your responsibility
+
+OmniDeck **never** downloads or distributes games, BIOS files, firmware or encryption keys,
+and never circumvents copy protection. Use games and system files you dumped from hardware
+you own. Diagnostic packages and the optional AI troubleshooter exclude games, BIOS, keys,
+saves and personal documents.
+
+## Build from source
+
+Requirements: Node.js 22+, npm 10+. Windows 10/11 x64 for the full experience. The app and
+test suite also run on Linux and macOS, where Windows-only features report themselves as
+unavailable.
 
 ```bash
 npm install
-npm run dev          # Vite + Electron with hot reload for the UI
-npm test             # unit, integration and end-to-end tests (vitest)
+npm run dev          # Vite + Electron with hot reload
+npm test             # unit, integration and end-to-end tests
 npm run typecheck
-npm run build        # bundles main/preload (esbuild) and renderer (Vite) into dist/
-npm run dist         # Windows installer: release/OmniDeck-Setup-<version>.exe
+npm run dist         # Windows installer → release/OmniDeck-Setup-<version>.exe
 ```
+
+Adding an emulator means writing one adapter and a manifest; see
+[docs/ADAPTERS.md](docs/ADAPTERS.md).
 
 ## Documentation
 
-| Topic | |
+| | |
 |---|---|
-| Architecture & decisions | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| Development setup & building | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
-| Writing an emulator adapter | [docs/ADAPTERS.md](docs/ADAPTERS.md) |
-| OmniDoctor rules | [docs/DIAGNOSTIC_RULES.md](docs/DIAGNOSTIC_RULES.md) |
-| Database | [docs/DATABASE.md](docs/DATABASE.md) |
-| Security | [docs/SECURITY.md](docs/SECURITY.md) |
-| Licensing | [docs/LICENSING.md](docs/LICENSING.md) |
-| Release process | [docs/RELEASE.md](docs/RELEASE.md) |
-| User guide | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) |
-| Troubleshooting | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) |
-| What works today | [docs/STATUS.md](docs/STATUS.md) |
+| [User guide](docs/USER_GUIDE.md) | [Troubleshooting](docs/TROUBLESHOOTING.md) |
+| [What works today](docs/STATUS.md) | [Windows testing checklist](docs/TESTING_CHECKLIST.md) |
+| [Architecture](docs/ARCHITECTURE.md) | [Writing an adapter](docs/ADAPTERS.md) |
+| [OmniDoctor rules](docs/DIAGNOSTIC_RULES.md) | [Database](docs/DATABASE.md) |
+| [Security](docs/SECURITY.md) | [Licensing](docs/LICENSING.md) |
+| [Development](docs/DEVELOPMENT.md) | [Release process](docs/RELEASE.md) |
 
-## Legal
+## License
 
-OmniDeck never downloads or distributes games, BIOS files, firmware or encryption keys.
-You supply content you legally own. Emulators are downloaded from their official sources and
-remain under their own licenses. OmniDeck is not affiliated with EmuDeck or any console maker.
-See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+OmniDeck PC is released under the [MIT License](LICENSE). Emulators are downloaded from their
+official sources and remain under their own licenses; see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+OmniDeck is an independent project. It is not affiliated with EmuDeck, Sony, Nintendo,
+Microsoft, Sega or any emulator project. Product names are used only to identify compatibility.

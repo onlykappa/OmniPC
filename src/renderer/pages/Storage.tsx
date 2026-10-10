@@ -21,7 +21,7 @@ export function StoragePage() {
           <table className="table">
             <thead><tr><th>What</th><th>Location</th><th>Size</th><th>Free on drive</th><th /></tr></thead>
             <tbody>
-              {(paths ?? []).map((p) => <tr key={`g${p.id}`}><td>Games</td><td className="mono small">{p.path}</td><td>{p.gameCount} games</td><td>—</td><td><Button size="sm" onClick={() => void api('app.openPath', p.path)} disabled={!p.available}>Open</Button></td></tr>)}
+              {(paths ?? []).map((p) => <tr key={`g${p.id}`}><td>Games</td><td className="mono small">{p.path}</td><td>{p.gameCount} {p.gameCount === 1 ? "game" : "games"}</td><td>—</td><td><Button size="sm" onClick={() => void api('app.openPath', p.path)} disabled={!p.available}>Open</Button></td></tr>)}
               {data.map((l) => (
                 <tr key={l.key}>
                   <td>{l.label}</td><td className="mono small">{l.path}</td><td>{l.sizeBytes === null ? 'large' : bytes(l.sizeBytes)}</td><td>{bytes(l.freeBytes)}</td>

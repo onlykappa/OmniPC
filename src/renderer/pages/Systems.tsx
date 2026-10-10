@@ -16,7 +16,7 @@ export function SystemsPage() {
         {data.map((s) => (
           <div key={s.id} className="card system-card" style={{ cursor: 'default' }}>
             <span className="stripe" style={{ background: s.accent }} />
-            <div className="row"><span className="tiny faint">{s.manufacturer}</span><span className="right small muted">{s.gameCount} games</span></div>
+            <div className="row"><span className="tiny faint">{s.manufacturer}</span><span className="right small muted">{s.gameCount} {s.gameCount === 1 ? "game" : "games"}</span></div>
             <strong style={{ fontSize: 18 }}>{s.name}</strong>
             <div className="row">
               {s.emulatorName ? <Chip tone={s.emulatorInstalled ? 'ok' : s.emulatorImplemented ? undefined : 'planned'}>{s.emulatorName}{s.emulatorInstalled ? ' · installed' : s.emulatorImplemented ? '' : ' · planned'}</Chip> : <Chip>No emulator</Chip>}

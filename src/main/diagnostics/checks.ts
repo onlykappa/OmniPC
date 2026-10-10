@@ -215,7 +215,8 @@ export const CHECKS: HealthCheck[] = [
           // A missing BIOS only blocks play once the system's emulator integration exists.
           severity: d.registry.get(s.emulatorId)?.manifest.implemented ? 'problem' : 'warning',
           title: `${s.label} missing`,
-          detail: `${getSystem(s.systemId)?.name} games cannot start without it. OmniDeck cannot download BIOS files; you must supply one dumped from your own console.`,
+          // The adapter's note says where this particular file comes from (e.g. PS3 firmware from Sony).
+          detail: `${getSystem(s.systemId)?.name} games cannot start without it. ${s.note || 'OmniDeck cannot download BIOS files; you must supply one dumped from your own console.'}`,
           subject,
           evidence: [`Expected in ${s.expectedLocation}`],
           manualSteps: ['Open Settings > BIOS & Firmware and import your BIOS file.'],

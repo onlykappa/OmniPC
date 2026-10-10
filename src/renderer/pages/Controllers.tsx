@@ -99,7 +99,7 @@ function HotkeysPanel() {
   const update = async (next: typeof hk) => setSettings(await api('app.settings.set', { hotkeys: next }));
   return (
     <Panel id="hotkeys" title="Universal hotkeys">
-      <p className="small muted">Hold the modifier and press a button. Only actions the active emulator supports are mapped (PCSX2: all except screenshot; Dolphin: all except menu). Note: Windows Game Bar captures the Guide button by default, so Select is the default modifier.</p>
+      <p className="small muted">Hold the modifier and press a button. Each emulator gets the actions it supports; its page lists any it can't map. Note: Windows Game Bar captures the Guide button by default, so Select is the default modifier.</p>
       <label className="field">Modifier
         <select value={hk.modifier} onChange={(e) => void update({ ...hk, modifier: e.target.value as UniversalButton })}>{BUTTON_CHOICES.map((b) => <option key={b}>{b}</option>)}</select>
       </label>

@@ -1,13 +1,15 @@
 # Release process
 
-1. Update `version` in `package.json` and add release notes.
-2. Ensure CI is green (typecheck, tests, build on Ubuntu and Windows).
-3. The `installer` CI job builds `OmniDeck-Setup-<version>.exe` on `windows-latest` and uploads
-   it as a workflow artifact.
-4. Smoke-test the installer on a clean Windows 11 VM following the acceptance checklist in
-   [USER_GUIDE.md](USER_GUIDE.md#first-run-checklist).
-5. Code-sign the installer (configure `CSC_LINK`/`CSC_KEY_PASSWORD` secrets) and attach it to a
-   GitHub release.
+1. Update `version` in `package.json` (`npm version X.Y.Z --no-git-tag-version`) and add a
+   `## [X.Y.Z]` section to [CHANGELOG.md](../CHANGELOG.md).
+2. Merge to the default branch with CI green (typecheck, tests, build on Ubuntu and Windows).
+3. Test the installer from the CI artifact using [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md).
+4. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+   The **Release** workflow re-runs the tests, checks the tag matches `package.json`, builds
+   `OmniDeck-Setup-X.Y.Z.exe`, writes `SHA256SUMS.txt`, and publishes a GitHub Release with the
+   changelog section as release notes.
+5. Optional: code-sign the installer by adding `CSC_LINK`/`CSC_KEY_PASSWORD` secrets and removing
+   `CSC_IDENTITY_AUTO_DISCOVERY: 'false'` from the workflow.
 
 ## Application updates
 

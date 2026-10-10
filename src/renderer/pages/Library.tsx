@@ -145,7 +145,7 @@ function FoldersModal(props: { onClose: () => void }) {
             <span className={`dot ${p.available ? 'ok' : 'warn'}`} />
             <div className="grow">
               <div>{p.path}</div>
-              <div className="small faint">{p.gameCount} games · {p.available ? `scanned ${when(p.lastScanAt)}` : 'Drive unavailable — games are kept and return when it is reconnected'}</div>
+              <div className="small faint">{p.gameCount} {p.gameCount === 1 ? "game" : "games"} · {p.available ? `scanned ${when(p.lastScanAt)}` : 'Drive unavailable — games are kept and return when it is reconnected'}</div>
             </div>
             <Button size="sm" variant="ghost" onClick={async () => { await api('library.removePath', p.id); reload(); }}>Remove</Button>
           </div>

@@ -23,7 +23,7 @@ await page.screenshot({ path: join(out, '00-start.png') });
 if (process.env.SMOKE_SEED) {
   // Drive the real backend through the preload bridge, exactly like the UI does.
   const inv = (m, ...a) => page.evaluate(([m, a]) => window.omni.invoke(m, ...a), [m, a]);
-  await inv('app.settings.set', { onboardingComplete: true });
+  await inv('app.settings.set', { onboardingComplete: true, ...JSON.parse(process.env.SMOKE_SETTINGS ?? '{}') });
   await inv('library.addPath', process.env.SMOKE_SEED);
   await inv('library.scan', { full: false });
   await page.waitForTimeout(3000);
@@ -37,6 +37,13 @@ for (const r of routes) {
   await page.evaluate((h) => (window.location.hash = h), r);
   await page.waitForTimeout(1500);
   await page.screenshot({ path: join(out, `${r.replace(/[^\w]+/g, '_')}.png`) });
+}
+if (process.env.SMOKE_CONSOLE) {
+  // Console Mode (fullscreen, controller-first) on the home page.
+  await page.evaluate(() => window.omni.invoke('app.setConsoleMode', true));
+  await page.evaluate(() => (window.location.hash = '/home'));
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: join(out, 'console-mode.png') });
 }
 await app.close();
 console.log('smoke ok', out);
