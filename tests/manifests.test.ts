@@ -13,7 +13,7 @@ describe('emulator manifests & registry', () => {
   });
 
   it('marks only real integrations as implemented', () => {
-    expect(reg.implemented().map((a) => a.manifest.id).sort()).toEqual(['dolphin', 'duckstation', 'kyty', 'pcsx2', 'ppsspp', 'rpcs3']);
+    expect(reg.implemented().map((a) => a.manifest.id).sort()).toEqual(['cemu', 'dolphin', 'duckstation', 'kyty', 'pcsx2', 'ppsspp', 'rpcs3']);
     expect(reg.get('xenia')?.manifest.implemented).toBe(false);
   });
 

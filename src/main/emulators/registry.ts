@@ -11,14 +11,14 @@ import { DuckStationAdapter } from './duckstation/adapter';
 import { KytyAdapter } from './kyty/adapter';
 import { Rpcs3Adapter } from './rpcs3/adapter';
 import { PpssppAdapter } from './ppsspp/adapter';
+import { CemuAdapter } from './cemu/adapter';
 import { PlannedAdapter } from './planned';
 import retroarch from './manifests/retroarch.json';
-import cemu from './manifests/cemu.json';
 import melonds from './manifests/melonds.json';
 import xenia from './manifests/xenia.json';
 import xemu from './manifests/xemu.json';
 
-const PLANNED = [retroarch, cemu, melonds, xenia, xemu] as unknown as EmulatorManifest[];
+const PLANNED = [retroarch, melonds, xenia, xemu] as unknown as EmulatorManifest[];
 
 export function validateManifest(m: EmulatorManifest): string[] {
   const errors: string[] = [];
@@ -48,7 +48,7 @@ export class AdapterRegistry {
   private adapters = new Map<string, EmulatorAdapter>();
 
   constructor(paths: AppPaths, extra: EmulatorAdapter[] = []) {
-    const all: EmulatorAdapter[] = [new Pcsx2Adapter(paths), new DolphinAdapter(paths), new DuckStationAdapter(paths), new KytyAdapter(paths), new Rpcs3Adapter(paths), new PpssppAdapter(paths), ...PLANNED.map((m) => new PlannedAdapter(m, paths)), ...extra];
+    const all: EmulatorAdapter[] = [new Pcsx2Adapter(paths), new DolphinAdapter(paths), new DuckStationAdapter(paths), new KytyAdapter(paths), new Rpcs3Adapter(paths), new PpssppAdapter(paths), new CemuAdapter(paths), ...PLANNED.map((m) => new PlannedAdapter(m, paths)), ...extra];
     for (const a of all) {
       const errors = validateManifest(a.manifest);
       if (errors.length) throw new Error(`Invalid manifest for ${a.manifest.id}: ${errors.join('; ')}`);

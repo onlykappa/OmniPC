@@ -1,27 +1,68 @@
 {
   "id": "cemu",
   "name": "Cemu",
-  "systems": [
-    "wiiu"
-  ],
+  "systems": ["wiiu"],
   "website": "https://cemu.info",
   "repository": "https://github.com/cemu-project/Cemu",
   "license": "MPL-2.0",
-  "implemented": false,
-  "plannedNote": "The Cemu adapter is planned. Its manifest is declared so the library can recognise wiiu games, but OmniDeck does not yet install, configure or launch Cemu. You can still point OmniDeck at an existing Cemu installation in a future release.",
+  "implemented": true,
   "download": {
-    "kind": "none",
-    "allowedHosts": []
+    "kind": "github-release",
+    "repo": "cemu-project/Cemu",
+    "assetPatterns": ["^cemu-[\\d.]+(-\\d+)?-windows-x64\\.zip$"],
+    "assetExclude": ["installer", "ubuntu", "macos", "AppImage"],
+    "allowedHosts": ["github.com", "api.github.com", "objects.githubusercontent.com", "release-assets.githubusercontent.com"]
   },
   "executable": "Cemu.exe",
-  "supportedExtensions": [],
+  "supportedExtensions": [".wud", ".wux", ".wua", ".rpx", ".wuhb", ".elf"],
   "dependencies": [],
-  "configFiles": [],
-  "logFiles": [],
-  "saveDirs": [],
-  "biosRequirements": [],
-  "notes": [
-    "Not implemented in this build."
+  "configFiles": [
+    { "label": "Main settings (settings.xml, portable mode)", "path": "{app}/portable/settings.xml", "format": "xml" },
+    { "label": "Controller profile (player 1)", "path": "{app}/portable/controllerProfiles/controller0.xml", "format": "xml" }
   ],
-  "assumptions": []
+  "logFiles": [{ "label": "Emulator log (log.txt)", "path": "{app}/portable/log.txt" }],
+  "saveDirs": [
+    { "label": "Wii U saves (mlc01/usr/save)", "path": "{saves}/mlc01/usr/save" }
+  ],
+  "biosRequirements": [
+    {
+      "systemId": "wiiu",
+      "label": "Wii U disc keys (keys.txt)",
+      "required": false,
+      "directory": "{bios}/wiiu",
+      "filenames": ["keys.txt"],
+      "validator": "any-file",
+      "note": "Only needed for encrypted disc images (.wud/.wux): a keys.txt with the disc keys dumped from your own console/games, one 32-digit hex key per line. Optional otp.bin (1024 bytes) and seeprom.bin (512 bytes) from your own console enable online play. OmniDeck copies these files into Cemu's folder and never downloads keys."
+    }
+  ],
+  "notes": [
+    "OmniDeck installs the official Windows release zip from github.com/cemu-project/Cemu (latest stable release, prereleases are skipped).",
+    "Cemu has no command-line option for its settings folder, so OmniDeck runs it in portable mode (a 'portable' folder next to Cemu.exe) and carries that folder over on every update, rollback and uninstall.",
+    "The Wii U NAND (mlc01: saves, installed updates and DLC) is redirected to the OmniDeck Saves folder through settings.xml mlc_path. Installed updates/DLC therefore also live there and can be large.",
+    "Shader caches, graphic packs and game profiles stay in the portable folder: Cemu offers no setting to move them.",
+    "Games are launched with -f -g <game>; -g opens the game without the game list, so closing the game window exits Cemu.",
+    "Cemu has no global resolution setting (use per-game graphic packs inside Cemu) and no global frame-limit switch.",
+    "The controller profile maps the Wii U GamePad to the XInput pad in the configured slot. Pads Cemu only sees through SDL (e.g. DualSense) must be selected once in Cemu's Input settings; OmniDeck then keeps that device and only rewrites the mapping. The XInput API cannot read the Guide button, so the GamePad Home button is unmapped with XInput.",
+    "Controller hotkeys (exit, fast forward, screenshot, fullscreen) use Cemu's hotkey modifier + button scheme. Save/load state, volume and menu hotkeys do not exist in Cemu.",
+    "Per-game profiles change settings.xml for the session only; just the overridden values are restored when Cemu exits, so Cemu's own changes (play time, window size) are kept."
+  ],
+  "assumptions": [
+    "Verified against cemu-project/Cemu main @ aa20e2f (2026-10-10). Latest stable release is v2.6 (GitHub 'Latest' badge; v2.1-v2.6 are stable, older v2.0-NN builds are prereleases). Its assets (releases/expanded_assets/v2.6): cemu-2.6-windows-x64.zip, cemu-2.6-ubuntu-22.04-x64.zip, cemu-2.6-macos-12-x64.dmg, Cemu-2.6-x86_64.AppImage. A cemu-<ver>-windows-x64-installer.exe is produced by .github/workflows/deploy_release.yml but excluded.",
+    "The Windows zip contains a single folder Cemu_<ver>/ with Cemu.exe, resources/ (translations, sharedFonts) and gameProfiles/default (deploy_release.yml: cp -R ./bin; bin/ in the repo).",
+    "CemuBin and dependencies are linked with the static MSVC runtime (src/CMakeLists.txt MSVC_RUNTIME_LIBRARY MultiThreaded, vcpkg triplet x64-windows-static), so no Visual C++ redistributable is needed.",
+    "Paths (src/gui/wxgui/CemuApp.cpp CemuApp::DeterminePaths, Windows): if <exe dir>/portable is a directory (CEMU_ALLOW_PORTABLE, CMake option ALLOW_PORTABLE default ON) user-data, config and cache paths are all <exe dir>/portable; otherwise %APPDATA%/Cemu, except a legacy settings.xml next to the exe makes the exe dir the portable dir. The data path (resources, gameProfiles/default) is always the exe folder.",
+    "Files in the portable dir: settings.xml (GetConfigPath, CemuApp::OnInit), controllerProfiles/controller<N>.xml (InputManager::load/save), keys.txt / otp.bin / seeprom.bin (GetUserDataPath in KeyCache.cpp, iosu_crypto.cpp), log.txt (cemuLog_GetLogFilePath), shaderCache/ (GetCachePath), graphicPacks/, gameProfiles/, network_services.xml, memorySearcher/.",
+    "mlc01: ActiveSettings::GetMlcPath uses the -mlc command-line value, else settings.xml <content><mlc_path>, else <user data>/mlc01. OmniDeck uses mlc_path (not -mlc) so UI launches use the same NAND; CemuApp::InitializeExistingMLCOrFail creates the folder structure and shows a modal error if it is not writable, so OmniDeck creates it first.",
+    "settings.xml format (src/config/XMLConfig.h, CemuConfig::Save, wxCemuConfig::Save): tinyxml2 document with root <content>; general keys and the GUI keys (check_update, receive_untested_updates, fullscreen, Hotkeys, ...) are children of <content>. <Graphic><api> enum GraphicAPI (0 OpenGL, 1 Vulkan), <Graphic><VSync> (0 off, 1 on/double buffering; GeneralSettings2.cpp), <Graphic><FullscreenScaling> (0 keep aspect ratio, 1 stretch), <GamePaths><Entry>. Booleans use tinyxml2 BoolText (true/false).",
+    "First-run and startup prompts: the Getting Started wizard is shown exactly when settings.xml does not exist in the config path (CemuApp::OnInit isFirstStart), so OmniDeck always writes settings.xml. The update check and 'There's a new update available' dialog depend on check_update (MainWindow::LoadSettings / MainWindow::OnTimer), set to false. Cemu has no confirm-exit, telemetry or settings-version prompt. Invalid keys.txt lines show an error dialog (KeyCache.cpp), so OmniDeck comments them out when copying keys.txt.",
+    "CLI (src/config/LaunchSettings.cpp HandleCommandline, boost::program_options with allow_unregistered, case_insensitive, allow_long_disguise): -h/--help, -v/--version, -g/--game <path>, -t/--title-id, -m/--mlc <path>, -f/--fullscreen (implicit bool), -u/--ud, -a/--account, --cos-mounts, --forward-console-logging, --cos-argstr, --force-interpreter, --force-multicore-interpreter, --enable-gdbstub, --open-debugger, -e/--extract, -p/--path, -o/--output. Unknown options are ignored; repeating a known option throws and exits, so OmniDeck drops custom -g/-t/-m/-f/-e/-p/-o/-h/-v. There is no option for the config/user-data folder. --version writes '<major>.<minor>' to stdout and returns 0 before any path or settings initialisation.",
+    "With -g the main window launches the game directly and skips the game list (MainWindow constructor quick_launch); closing the window ends Cemu (MainWindow::OnClose).",
+    "Controller profile (InputManager::load/save): <emulated_controller><type>Wii U GamePad</type><toggle_display/><controller><api/><uuid/><display_name/><rumble/><axis|rotation|trigger><deadzone/><range/></...><mappings><entry><mapping>VPAD id</mapping><button>controller button id</button></entry>...</mappings></controller></emulated_controller>. XInput uuid is the slot number (ControllerFactory::CreateController); SDLController uuid is '<n>_<SDL GUID>', which cannot be known without the device, hence XInput by default.",
+    "VPAD mapping ids (src/input/emulated/VPADController.h ButtonId): A=1 B=2 X=3 Y=4 L=5 R=6 ZL=7 ZR=8 Plus=9 Minus=10 Up=11 Down=12 Left=13 Right=14 StickL=15 StickR=16 StickL Up/Down/Left/Right=17-20 StickR Up/Down/Left/Right=21-24 Mic=25 Screen=26 Home=27.",
+    "Controller button ids (src/input/api/Controller.h Buttons2): kButton0-31 = 0-31, ZL 32, ZR 33, DPad 34-37, AxisXP 38, AxisYP 39, RotationXP 40, RotationYP 41, TriggerXP 42, TriggerYP 43, AxisXN 44, AxisYN 45, RotationXN 46, RotationYN 47, TriggerXN 48, TriggerYN 49. XInput buttons are XINPUT_GAMEPAD bit indices (DPad 0-3, Start 4, Back 5, thumbs 6-7, shoulders 8-9, A 12, B 13, X 14, Y 15; XInputController::raw_state) with stick up = +Y; SDL buttons are SDL3 SDL_GamepadButton values (South 0, East 1, West 2, North 3, Back 4, Guide 5, Start 6, sticks 7-8, shoulders 9-10, DPad 11-14) with stick up = -Y (VPADController::set_default_mapping).",
+    "Cemu's own default mapping is positional (Wii U A on the east button); OmniDeck maps by label (Wii U A on the pad's A) and applies the profile's Nintendo-layout swap for wiiu like other Nintendo systems.",
+    "Hotkeys (src/gui/wxgui/wxCemuConfig.h sHotkeyCfg, input/HotkeySettings.cpp): <Hotkeys><modifiers|ExitApplication|ToggleFastForward|TakeScreenshot|ToggleFullscreen|ToggleFullscreenAlt|ExitFullscreen> each '<keyboard raw> <controller button id>' (-1 = none). A controller hotkey fires when the modifier button is held and the hotkey button is pressed on any connected controller (HotkeySettings::CaptureInput). Default keyboard values kept: F11 (350) fullscreen, F12 (351) screenshot.",
+    "keys.txt (src/Cafe/Filesystem/FST/KeyCache.cpp KeyCache_Prepare): read from the user-data folder; text after '#' or ';' is a comment, spaces/tabs/'-'/'_' are removed, 32 hex digits form a key, non-hex lines raise an error dialog. If keys.txt is missing Cemu creates one with an example key. otp.bin must be 1024 bytes and seeprom.bin 512 bytes (iosu_crypto.cpp).",
+    "Version resource (src/resource/cemu.rc): ProductVersion '<major>.<minor>.<patch><suffix>'; release builds use patch 0, so '2.6.0' is reported as 2.6."
+  ]
 }
