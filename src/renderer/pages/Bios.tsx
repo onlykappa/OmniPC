@@ -10,7 +10,7 @@ export function BiosPage() {
   if (!data) return <div className="page"><Spinner /></div>;
   return (
     <div className="page">
-      <div className="page-head"><div><h1>BIOS & Firmware</h1><p>Some consoles need system files dumped from your own hardware. OmniDeck organises and validates them; it never downloads BIOS, firmware or keys.</p></div></div>
+      <div className="page-head"><div><h1>BIOS & Firmware</h1><p>Some consoles need system files dumped from your own hardware. OmniPC organises and validates them; it never downloads BIOS, firmware or keys.</p></div></div>
       <div className="grid cols-2">
         {data.map((b) => (
           <Panel key={`${b.systemId}:${b.label}`} title={b.systemName} actions={<Chip tone={b.status === 'found' ? 'ok' : b.status === 'missing' ? (b.required ? 'bad' : undefined) : b.status === 'invalid' ? 'bad' : undefined}>{b.status === 'found' ? 'Found' : b.status === 'missing' ? 'Missing' : b.status === 'invalid' ? 'Invalid' : 'Optional'}</Chip>}>

@@ -42,7 +42,7 @@ export function ControllersPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <div><h1>Controllers</h1><p>Configure your controller once. OmniDeck translates it into every emulator's own mapping.</p></div>
+        <div><h1>Controllers</h1><p>Configure your controller once. OmniPC translates it into every emulator's own mapping.</p></div>
         <div className="row"><Button onClick={() => setRemap(true)}>Controller setup</Button><Button variant="primary" busy={applying} onClick={apply}>Apply to all emulators</Button></div>
       </div>
       <Panel title="Connected controllers">

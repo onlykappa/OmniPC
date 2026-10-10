@@ -62,7 +62,7 @@ export function SettingsPage() {
         <Panel id="updates" title="Updates">
           <div className="col"><span>Emulator update channel</span><Segmented value={settings.updateChannel} onChange={(v) => set({ updateChannel: v })} options={[{ value: 'stable', label: 'Stable' }, { value: 'nightly', label: 'Nightly / development' }]} /></div>
           <Toggle label="Check for updates at startup" value={settings.checkUpdatesOnStart} onChange={(v) => set({ checkUpdatesOnStart: v })} />
-          <p className="small faint">OmniDeck app updates: this version uses manual updates (download the new installer). Emulators never auto-update without a backup and health test.</p>
+          <p className="small faint">OmniPC app updates: this version uses manual updates (download the new installer). Emulators never auto-update without a backup and health test.</p>
         </Panel>
         <ImportPanel />
         <ResetPanel />
@@ -84,7 +84,7 @@ function ImportPanel() {
   const [what, setWhat] = useState({ settings: true, saves: true, bios: true, romPaths: true, useInstallation: false });
   return (
     <Panel id="import" title="Import existing setup">
-      <p className="small muted">Detects PCSX2, Dolphin and EmuDeck (Windows) setups. OmniDeck copies what you choose and never modifies the original.</p>
+      <p className="small muted">Detects PCSX2, Dolphin and EmuDeck (Windows) setups. OmniPC copies what you choose and never modifies the original.</p>
       <Button busy={busy} onClick={async () => { setBusy(true); try { setCandidates(await api('import.detect')); } finally { setBusy(false); } }}>Detect existing setups</Button>
       {candidates && candidates.length === 0 && <p className="muted">Nothing found.</p>}
       {candidates?.map((c) => (
@@ -109,10 +109,10 @@ function ResetPanel() {
   const [result, setResult] = useState<string[] | null>(null);
   const toast = useStore((s) => s.toast);
   const options = [
-    { kind: 'settings' as const, title: 'Reset Settings', body: 'Resets OmniDeck preferences to defaults. Library, emulators, saves and games are kept.' },
+    { kind: 'settings' as const, title: 'Reset Settings', body: 'Resets OmniPC preferences to defaults. Library, emulators, saves and games are kept.' },
     { kind: 'emulator-configs' as const, title: 'Reset Emulator Configurations', body: 'Backs up and regenerates recommended configuration for every installed emulator. Saves, BIOS and games are kept.' },
-    { kind: 'repair-installation' as const, title: 'Repair Installation', body: 'Re-applies OmniDeck folders and settings to every emulator, recreates folders and rebuilds database indexes.' },
-    { kind: 'complete' as const, title: 'Complete OmniDeck Reset', body: 'Resets settings and emulator configurations, clears the library database records and artwork cache, and restarts onboarding. PRESERVED: your game files, saves, BIOS files, emulator installations and all backups.' },
+    { kind: 'repair-installation' as const, title: 'Repair Installation', body: 'Re-applies OmniPC folders and settings to every emulator, recreates folders and rebuilds database indexes.' },
+    { kind: 'complete' as const, title: 'Complete OmniPC Reset', body: 'Resets settings and emulator configurations, clears the library database records and artwork cache, and restarts onboarding. PRESERVED: your game files, saves, BIOS files, emulator installations and all backups.' },
   ];
   return (
     <Panel id="reset" title="Reset & repair">

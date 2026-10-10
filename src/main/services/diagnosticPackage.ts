@@ -41,7 +41,7 @@ export async function exportDiagnosticPackage(opts: { includeEmulatorLogs: boole
       if (existsSync(path) && !EXCLUDED_EXT.test(path)) addText(`${a.manifest.id}/config/${basename(path)}`, await readFile(path, 'utf8'));
     }
   }
-  addText('README.txt', `OmniDeck PC diagnostic package\nCreated ${new Date().toISOString()}\n\nIncluded: ${files.join(', ')}\n\nNever included: ${excluded.join(', ')}.\nUser folder paths and user name were redacted.\n`);
+  addText('README.txt', `OmniPC diagnostic package\nCreated ${new Date().toISOString()}\n\nIncluded: ${files.join(', ')}\n\nNever included: ${excluded.join(', ')}.\nUser folder paths and user name were redacted.\n`);
   await new Promise<void>((resolve, reject) => {
     zip.outputStream.pipe(createWriteStream(dest)).on('close', () => resolve()).on('error', reject);
     zip.end();

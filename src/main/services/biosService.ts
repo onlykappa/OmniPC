@@ -1,4 +1,4 @@
-// BIOS & firmware manager. OmniDeck organises and validates files the user
+// BIOS & firmware manager. OmniPC organises and validates files the user
 // supplies; it never downloads BIOS, firmware or keys.
 
 import { existsSync } from 'node:fs';
@@ -46,7 +46,7 @@ export class BiosService {
         expectedLocation: dir,
         status: files.length ? 'found' : sys.bios === 'optional' ? 'not_applicable' : 'missing',
         files,
-        note: implemented ? sys.biosNote : `${sys.biosNote} (The ${sys.emulators[0]} integration is planned; OmniDeck currently only records these files.)`,
+        note: implemented ? sys.biosNote : `${sys.biosNote} (The ${sys.emulators[0]} integration is planned; OmniPC currently only records these files.)`,
       });
     }
     return out;

@@ -301,7 +301,7 @@ export class Rpcs3Adapter implements EmulatorAdapter {
     const idx = Math.max(0, Math.min(spec.maxDevices - 1, c.deviceIndex));
     if (idx !== c.deviceIndex) notes.push(`${spec.handler} supports ${spec.maxDevices} pads; using pad #${idx + 1}.`);
     if (c.controllerKind === 'switch_pro' || c.controllerKind === 'generic') {
-      notes.push('RPCS3 names SDL devices after the controller model, so OmniDeck configures the XInput handler. Use Steam Input or another XInput wrapper for this controller, or pick the SDL device once in RPCS3\'s pad settings.');
+      notes.push('RPCS3 names SDL devices after the controller model, so OmniPC configures the XInput handler. Use Steam Input or another XInput wrapper for this controller, or pick the SDL device once in RPCS3\'s pad settings.');
     }
     const tok = (b: UniversalButton) => spec.tokens[physicalFor(c, 'ps3', b)];
     const cfg = (k: string): string[] => [PLAYER, 'Config', k];
@@ -458,7 +458,7 @@ export class Rpcs3Adapter implements EmulatorAdapter {
     if (overrides.length) {
       // --config switches RPCS3 to cfg_mode::config_override, which loads ONLY that file
       // (Emu/System.cpp Emulator::Load): build it from the global config + RPCS3's own
-      // per-title config + the OmniDeck overrides.
+      // per-title config + the OmniPC overrides.
       const cfgPath = join(p.data, 'omnideck-gamecfg', `${target.gameId ?? 'adhoc'}.yml`);
       const serial = target.serial && /^[A-Z]{4}\d{5}$/.test(target.serial) ? target.serial : null;
       prepare = async () => {
@@ -500,7 +500,7 @@ export class Rpcs3Adapter implements EmulatorAdapter {
     const missing = ['Qt6Core.dll', 'Qt6Gui.dll', 'Qt6Widgets.dll', join('qt6', 'plugins')].filter((f) => !existsSync(join(exeDir, f)));
     checks.push({ label: 'Qt runtime files present', ok: missing.length === 0, detail: missing.length ? `Missing: ${missing.join(', ')}` : 'Qt6 DLLs and plugins found' });
     const portable = join(exeDir, 'portable');
-    checks.push({ label: 'No "portable" folder overriding OmniDeck paths', ok: !existsSync(portable), detail: existsSync(portable) ? `${portable} exists, so RPCS3 ignores RPCS3_CONFIG_DIR and keeps everything there` : 'OK' });
+    checks.push({ label: 'No "portable" folder overriding OmniPC paths', ok: !existsSync(portable), detail: existsSync(portable) ? `${portable} exists, so RPCS3 ignores RPCS3_CONFIG_DIR and keeps everything there` : 'OK' });
     const insp = await this.inspectConfig();
     const broken = insp.files.filter((f) => f.exists && !f.parseOk);
     checks.push({ label: 'Configuration parses', ok: broken.length === 0, detail: broken.map((f) => `${f.label}: ${f.issues.join('; ')}`).join(' | ') || 'config.yml, vfs.yml, Default.yml, CurrentSettings.ini OK' });
@@ -529,7 +529,7 @@ export class Rpcs3Adapter implements EmulatorAdapter {
         id: 'rpcs3.onedrive', checkId: 'rpcs3.location', category: 'emulators', severity: 'problem', title: 'RPCS3 data folder is inside OneDrive',
         detail: 'RPCS3 refuses to start when its configuration folder is synced by OneDrive ("RPCS3 should never be run from a OneDrive path!").', subject,
         evidence: [`Data folder: ${this.paths().data}`, `OneDrive folder: ${od}`], confidence: 'medium', repair: null,
-        manualSteps: ['Move the OmniDeck data folder to a location outside OneDrive (Settings > Storage).'],
+        manualSteps: ['Move the OmniPC data folder to a location outside OneDrive (Settings > Storage).'],
       });
     }
     if (hw && hw.graphicsApis.vulkan === false) {
@@ -559,7 +559,7 @@ export class Rpcs3Adapter implements EmulatorAdapter {
     if (executable && existsSync(join(executable, '..', 'portable'))) {
       out.push({
         id: 'rpcs3.portable', checkId: 'rpcs3.paths', category: 'emulators', severity: 'warning', title: 'RPCS3 "portable" folder found',
-        detail: 'A "portable" folder next to rpcs3.exe makes RPCS3 ignore OmniDeck\'s data folder (fs::get_config_dir checks it first).', subject,
+        detail: 'A "portable" folder next to rpcs3.exe makes RPCS3 ignore OmniPC\'s data folder (fs::get_config_dir checks it first).', subject,
         evidence: [join(executable, '..', 'portable')], confidence: 'high', repair: null, manualSteps: ['Move your data out of the "portable" folder and delete it.'],
       });
     }
@@ -622,7 +622,7 @@ export class Rpcs3Adapter implements EmulatorAdapter {
       note = 'The PUP file in this folder is not a valid PS3 firmware update. Download PS3UPDAT.PUP from Sony\'s official PlayStation website.';
     } else {
       status = 'missing';
-      note = 'Commercial games need the official PS3 firmware. Download PS3UPDAT.PUP from Sony\'s PlayStation website, place it in this folder, then run "Install firmware". OmniDeck never downloads firmware.';
+      note = 'Commercial games need the official PS3 firmware. Download PS3UPDAT.PUP from Sony\'s PlayStation website, place it in this folder, then run "Install firmware". OmniPC never downloads firmware.';
     }
     return [{
       systemId: 'ps3', systemName: 'PlayStation 3', label: 'PS3 system firmware', required: true, requirementKind: 'firmware', emulatorId: 'rpcs3',
@@ -731,12 +731,12 @@ export class Rpcs3Adapter implements EmulatorAdapter {
       notes.push('Copied the SDL controller database into the RPCS3 data folder.');
     }
     await mkdir(this.paths().data, { recursive: true });
-    await writeFile(join(this.paths().data, 'README-OmniDeck.txt'), 'This folder is RPCS3\'s configuration directory (RPCS3_CONFIG_DIR) managed by OmniDeck PC. Settings: config\\config.yml. PS3 HDD (saves) lives in the OmniDeck Saves folder via config\\vfs.yml.\r\n');
+    await writeFile(join(this.paths().data, 'README-OmniPC.txt'), 'This folder is RPCS3\'s configuration directory (RPCS3_CONFIG_DIR) managed by OmniPC. Settings: config\\config.yml. PS3 HDD (saves) lives in the OmniPC Saves folder via config\\vfs.yml.\r\n');
     return notes;
   }
 
   /**
-   * Data RPCS3 writes next to rpcs3.exe when started without OmniDeck's
+   * Data RPCS3 writes next to rpcs3.exe when started without OmniPC's
    * RPCS3_CONFIG_DIR (e.g. double-clicked): kept across updates, never deleted.
    */
   persistentAppPaths(): string[] {

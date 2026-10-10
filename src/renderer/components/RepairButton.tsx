@@ -45,7 +45,7 @@ export function RepairButton(props: { suggestion: RepairSuggestion; onDone?: (r:
         <Modal onClose={() => setConfirming(false)}>
           <div className="row"><h2>{s.label}</h2><SafetyChip safety={s.safety} /></div>
           <p className="muted">{s.description}</p>
-          {s.safety === 'high' && <p>This is a high-impact repair. OmniDeck backs up affected configuration first. Your games, saves and BIOS files are never deleted.</p>}
+          {s.safety === 'high' && <p>This is a high-impact repair. OmniPC backs up affected configuration first. Your games, saves and BIOS files are never deleted.</p>}
           {s.safety === 'low' && <p className="small faint">Configuration is backed up first and the change can be undone from Repair History.</p>}
           <div className="row right">
             <Button onClick={() => setConfirming(false)}>Cancel</Button>

@@ -50,10 +50,10 @@ export function Onboarding(props: { onDone: () => void }) {
         <div className="progress-dots">{STEPS.map((s, i) => <span key={s} className={i <= step ? 'on' : ''} title={s} />)}</div>
         {step === 0 && (
           <div className="col" style={{ gap: 18 }}>
-            <div className="brand" style={{ padding: 0, fontSize: 22 }}><span className="brand-mark" />OmniDeck PC</div>
+            <div className="brand" style={{ padding: 0, fontSize: 22 }}><span className="brand-mark" />OmniPC</div>
             <h1 style={{ fontSize: 44 }}>One place for all your games.</h1>
-            <p className="muted" style={{ fontSize: 18, maxWidth: 720 }}>OmniDeck installs and configures emulators for you, organises your library with artwork, maps your controller once for everything, and diagnoses and repairs problems on its own.</p>
-            <p className="small faint">You supply your own games and console BIOS files. OmniDeck never downloads games, BIOS, firmware or keys.</p>
+            <p className="muted" style={{ fontSize: 18, maxWidth: 720 }}>OmniPC installs and configures emulators for you, organises your library with artwork, maps your controller once for everything, and diagnoses and repairs problems on its own.</p>
+            <p className="small faint">You supply your own games and console BIOS files. OmniPC never downloads games, BIOS, firmware or keys.</p>
             <div className="row"><Button variant="primary" size="big" onClick={next} autoFocus>Get started</Button><Button onClick={async () => { await api('app.settings.set', { onboardingComplete: true }); props.onDone(); }}>Skip setup</Button></div>
           </div>
         )}
@@ -105,7 +105,7 @@ export function Onboarding(props: { onDone: () => void }) {
         {step === 4 && (
           <Panel title="Controller">
             {connected.length === 0 ? <p className="muted">No controller detected yet. Connect one and press any button. You can also continue with keyboard and mouse.</p> : connected.map((p) => <div key={p.index} className="row"><span className="dot ok" /><strong>{describePad(p).name}</strong><Chip>{describePad(p).api}</Chip><span className="small faint">Press buttons to test: {p.buttons.filter((b) => b.pressed).length ? 'input received ✓' : 'waiting…'}</span></div>)}
-            <p className="small faint">OmniDeck creates a universal profile and maps it into every installed emulator automatically. Default exit combo: Select + Start.</p>
+            <p className="small faint">OmniPC creates a universal profile and maps it into every installed emulator automatically. Default exit combo: Select + Start.</p>
           </Panel>
         )}
         {step === 5 && (
@@ -114,7 +114,7 @@ export function Onboarding(props: { onDone: () => void }) {
             <p className="muted">{hw ? `Based on your ${hw.tier}-tier PC (${hw.tierReason}).` : 'Based on defaults.'} You can change this any time.</p>
             <Segmented value={preset} onChange={setPreset} options={[{ value: 'performance', label: 'Performance' }, { value: 'balanced', label: 'Balanced' }, { value: 'quality', label: 'Quality' }, { value: 'maximum', label: 'Maximum' }]} />
             {!plan ? <Spinner /> : (
-              <Panel title="OmniDeck will">
+              <Panel title="OmniPC will">
                 {plan.emulators.map((e) => <div key={e.id} className="row"><span className={`dot ${e.implemented ? 'ok' : ''}`} /><strong>{e.name}</strong><span className="small muted">{e.note}</span></div>)}
                 <div className="small muted">· Download each emulator from its official source and verify it · create folders and recommended settings · configure your controller and hotkeys · scan {plan.libraryPaths.length} game folder(s) · run a health check</div>
               </Panel>
@@ -124,7 +124,7 @@ export function Onboarding(props: { onDone: () => void }) {
         {step === 6 && (
           <Panel title="Installing">
             {!job ? <Spinner /> : <JobSteps job={job} />}
-            {job && job.state !== 'running' && job.state !== 'queued' && <div className="row"><Button variant="primary" size="big" onClick={props.onDone} autoFocus>{job.state === 'succeeded' ? 'Start playing' : 'Continue to OmniDeck'}</Button></div>}
+            {job && job.state !== 'running' && job.state !== 'queued' && <div className="row"><Button variant="primary" size="big" onClick={props.onDone} autoFocus>{job.state === 'succeeded' ? 'Start playing' : 'Continue to OmniPC'}</Button></div>}
           </Panel>
         )}
         {step > 0 && step < 6 && (

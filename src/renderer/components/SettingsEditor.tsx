@@ -43,7 +43,7 @@ export function SettingsEditor(props: {
         <div className="col">
           <span>Graphics quality</span>
           <Segmented<PerformancePreset> value={v.preset} onChange={(p) => set({ preset: p })} options={[{ value: 'performance', label: 'Performance' }, { value: 'balanced', label: 'Balanced' }, { value: 'quality', label: 'Quality' }, { value: 'maximum', label: 'Maximum' }]} />
-          <span className="small faint">Changing the preset here only labels your choice; adjust resolution below. Presets are applied automatically when OmniDeck generates a configuration.</span>
+          <span className="small faint">Changing the preset here only labels your choice; adjust resolution below. Presets are applied automatically when OmniPC generates a configuration.</span>
         </div>
       )}
       <div className="col">

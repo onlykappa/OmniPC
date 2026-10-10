@@ -22,7 +22,7 @@ export class ApiError extends Error {
 }
 
 function bridge(): Bridge {
-  if (!window.omni) throw new ApiError('NO_BRIDGE', 'OmniDeck backend is not available. Start the app with Electron.', null);
+  if (!window.omni) throw new ApiError('NO_BRIDGE', 'OmniPC backend is not available. Start the app with Electron.', null);
   return window.omni;
 }
 

@@ -44,3 +44,19 @@ describe('configuration backups', () => {
     expect(ops.backups('pcsx2').length).toBe(3);
   });
 });
+
+describe('data root after the rename to OmniPC', () => {
+  it('uses %USERPROFILE%\\OmniPC for new installs and keeps an existing OmniDeck folder', async () => {
+    const { mkdirSync, mkdtempSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join: j } = await import('node:path');
+    const { AppPaths: P } = await import('../src/main/core/paths');
+    const fresh = mkdtempSync(j(tmpdir(), 'omnipc-home-'));
+    expect(P.defaultRoot(fresh)).toBe(j(fresh, 'OmniPC'));
+    const upgraded = mkdtempSync(j(tmpdir(), 'omnipc-home-'));
+    mkdirSync(j(upgraded, 'OmniDeck'));
+    expect(P.defaultRoot(upgraded)).toBe(j(upgraded, 'OmniDeck'));
+    mkdirSync(j(upgraded, 'OmniPC'));
+    expect(P.defaultRoot(upgraded)).toBe(j(upgraded, 'OmniPC'));
+  });
+});

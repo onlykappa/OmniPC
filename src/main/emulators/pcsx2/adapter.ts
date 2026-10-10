@@ -149,7 +149,7 @@ export class Pcsx2Adapter implements EmulatorAdapter {
     }
   }
 
-  /** Values OmniDeck manages in PCSX2.ini. Everything else is left as the user set it. */
+  /** Values OmniPC manages in PCSX2.ini. Everything else is left as the user set it. */
   managedPathValues(): [string, string, string][] {
     const p = this.paths();
     return [
@@ -371,7 +371,7 @@ export class Pcsx2Adapter implements EmulatorAdapter {
     return [{
       systemId: 'ps2', systemName: 'PlayStation 2', label: 'PlayStation 2 BIOS', required: true, requirementKind: 'bios', emulatorId: 'pcsx2', expectedLocation: dir,
       status: anyValid ? 'found' : files.length ? 'invalid' : 'missing', files,
-      note: anyValid ? 'PCSX2 will use the first valid BIOS it finds in this folder.' : 'Place a BIOS dumped from your own PS2 in this folder. OmniDeck never downloads BIOS files.',
+      note: anyValid ? 'PCSX2 will use the first valid BIOS it finds in this folder.' : 'Place a BIOS dumped from your own PS2 in this folder. OmniPC never downloads BIOS files.',
     }];
   }
 
@@ -415,10 +415,10 @@ export class Pcsx2Adapter implements EmulatorAdapter {
     return out;
   }
 
-  /** Writes portable.txt-free layout marker so users can tell the folder is OmniDeck managed. */
+  /** Writes portable.txt-free layout marker so users can tell the folder is OmniPC managed. */
   async writeReadme(): Promise<void> {
     await mkdir(this.paths().data, { recursive: true });
-    await writeFile(join(this.paths().data, 'README-OmniDeck.txt'), 'This folder is PCSX2\'s data directory managed by OmniDeck PC (-datapath). Settings: PCSX2\\inis\\PCSX2.ini. Saves live in the OmniDeck Saves folder.\r\n');
+    await writeFile(join(this.paths().data, 'README-OmniPC.txt'), 'This folder is PCSX2\'s data directory managed by OmniPC (-datapath). Settings: PCSX2\\inis\\PCSX2.ini. Saves live in the OmniPC Saves folder.\r\n');
   }
 }
 

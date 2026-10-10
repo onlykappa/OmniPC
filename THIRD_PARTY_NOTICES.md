@@ -1,8 +1,8 @@
 # Third-party notices
 
-OmniDeck PC is MIT-licensed. It ships the following third-party software.
+OmniPC is MIT-licensed. It ships the following third-party software.
 
-## Bundled in the OmniDeck application
+## Bundled in the OmniPC application
 
 | Component | Version | License | Notes |
 |---|---|---|---|
@@ -20,11 +20,11 @@ OmniDeck PC is MIT-licensed. It ships the following third-party software.
 
 ## Not bundled — downloaded on request from official sources
 
-OmniDeck does not distribute emulators. When you choose a system, OmniDeck
+OmniPC does not distribute emulators. When you choose a system, OmniPC
 downloads the emulator from its official release source and it remains under
 its own license:
 
-| Emulator | License | Source used by OmniDeck |
+| Emulator | License | Source used by OmniPC |
 |---|---|---|
 | PCSX2 | GPL-3.0 | GitHub Releases of `PCSX2/pcsx2` |
 | Dolphin | GPL-2.0-or-later | `https://dolphin-emu.org/update/latest/beta/` (official update service) |
@@ -42,19 +42,19 @@ its own license:
 
 - **PCSX2 `GameIndex.yaml`** and **Dolphin `Sys/wiitdb-*.txt`** are read from the user's
   installed emulator to show titles and compatibility ratings. They are part of those
-  projects and are not copied into OmniDeck.
+  projects and are not copied into OmniPC.
 - **Cover art** may be fetched (if enabled in Settings) from GameTDB (`art.gametdb.com`),
   the community `xlenore/ps2-covers` repository, or TheGamesDB (with the user's own API key).
   Artwork remains the property of its respective owners and is cached locally for display only.
 
 ## EmuDeck
 
-OmniDeck is an independent project and is not affiliated with EmuDeck. EmuDeck (GPL-3.0)
+OmniPC is an independent project and is not affiliated with EmuDeck. EmuDeck (GPL-3.0)
 was studied as an architectural reference only; no EmuDeck code, configuration files,
-artwork or branding are included. OmniDeck can *read* an existing EmuDeck installation's
+artwork or branding are included. OmniPC can *read* an existing EmuDeck installation's
 settings file to import paths and saves the user already owns.
 
 ## No console data
 
-OmniDeck never bundles, downloads or distributes games, BIOS images, system firmware,
+OmniPC never bundles, downloads or distributes games, BIOS images, system firmware,
 or encryption keys. Users supply content they legally own.

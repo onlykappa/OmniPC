@@ -50,7 +50,7 @@ export function StoragePage() {
       {move && (
         <Modal onClose={() => setMove(null)}>
           <h2>Move {move.key}?</h2>
-          <p>OmniDeck copies everything to <code>{move.to}</code>, verifies the copy, switches OmniDeck and emulator configurations to the new location, and leaves the original folder in place for you to delete once you're satisfied.</p>
+          <p>OmniPC copies everything to <code>{move.to}</code>, verifies the copy, switches OmniPC and emulator configurations to the new location, and leaves the original folder in place for you to delete once you're satisfied.</p>
           <div className="row right"><Button onClick={() => setMove(null)}>Cancel</Button><Button variant="primary" autoFocus onClick={async () => { const m = move; setMove(null); try { await api('storage.relocate', m.key, m.to); toast('info', 'Moving…', 'Progress is shown in Downloads.'); setTimeout(reload, 1500); } catch (e) { toast('error', (e as Error).message); } }}>Move</Button></div>
         </Modal>
       )}

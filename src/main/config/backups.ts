@@ -1,6 +1,6 @@
-// Configuration backup service. Before OmniDeck modifies any emulator config it
+// Configuration backup service. Before OmniPC modifies any emulator config it
 // snapshots the affected files here. Backups are plain folders containing a copy
-// of each file plus a manifest, so users can inspect them without OmniDeck.
+// of each file plus a manifest, so users can inspect them without OmniPC.
 
 import { copyFile, mkdir, readFile, rm, stat, writeFile, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';

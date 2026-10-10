@@ -134,7 +134,7 @@ export class DownloadManager {
     i.item.error = null;
     this.publish(i);
     const startOffset = existsSync(i.partPath) ? statSync(i.partPath).size : 0;
-    const headers: Record<string, string> = { 'User-Agent': 'OmniDeck-PC' };
+    const headers: Record<string, string> = { 'User-Agent': 'OmniPC-PC' };
     if (startOffset > 0) headers.Range = `bytes=${startOffset}-`;
     try {
       const res = await this.fetchFollowingTrusted(i.req.url, i.req.allowedHosts, headers, i.controller.signal);
@@ -203,7 +203,7 @@ export class DownloadManager {
       if (sha !== i.req.expectedSha256.toLowerCase()) {
         await rm(i.partPath, { force: true });
         i.item.verification = 'SHA-256 mismatch — file discarded';
-        throw new OmniFailure({ code: 'HASH_MISMATCH', whatHappened: `The downloaded ${i.req.name} did not match the checksum published upstream and was discarded.`, detected: [`Expected ${i.req.expectedSha256}`, `Got ${sha}`], probableCause: 'Corrupted or tampered download.', userAction: ['Retry the download. If it keeps failing, report it to the OmniDeck project.'] });
+        throw new OmniFailure({ code: 'HASH_MISMATCH', whatHappened: `The downloaded ${i.req.name} did not match the checksum published upstream and was discarded.`, detected: [`Expected ${i.req.expectedSha256}`, `Got ${sha}`], probableCause: 'Corrupted or tampered download.', userAction: ['Retry the download. If it keeps failing, report it to the OmniPC project.'] });
       }
       verified = true;
       i.item.verification = 'SHA-256 matches upstream';

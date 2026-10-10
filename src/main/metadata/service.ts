@@ -132,7 +132,7 @@ export class MetadataService {
     const ext = (extname(new URL(a.location).pathname) || '.jpg').toLowerCase();
     const dest = join(this.artDir, `${gameId}-${a.kind}${ext}`);
     try {
-      const r = await this.env.fetchImpl(a.location, { headers: { 'User-Agent': 'OmniDeck-PC' }, redirect: 'manual' });
+      const r = await this.env.fetchImpl(a.location, { headers: { 'User-Agent': 'OmniPC-PC' }, redirect: 'manual' });
       if (!r.ok) return null;
       const type = r.headers.get('content-type') ?? '';
       if (!/^image\//.test(type)) return null;

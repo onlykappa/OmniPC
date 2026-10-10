@@ -40,7 +40,7 @@ export function HomePage() {
       </div>
       {!data.libraryCount && (
         <Empty title="No games yet" action={<Button variant="primary" onClick={() => navigate('/library?manage=1')} autoFocus>Add game folder</Button>}>
-          Point OmniDeck at the folders where your games live. It scans them, identifies each system and fetches artwork.
+          Point OmniPC at the folders where your games live. It scans them, identifies each system and fetches artwork.
         </Empty>
       )}
       <Shelf title="Continue Playing" games={data.continuePlaying} more="/library?sort=recent" />

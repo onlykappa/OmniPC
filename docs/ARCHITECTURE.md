@@ -44,7 +44,7 @@ launch router, OmniDoctor and repair engine — without Electron.
 Game ─▶ LaunchService.routeEmulator()  (game override ▸ profile ▸ system preference ▸ installed)
      ─▶ preflight (drive, file, executable, required BIOS, crash-loop)
      ─▶ adapter.buildLaunch(target, exe, settings, profile, version)  → { command, args, prepare, cleanup, logFile }
-     ─▶ spawn (no shell) ─▶ record pid/args/log offset ─▶ minimise OmniDeck
+     ─▶ spawn (no shell) ─▶ record pid/args/log offset ─▶ minimise OmniPC
      ─▶ exit ─▶ classify (ok / early_exit / crashed / failed_to_start / killed) ─▶ play time, crash-loop state
      ─▶ needsAnalysis? ─▶ UI opens Failure Recovery ─▶ OmniDoctor.analyzeLaunch()
 ```
@@ -75,7 +75,7 @@ See [ADAPTERS.md](ADAPTERS.md).
   `high` (explicit confirmation). Deleting saves/ROMs/BIOS is not implemented anywhere.
   Every repair is logged, backs up first, and records undo information when feasible.
 
-## Storage layout (default `%USERPROFILE%\OmniDeck`)
+## Storage layout (default `%USERPROFILE%\OmniPC`)
 
 ```
 Emulators\<id>\app        program files (replaced on update)
@@ -105,8 +105,8 @@ which is what makes storage relocation possible.
 ## Lessons from EmuDeck (reference only)
 
 EmuDeck's Windows edition (PowerShell scripts + Electron frontend) proves the value of
-automated configuration. Limitations OmniDeck addresses: downloads are not verified,
+automated configuration. Limitations OmniPC addresses: downloads are not verified,
 configuration is overwritten by sed-style replacement without backups, there is no
 structured health model or failure diagnosis, and emulator data lives inside program folders
-so updates are risky. OmniDeck uses verified downloads, key-level INI edits with backups,
+so updates are risky. OmniPC uses verified downloads, key-level INI edits with backups,
 separate data folders, version rollback, and OmniDoctor.

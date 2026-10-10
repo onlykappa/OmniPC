@@ -709,7 +709,7 @@ export interface SetupImportCandidate {
   details: string[];
   importable: { settings: boolean; saves: boolean; bios: boolean; romPaths: boolean; useInstallation: boolean };
   romPaths: string[];
-  /** Save folders to copy (never overwriting OmniDeck files), declared by the adapter. */
+  /** Save folders to copy (never overwriting OmniPC files), declared by the adapter. */
   saveCopies?: { from: string; to: string; label: string }[];
   /** BIOS folders whose files are offered to the BIOS importer for a system. */
   biosDirs?: { dir: string; systemId: string }[];

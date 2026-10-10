@@ -96,7 +96,7 @@ export class GitHubReleaseSource implements TrustedSource {
   async resolveLatest(ctx: SourceContext): Promise<ReleaseInfo> {
     const f = ctx.fetchImpl ?? fetch;
     const base = `https://api.github.com/repos/${this.repo}/releases`;
-    const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'OmniDeck-PC', 'X-GitHub-Api-Version': '2022-11-28' };
+    const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'OmniPC-PC', 'X-GitHub-Api-Version': '2022-11-28' };
     let releases: GhRelease[];
     try {
       if (ctx.channel === 'stable') {
@@ -136,9 +136,9 @@ export class GitHubReleaseSource implements TrustedSource {
     }
     throw new OmniFailure({
       code: 'NO_MATCHING_ASSET',
-      whatHappened: `The latest release on ${this.label} has no Windows x64 download OmniDeck recognises.`,
+      whatHappened: `The latest release on ${this.label} has no Windows x64 download OmniPC recognises.`,
       probableCause: 'The project may have changed its release file naming. The adapter manifest needs an update.',
-      userAction: ['Check for an OmniDeck update.', 'Advanced: point OmniDeck at an existing installation with "Use existing installation".'],
+      userAction: ['Check for an OmniPC update.', 'Advanced: point OmniPC at an existing installation with "Use existing installation".'],
     });
   }
 }
@@ -155,7 +155,7 @@ export class DolphinUpdateSource implements TrustedSource {
     const track = ctx.channel === 'nightly' ? 'master' : this.track;
     let data: DolphinLatest;
     try {
-      const r = await f(`https://dolphin-emu.org/update/latest/${encodeURIComponent(track)}/`, { headers: { 'User-Agent': 'OmniDeck-PC', Accept: 'application/json' } });
+      const r = await f(`https://dolphin-emu.org/update/latest/${encodeURIComponent(track)}/`, { headers: { 'User-Agent': 'OmniPC-PC', Accept: 'application/json' } });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       data = (await r.json()) as DolphinLatest;
     } catch (err) {
@@ -174,7 +174,7 @@ export class DolphinUpdateSource implements TrustedSource {
         code: 'NO_MATCHING_ASSET',
         whatHappened: 'The Dolphin update service did not offer a Windows x64 build from a trusted host.',
         detected: art?.url ? [`Offered URL: ${art.url}`] : [],
-        userAction: ['Try again later or check for an OmniDeck update.'],
+        userAction: ['Try again later or check for an OmniPC update.'],
       });
     }
     const fileName = decodeURIComponent(new URL(art.url).pathname.split('/').pop() ?? 'dolphin.7z');
@@ -199,7 +199,7 @@ export class VersionedUrlSource implements TrustedSource {
     const f = ctx.fetchImpl ?? fetch;
     let tag: string;
     try {
-      const r = await f(`https://api.github.com/repos/${this.repo}/releases/latest`, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'OmniDeck-PC', 'X-GitHub-Api-Version': '2022-11-28' } });
+      const r = await f(`https://api.github.com/repos/${this.repo}/releases/latest`, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'OmniPC-PC', 'X-GitHub-Api-Version': '2022-11-28' } });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       tag = ((await r.json()) as GhRelease).tag_name;
     } catch (err) {

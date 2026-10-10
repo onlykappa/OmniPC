@@ -11,7 +11,7 @@ export function SystemsPage() {
   if (!data) return <div className="page"><Spinner /></div>;
   return (
     <div className="page">
-      <div className="page-head"><div><h1>Systems</h1><p>One place for every console. OmniDeck picks and manages the emulator underneath.</p></div></div>
+      <div className="page-head"><div><h1>Systems</h1><p>One place for every console. OmniPC picks and manages the emulator underneath.</p></div></div>
       <div className="grid cols-auto">
         {data.map((s) => (
           <div key={s.id} className="card system-card" style={{ cursor: 'default' }}>

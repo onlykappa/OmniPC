@@ -50,7 +50,7 @@ export async function checkDependencies(): Promise<DependencyStatus[]> {
       name: '.NET Desktop Runtime',
       installed: dotnet.length > 0,
       version: dotnet.length ? dotnet[dotnet.length - 1] : null,
-      detail: dotnet.length ? `Installed versions: ${dotnet.join(', ')}` : 'Not installed. Only needed by some optional tools; OmniDeck and the PCSX2/Dolphin integrations do not require it.',
+      detail: dotnet.length ? `Installed versions: ${dotnet.join(', ')}` : 'Not installed. Only needed by some optional tools; OmniPC and the PCSX2/Dolphin integrations do not require it.',
       fixUrl: 'https://dotnet.microsoft.com/download/dotnet',
     },
   ];

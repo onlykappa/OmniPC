@@ -1,5 +1,5 @@
 // Structured error page: what happened / what we detected / probable cause /
-// what OmniDeck can fix / what you need to do / technical details.
+// what OmniPC can fix / what you need to do / technical details.
 
 import { useState } from 'react';
 import type { OmniError } from '@shared/models';
@@ -13,7 +13,7 @@ export function OmniErrorView(props: { error: OmniError; onFixed?: () => void })
       <h2>{e.whatHappened}</h2>
       {e.detected.length > 0 && (
         <div>
-          <div className="small faint">What OmniDeck detected</div>
+          <div className="small faint">What OmniPC detected</div>
           <ul>{e.detected.map((d, i) => <li key={i}>{d}</li>)}</ul>
         </div>
       )}
@@ -25,7 +25,7 @@ export function OmniErrorView(props: { error: OmniError; onFixed?: () => void })
       )}
       {e.omniCanFix && (
         <div className="col">
-          <div className="small faint">What OmniDeck can fix</div>
+          <div className="small faint">What OmniPC can fix</div>
           <div className="row"><RepairButton suggestion={e.omniCanFix} onDone={props.onFixed} primary /></div>
         </div>
       )}

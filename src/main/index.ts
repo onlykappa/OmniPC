@@ -18,6 +18,14 @@ const IMAGE_EXT = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']);
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'omni-art', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
+// The app was renamed from "OmniDeck PC" to "OmniPC". Electron derives the
+// userData folder from the product name, so keep using the old folder (it holds
+// bootstrap.json, which points at the library/emulator root) when it exists.
+{
+  const legacyUserData = join(app.getPath('appData'), 'OmniDeck PC');
+  if (!existsSync(app.getPath('userData')) && existsSync(legacyUserData)) app.setPath('userData', legacyUserData);
+}
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
   process.exit(0);
@@ -37,7 +45,7 @@ function decideSafeMode(): { safe: boolean; reason: string | null } {
     unclean = 1;
   }
   writeFileSync(marker, String(unclean + 1));
-  return unclean >= 2 ? { safe: true, reason: `OmniDeck did not close cleanly ${unclean} times in a row` } : { safe: false, reason: null };
+  return unclean >= 2 ? { safe: true, reason: `OmniPC did not close cleanly ${unclean} times in a row` } : { safe: false, reason: null };
 }
 
 function displays(): DisplayInfo[] {
@@ -74,7 +82,7 @@ function createWindow(consoleMode: boolean, safeMode: boolean): BrowserWindow {
     minWidth: 1024,
     minHeight: 640,
     backgroundColor: '#0b0d12',
-    title: safeMode ? 'OmniDeck PC (Safe Mode)' : 'OmniDeck PC',
+    title: safeMode ? 'OmniPC (Safe Mode)' : 'OmniPC',
     show: false,
     fullscreen: consoleMode,
     autoHideMenuBar: true,
@@ -116,7 +124,7 @@ app.whenReady().then(async () => {
       },
     },
   });
-  log.info('OmniDeck starting', { version: app.getVersion(), safeMode: safe, reason });
+  log.info('OmniPC starting', { version: app.getVersion(), safeMode: safe, reason });
   const c = container;
 
   protocol.handle('omni-art', async (req) => {
@@ -168,7 +176,7 @@ app.whenReady().then(async () => {
     if (win && !win.isDestroyed()) win.webContents.send('omni:event', name, payload);
   });
 
-  if (safe && reason) c.notifications.add('warning', 'Started in Safe Mode', `${reason}. Background scanners, automatic repairs and auto-updates are disabled. Use Settings > Advanced to repair OmniDeck, then restart normally.`);
+  if (safe && reason) c.notifications.add('warning', 'Started in Safe Mode', `${reason}. Background scanners, automatic repairs and auto-updates are disabled. Use Settings > Advanced to repair OmniPC, then restart normally.`);
   await c.startup().catch((e) => log.error('startup failed', e));
 });
 

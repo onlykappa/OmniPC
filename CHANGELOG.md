@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to OmniDeck PC. Versions follow [Semantic Versioning](https://semver.org).
+All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
 ## [1.0.0] - 2026-10-10
 
@@ -13,8 +13,8 @@ First public release.
   Cemu (Wii U), melonDS (DS), Xenia Canary (Xbox 360), xemu (Xbox),
   RetroArch (NES, SNES, N64, GB/GBC/GBA, Genesis, Arcade) and KytyPS5 (PS5, experimental).
 - First-run wizards, update prompts and exit confirmations are suppressed so games launch
-  fullscreen and return to OmniDeck when closed.
-- Saves, memory cards and states live in one OmniDeck Saves folder that survives updates;
+  fullscreen and return to OmniPC when closed.
+- Saves, memory cards and states live in one OmniPC Saves folder that survives updates;
   emulators that keep data next to their executable have it carried across updates and
   preserved on uninstall.
 - RPCS3 firmware install from your `PS3UPDAT.PUP`; RetroArch cores downloaded per system.

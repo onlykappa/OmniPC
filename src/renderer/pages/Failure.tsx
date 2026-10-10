@@ -43,7 +43,7 @@ export function FailurePage(props: { launchId: number }) {
       </div>
       {a.crashLoop.paused && (
         <Panel title={`${a.gameTitle ?? 'This game'} has failed ${a.crashLoop.failures} times.`}>
-          <p>OmniDeck has paused automatic launching to prevent a crash loop. Apply a fix below, then try again.</p>
+          <p>OmniPC has paused automatic launching to prevent a crash loop. Apply a fix below, then try again.</p>
         </Panel>
       )}
       <div className="grid cols-2">

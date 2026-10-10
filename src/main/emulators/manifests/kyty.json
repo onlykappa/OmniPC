@@ -37,7 +37,7 @@
   ],
   "configFiles": [
     {
-      "label": "OmniDeck launch options (omnideck-kyty.json)",
+      "label": "OmniPC launch options (omnideck-kyty.json)",
       "path": "{data}/omnideck-kyty.json",
       "format": "json"
     },
@@ -71,9 +71,9 @@
   "notes": [
     "KytyPS5 is an experimental PlayStation 5 emulator. It boots 2D games and a selection of 3D games (Unreal Engine 4/5, Unity, custom engines); most titles do not work yet and compatibility changes from one daily build to the next. See https://kytyps5.github.io/ for community test results.",
     "Requires a GPU and driver with Vulkan 1.3.",
-    "OmniDeck launches kyty_emulator.exe directly (no launcher window, no update check). KytyPS5 has no settings file of its own: OmniDeck passes every option on the command line and keeps them in omnideck-kyty.json.",
-    "KytyPS5 stores saves, trophies and download data relative to its working directory; OmniDeck starts it inside the OmniDeck Saves folder for KytyPS5 so saves never live in the program folder.",
-    "Controllers are read through SDL3 with a fixed DualSense layout (South=Cross, East=Circle, West=Square, North=Triangle). KytyPS5 has no gamepad remapping, dead-zone or controller hotkeys, so OmniDeck can only apply rumble on/off. F11 or Alt+Enter toggles fullscreen; close the window to exit.",
+    "OmniPC launches kyty_emulator.exe directly (no launcher window, no update check). KytyPS5 has no settings file of its own: OmniPC passes every option on the command line and keeps them in omnideck-kyty.json.",
+    "KytyPS5 stores saves, trophies and download data relative to its working directory; OmniPC starts it inside the OmniPC Saves folder for KytyPS5 so saves never live in the program folder.",
+    "Controllers are read through SDL3 with a fixed DualSense layout (South=Cross, East=Circle, West=Square, North=Triangle). KytyPS5 has no gamepad remapping, dead-zone or controller hotkeys, so OmniPC can only apply rumble on/off. F11 or Alt+Enter toggles fullscreen; close the window to exit.",
     "No PlayStation firmware or system modules are required. PlayStation 4 games are not supported by KytyPS5."
   ],
   "assumptions": [
@@ -90,7 +90,7 @@
     "Only sce_sys/param.json (PS5 format) is parsed (src/loader/systemContent.cpp Psf::OpenJson); there is no param.sfo/PS4 loader, so PS4 games are not supported.",
     "Vulkan 1.3 is required (shaders built with --target-env vulkan1.3; vulkanWindow.cpp rejects devices below VULKAN_TARGET_API_VERSION). README: 'External low-level emulation modules are neither required nor planned.'",
     "The Windows build uses clang-cl with the dynamic MSVC runtime and windeployqt --no-compiler-runtime, so the Visual C++ x64 redistributable is needed.",
-    "The executable has no Windows version resource; --help prints 'ver = 0.3.0, git = <git describe>' where git describe in CI is the short commit hash (the release tag is created after the build), so the installed version comes from the release tag OmniDeck installed.",
-    "Several dated builds can be published per day (tags KytyPS5-YYYY-MM-DD-<hash>), so OmniDeck versions are derived from the release publish time plus the commit hash (download.versionFrom = published-at) to order same-day builds correctly."
+    "The executable has no Windows version resource; --help prints 'ver = 0.3.0, git = <git describe>' where git describe in CI is the short commit hash (the release tag is created after the build), so the installed version comes from the release tag OmniPC installed.",
+    "Several dated builds can be published per day (tags KytyPS5-YYYY-MM-DD-<hash>), so OmniPC versions are derived from the release publish time plus the commit hash (download.versionFrom = published-at) to order same-day builds correctly."
   ]
 }

@@ -25,7 +25,7 @@
       "patterns": [],
       "probableCause": "The emulator was built for CPU instructions (for example AVX2) that your processor does not support.",
       "fix": { "actionId": "emulator.reinstall", "label": "Reinstall a compatible build", "safety": "high", "params": {} },
-      "manual": ["Reinstall the emulator; OmniDeck selects a build that matches your CPU."],
+      "manual": ["Reinstall the emulator; OmniPC selects a build that matches your CPU."],
       "references": []
     },
     {
@@ -51,7 +51,7 @@
       "patterns": [],
       "probableCause": "A DLL failed to initialise. This is commonly caused by graphics driver problems or security software blocking the emulator.",
       "fix": null,
-      "manual": ["Update your graphics driver.", "If you use third-party antivirus, allow the OmniDeck Emulators folder."],
+      "manual": ["Update your graphics driver.", "If you use third-party antivirus, allow the OmniPC Emulators folder."],
       "references": []
     },
     {

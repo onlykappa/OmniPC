@@ -1,4 +1,4 @@
-// Catalog of game systems OmniDeck understands. This is pure data shared by the
+// Catalog of game systems OmniPC understands. This is pure data shared by the
 // main process (library scanning, launch routing) and the renderer (UI).
 //
 // `extensions` drive library classification. Ambiguous extensions (e.g. .iso,

@@ -56,5 +56,5 @@ docs/           documentation
 ## Fixtures are synthetic
 
 `tests/fixtures/builders.mjs` builds minimal files containing only the header structures
-OmniDeck reads (ISO9660 volume descriptor + `SYSTEM.CNF`, Nintendo disc headers, a PS2 ROMDIR
+OmniPC reads (ISO9660 volume descriptor + `SYSTEM.CNF`, Nintendo disc headers, a PS2 ROMDIR
 table). They contain no game or BIOS code.

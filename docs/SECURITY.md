@@ -13,7 +13,7 @@
 - Archives are listed before extraction; absolute paths, drive letters, `..` traversal and
   links are rejected, and the extracted tree is re-verified afterwards.
 - No downloaded script (PowerShell or otherwise) is ever executed. The only downloaded
-  executable OmniDeck runs is the Microsoft VC++ redistributable, after verifying a valid
+  executable OmniPC runs is the Microsoft VC++ redistributable, after verifying a valid
   Authenticode signature from Microsoft Corporation, and only on explicit user confirmation.
 
 ## Processes

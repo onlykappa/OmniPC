@@ -1,6 +1,6 @@
 # Database
 
-SQLite (`better-sqlite3`), WAL mode, foreign keys on. File: `%USERPROFILE%\OmniDeck\Data\omnideck.db`.
+SQLite (`better-sqlite3`), WAL mode, foreign keys on. File: `%USERPROFILE%\OmniPC\Data\omnideck.db`.
 
 ## Tables
 

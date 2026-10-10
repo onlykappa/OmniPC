@@ -1,4 +1,4 @@
-# OmniDeck PC: Windows testing checklist
+# OmniPC: Windows testing checklist
 
 This is the file to work from when testing on your PC. Tick items off, write what you saw
 next to anything that fails, and send back the **Report** section at the bottom.
@@ -11,8 +11,8 @@ Last updated: 2026-10-10. Branch `claude/omnideck-foundation`, PR #1.
 
 1. Open PR #1 on GitHub → **Checks** tab (or the repo's **Actions** tab → latest **CI** run on
    `claude/omnideck-foundation`).
-2. Scroll to **Artifacts** → download **OmniDeck-Setup** → unzip → run the `.exe`.
-3. If you already have OmniDeck installed, installing over it keeps your library, settings and saves.
+2. Scroll to **Artifacts** → download **OmniPC-Setup** → unzip → run the `.exe`.
+3. If you already have OmniPC installed, installing over it keeps your library, settings and saves.
 
 Note the commit shown on the run (e.g. `d165b17`) so we know which build you tested.
 
@@ -35,7 +35,7 @@ Note the commit shown on the run (e.g. `d165b17`) so we know which build you tes
 | RetroArch | NES, SNES, N64, GB/GBC/GBA, Genesis, Arcade | Ported (cores download on install) | nothing; optional `gba_bios.bin` → `BIOS\gba`, `disksys.rom` → `BIOS\nes` |
 | — | PS4 | Games are recognised, **no emulator yet** (KytyPS5 is PS5-only) | — |
 
-OmniDeck never downloads BIOS, firmware or keys. Use files from your own consoles.
+OmniPC never downloads BIOS, firmware or keys. Use files from your own consoles.
 
 ---
 
@@ -53,7 +53,7 @@ Do these for every row marked "Ported". It's fine to skip emulators you don't ca
 - [ ] The game starts **fullscreen** with **no pop-up** first (setup wizard, "update available",
       "settings failed to load", welcome box…). Any pop-up = note its exact text.
 - [ ] The controller works in-game (D-pad, sticks, face buttons, triggers).
-- [ ] Exit with the hotkey (default **Select + Start**) or by closing the window → you're back in OmniDeck.
+- [ ] Exit with the hotkey (default **Select + Start**) or by closing the window → you're back in OmniPC.
 - [ ] Play history shows the session.
 
 ### C. Saves
@@ -71,9 +71,9 @@ Do these for every row marked "Ported". It's fine to skip emulators you don't ca
 - **Xenia:** a "No Profiles Found" notice inside Xenia is expected on first launch; the game
   should still start. No button remapping (Xbox pad is used as-is).
 - **KytyPS5:** select a PS5 game *folder* (the one containing `eboot.bin` and `sce_sys\param.json`).
-  A console window next to the game is normal. Many games won't boot yet; that's KytyPS5, not OmniDeck.
+  A console window next to the game is normal. Many games won't boot yet; that's KytyPS5, not OmniPC.
 - **PPSSPP:** no volume hotkeys (PPSSPP has none).
-- **xemu:** all three files must be in `BIOS\xbox` or OmniDeck won't launch. Your Xbox game saves
+- **xemu:** all three files must be in `BIOS\xbox` or OmniPC won't launch. Your Xbox game saves
   live inside the HDD image, so back it up. Menu is Guide or Back+Start (xemu's own, not remappable).
 - **RetroArch:** install also downloads one core per system (NES mesen, SNES snes9x, N64
   mupen64plus_next, GB/GBC gambatte, GBA mgba, Genesis genesis_plus_gx, Arcade fbneo). Check the

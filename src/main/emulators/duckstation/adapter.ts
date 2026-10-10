@@ -2,8 +2,8 @@
 // DuckStation has no -datapath option: its data root is the executable folder
 // when portable.txt (or settings.ini) sits next to it, otherwise
 // Documents\DuckStation / %LOCALAPPDATA%\DuckStation (src/core/core.cpp SetDataRoot).
-// OmniDeck therefore runs it in portable mode and redirects every folder key to
-// OmniDeck-managed locations, so only a handful of files stay in the app dir.
+// OmniPC therefore runs it in portable mode and redirects every folder key to
+// OmniPC-managed locations, so only a handful of files stay in the app dir.
 // Layout:
 //   Emulators/duckstation/app       program files + portable.txt + settings.ini (carried across updates)
 //   Emulators/duckstation/data      gamesettings, inputprofiles, cheats, patches, covers, textures, shaders, ...
@@ -178,7 +178,7 @@ export class DuckStationAdapter implements EmulatorAdapter {
     for (const d of dirs) await mkdir(d, { recursive: true });
   }
 
-  /** Folder keys OmniDeck manages (EmuFolders::LoadConfig). Everything else is left as the user set it. */
+  /** Folder keys OmniPC manages (EmuFolders::LoadConfig). Everything else is left as the user set it. */
   managedPathValues(): [string, string, string][] {
     const p = this.paths();
     return [
@@ -438,16 +438,16 @@ export class DuckStationAdapter implements EmulatorAdapter {
     if (hw && executable && !sse2Build && features.length > 0 && !features.includes('sse41')) {
       out.push({
         id: 'duckstation.sse41', checkId: 'duckstation.cpu', category: 'emulators', severity: 'problem', title: 'DuckStation needs SSE4.1',
-        detail: 'The standard DuckStation x64 build requires a CPU with SSE4.1 and refuses to start without it. Only the legacy SSE2 build works on this CPU, which OmniDeck cannot install automatically yet.',
+        detail: 'The standard DuckStation x64 build requires a CPU with SSE4.1 and refuses to start without it. Only the legacy SSE2 build works on this CPU, which OmniPC cannot install automatically yet.',
         subject: { kind: 'emulator', id: 'duckstation', label: 'DuckStation' },
         evidence: [`CPU features: ${features.join(', ')}`], confidence: 'high', repair: null,
-        manualSteps: ['Download duckstation-windows-x64-sse2-release.zip from github.com/stenzek/duckstation/releases and use "Use existing installation" in OmniDeck.'],
+        manualSteps: ['Download duckstation-windows-x64-sse2-release.zip from github.com/stenzek/duckstation/releases and use "Use existing installation" in OmniPC.'],
       });
     }
     if (hw && hw.isWindows === false) {
       out.push({
         id: 'duckstation.platform', checkId: 'duckstation.platform', category: 'emulators', severity: 'warning', title: 'DuckStation Windows build on a non-Windows system',
-        detail: 'OmniDeck installs the Windows build of DuckStation.', subject: { kind: 'emulator', id: 'duckstation', label: 'DuckStation' },
+        detail: 'OmniPC installs the Windows build of DuckStation.', subject: { kind: 'emulator', id: 'duckstation', label: 'DuckStation' },
         evidence: [], confidence: 'high', repair: null, manualSteps: [],
       });
     }
@@ -482,7 +482,7 @@ export class DuckStationAdapter implements EmulatorAdapter {
       status: anyValid ? 'found' : files.length ? 'invalid' : 'missing', files,
       note: anyValid
         ? 'DuckStation picks the BIOS matching each game\'s region from this folder (identified by hash). Keep a BIOS for every region you play.'
-        : 'Place a BIOS dumped from your own PlayStation (e.g. SCPH-1001.bin, 512 KB) in this folder. OmniDeck never downloads BIOS files.',
+        : 'Place a BIOS dumped from your own PlayStation (e.g. SCPH-1001.bin, 512 KB) in this folder. OmniPC never downloads BIOS files.',
     }];
   }
 
@@ -556,14 +556,14 @@ export class DuckStationAdapter implements EmulatorAdapter {
   /** Portable marker: makes DuckStation's DataRoot the exe folder (core.cpp SetDataRoot). */
   private async writePortableMarker(appDir: string): Promise<void> {
     await mkdir(appDir, { recursive: true });
-    await writeFile(join(appDir, 'portable.txt'), 'Created by OmniDeck PC: DuckStation keeps settings.ini in this folder (portable mode). Saves are redirected to the OmniDeck Saves folder.\r\n');
+    await writeFile(join(appDir, 'portable.txt'), 'Created by OmniPC: DuckStation keeps settings.ini in this folder (portable mode). Saves are redirected to the OmniPC Saves folder.\r\n');
   }
 
   async prepareInstall(appDir: string): Promise<string[]> {
     const notes: string[] = [];
     if (!existsSync(join(appDir, 'portable.txt'))) {
       await this.writePortableMarker(appDir);
-      notes.push('Enabled DuckStation portable mode (portable.txt) so settings stay inside the OmniDeck folder.');
+      notes.push('Enabled DuckStation portable mode (portable.txt) so settings stay inside the OmniPC folder.');
     }
     return notes;
   }

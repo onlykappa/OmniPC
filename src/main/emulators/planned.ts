@@ -12,7 +12,7 @@ export class PlannedAdapter implements EmulatorAdapter {
   constructor(readonly manifest: EmulatorManifest, private readonly app: AppPaths) {}
 
   private notImplemented(): never {
-    throw new OmniFailure({ code: 'ADAPTER_NOT_IMPLEMENTED', whatHappened: `${this.manifest.name} support is not implemented yet in this build of OmniDeck.`, userAction: ['Watch for an OmniDeck update. PCSX2 and Dolphin are fully supported today.'] });
+    throw new OmniFailure({ code: 'ADAPTER_NOT_IMPLEMENTED', whatHappened: `${this.manifest.name} support is not implemented yet in this build of OmniPC.`, userAction: ['Watch for an OmniPC update. PCSX2 and Dolphin are fully supported today.'] });
   }
 
   paths(): AdapterPaths {

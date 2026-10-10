@@ -26,7 +26,7 @@ Rules live in `src/main/diagnostics/rules/*.rules.json`. Each file has an `emula
 | `exitCodes` | Signed 32-bit exit codes (Windows NTSTATUS values such as `-1073741515` = `0xC0000135`) |
 | `confidence` | `high` only if the signature unambiguously identifies the cause |
 | `fix.actionId` | A repair action from `repairs/engine.ts`. For renderer fixes the engine scopes the change to the failing game and avoids "switching" to the renderer already in use |
-| `userSupplied` | The fix needs something only the user can provide (BIOS/firmware/keys) — OmniDeck says automatic repair is unavailable |
+| `userSupplied` | The fix needs something only the user can provide (BIOS/firmware/keys) — OmniPC says automatic repair is unavailable |
 
 Rules are validated by `tests/rules.test.ts` (unique ids, valid regexes, a pattern or exit
 code, valid safety). Prefer strings copied from the emulator's source code; note the version

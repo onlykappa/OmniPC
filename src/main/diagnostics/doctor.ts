@@ -145,7 +145,7 @@ export class OmniDoctor {
     }
     if (game) {
       for (const b of await this.d.bios.status()) {
-        if (b.systemId === game.system_id && b.required && b.status !== 'found') findings.push(stateFinding('launch.bios', 'bios', `${b.label} is ${b.status === 'missing' ? 'missing' : 'not valid'}`, `Checked ${b.expectedLocation}`, 'high', null, ['Import a BIOS dumped from your own console in Settings > BIOS & Firmware. OmniDeck cannot download BIOS files.']));
+        if (b.systemId === game.system_id && b.required && b.status !== 'found') findings.push(stateFinding('launch.bios', 'bios', `${b.label} is ${b.status === 'missing' ? 'missing' : 'not valid'}`, `Checked ${b.expectedLocation}`, 'high', null, ['Import a BIOS dumped from your own console in Settings > BIOS & Firmware. OmniPC cannot download BIOS files.']));
       }
     }
     const settings = this.d.emulators.settingsFor(rec.emulatorId);

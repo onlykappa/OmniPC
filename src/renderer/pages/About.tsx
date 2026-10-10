@@ -8,7 +8,7 @@ export function AboutPage() {
   if (!data) return <div className="page"><Spinner /></div>;
   return (
     <div className="page">
-      <div className="page-head"><div><h1>OmniDeck PC</h1><p>Version {data.version}{data.safeMode ? ' · Safe Mode' : ''}</p></div></div>
+      <div className="page-head"><div><h1>OmniPC</h1><p>Version {data.version}{data.safeMode ? ' · Safe Mode' : ''}</p></div></div>
       <div className="grid cols-2">
         <Panel title="This build">
           <dl className="kv"><dt>Electron</dt><dd>{data.electron}</dd><dt>Chromium</dt><dd>{data.chrome}</dd><dt>Node</dt><dd>{data.node}</dd><dt>Platform</dt><dd>{data.platform}</dd><dt>Data folder</dt><dd className="mono small">{data.dataRoot}</dd><dt>Database</dt><dd className="mono small">{data.databasePath}</dd><dt>Log</dt><dd className="mono small">{data.logPath}</dd></dl>
@@ -20,7 +20,7 @@ export function AboutPage() {
           )}
         </Panel>
         <Panel title="Legal">
-          <p className="small">OmniDeck PC is an independent project, not affiliated with EmuDeck, Sony, Nintendo, Microsoft or any emulator project. Emulators are downloaded from their official sources and remain under their own licenses. OmniDeck never provides games, BIOS files, firmware or encryption keys; you supply content you legally own.</p>
+          <p className="small">OmniPC is an independent project, not affiliated with EmuDeck, Sony, Nintendo, Microsoft or any emulator project. Emulators are downloaded from their official sources and remain under their own licenses. OmniPC never provides games, BIOS files, firmware or encryption keys; you supply content you legally own.</p>
           <p className="small faint">See THIRD_PARTY_NOTICES.md shipped with the app for third-party licenses.</p>
         </Panel>
       </div>

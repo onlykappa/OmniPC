@@ -4,7 +4,7 @@
 // "emuDirectory" that holds melonDS.toml and wfcsettings.bin, unless a "portable"
 // sub-folder exists next to the exe. There is no command-line option or
 // environment variable for the config location (CLI.cpp only knows -b/-f/-a/-A),
-// so OmniDeck keeps melonDS.toml next to the exe (carried over on updates via
+// so OmniPC keeps melonDS.toml next to the exe (carried over on updates via
 // persistentAppPaths) and points every path setting outside the app folder:
 //   Emulators/melonds/app        melonDS.exe + melonDS.toml + wfcsettings.bin
 //   Emulators/melonds/data       cheats (.mch) + per-game session journal
@@ -104,7 +104,7 @@ const HOTKEY_NAMES = {
   volumeDown: 'HK_VolumeDown',
 } as const;
 
-/** DS-specific single-button hotkeys OmniDeck adds when the button is free. */
+/** DS-specific single-button hotkeys OmniPC adds when the button is free. */
 const DS_EXTRA_HOTKEYS: [string, UniversalButton][] = [['HK_SwapScreens', 'R3'], ['HK_Mic', 'L3']];
 
 const KNOWN_FLAGS = new Set(['-f', '--fullscreen']);
@@ -417,7 +417,7 @@ export class MelonDsAdapter implements EmulatorAdapter {
   async buildLaunch(target: LaunchTarget, executable: string, settings: EmulatorSettings, profile: GameProfile | null, _version: string | null): Promise<LaunchCommand> {
     const args: string[] = [];
     if (settings.fullscreen) args.push('--fullscreen');
-    const notes: string[] = ['melonDS has no exit hotkey: close the window (Alt+F4) or stop the game from OmniDeck to return.'];
+    const notes: string[] = ['melonDS has no exit hotkey: close the window (Alt+F4) or stop the game from OmniPC to return.'];
     let prepare: LaunchCommand['prepare'];
     let cleanup: LaunchCommand['cleanup'];
     const overrides = profile ? this.profileOverrides(settings, profile) : [];
@@ -501,13 +501,13 @@ export class MelonDsAdapter implements EmulatorAdapter {
         id: 'melonds.opengl', checkId: 'melonds.gpu', category: 'emulators', severity: 'warning', title: 'No OpenGL driver for melonDS',
         detail: 'melonDS\'s upscaling renderers need OpenGL (3.2, or 4.3 for the compute renderer). Without it melonDS falls back to the software renderer at native resolution.',
         subject, evidence: hw.graphicsApis.notes, confidence: 'medium', repair: null,
-        manualSteps: ['Install the latest graphics driver from your GPU vendor.', 'Or pick the Software renderer for melonDS in OmniDeck.'],
+        manualSteps: ['Install the latest graphics driver from your GPU vendor.', 'Or pick the Software renderer for melonDS in OmniPC.'],
       });
     }
     if (hw && hw.isWindows === false) {
       out.push({
         id: 'melonds.platform', checkId: 'melonds.platform', category: 'emulators', severity: 'warning', title: 'melonDS Windows build on a non-Windows system',
-        detail: 'OmniDeck installs the Windows build of melonDS.', subject, evidence: [], confidence: 'high', repair: null, manualSteps: [],
+        detail: 'OmniPC installs the Windows build of melonDS.', subject, evidence: [], confidence: 'high', repair: null, manualSteps: [],
       });
     }
     return out;
@@ -541,7 +541,7 @@ export class MelonDsAdapter implements EmulatorAdapter {
       status, files,
       note: all
         ? 'melonDS uses these dumps (external BIOS mode). melonDS writes firmware user settings (e.g. Wi-Fi) back into firmware.bin.'
-        : 'Optional: melonDS runs games with its built-in FreeBIOS. For best compatibility (and Wi-Fi), place bios7.bin (16 KB), bios9.bin (4 KB) and firmware.bin (128/256/512 KB) dumped from your own DS here; OmniDeck enables external BIOS mode only when all three are valid. OmniDeck never downloads BIOS files.',
+        : 'Optional: melonDS runs games with its built-in FreeBIOS. For best compatibility (and Wi-Fi), place bios7.bin (16 KB), bios9.bin (4 KB) and firmware.bin (128/256/512 KB) dumped from your own DS here; OmniPC enables external BIOS mode only when all three are valid. OmniPC never downloads BIOS files.',
     }];
   }
 

@@ -36,7 +36,7 @@ export function excerpt(text: string, maxLines = 40): string {
   return picked.join('\n');
 }
 
-/** Replaces the user's home folder and user name in text sent outside OmniDeck. */
+/** Replaces the user's home folder and user name in text sent outside OmniPC. */
 export function redactPaths(text: string, extra: string[] = []): { text: string; redactions: string[] } {
   const redactions: string[] = [];
   let out = text;

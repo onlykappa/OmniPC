@@ -64,7 +64,7 @@ export interface ConfigWriteResult {
 
 export interface ConfigInspection {
   files: { label: string; path: string; exists: boolean; parseOk: boolean; issues: string[] }[];
-  /** Managed values that differ from what OmniDeck expects (paths, folders). */
+  /** Managed values that differ from what OmniPC expects (paths, folders). */
   drift: { file: string; key: string; expected: string; actual: string | null; critical: boolean }[];
 }
 
@@ -82,7 +82,7 @@ export interface ConfigInput {
 }
 
 export interface AdapterCapabilities {
-  /** native = emulator supports per-game override files/args; session = OmniDeck applies and restores; none */
+  /** native = emulator supports per-game override files/args; session = OmniPC applies and restores; none */
   perGameProfiles: 'native' | 'session' | 'none';
   frameLimit: boolean;
   vsync: boolean;
@@ -104,9 +104,9 @@ export interface EmulatorAdapter {
   renderers(hw: HardwareProfile | null): RendererOption[];
   defaultSettings(hw: HardwareProfile | null, preset: PerformancePreset): EmulatorSettings;
 
-  /** Files OmniDeck may modify; these are snapshotted before every change. */
+  /** Files OmniPC may modify; these are snapshotted before every change. */
   configTargets(): BackupTarget[];
-  /** Creates folders and writes OmniDeck-managed settings (merging with user settings). */
+  /** Creates folders and writes OmniPC-managed settings (merging with user settings). */
   applyConfig(input: ConfigInput, scope: 'all' | 'controller' | 'graphics' | 'paths'): Promise<ConfigWriteResult>;
   inspectConfig(): Promise<ConfigInspection>;
 

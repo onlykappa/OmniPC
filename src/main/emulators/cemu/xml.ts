@@ -1,6 +1,6 @@
 // Minimal order-preserving XML document model for Cemu's settings.xml and
 // controller profiles. Cemu reads them with tinyxml2 / pugixml and rewrites
-// settings.xml itself on exit, so OmniDeck only needs element/text/attribute
+// settings.xml itself on exit, so OmniPC only needs element/text/attribute
 // round-tripping: unknown elements, attributes and comments are preserved, and
 // the output mirrors tinyxml2's default printer (4-space indent, <a/> for empty).
 

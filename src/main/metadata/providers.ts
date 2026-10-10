@@ -168,7 +168,7 @@ export const theGamesDbProvider: MetadataProvider = {
     url.searchParams.set('filter[platform]', String(platform));
     url.searchParams.set('fields', 'overview,players,rating');
     url.searchParams.set('include', 'boxart');
-    const r = await env.fetchImpl(url, { headers: { 'User-Agent': 'OmniDeck-PC' } });
+    const r = await env.fetchImpl(url, { headers: { 'User-Agent': 'OmniPC-PC' } });
     if (!r.ok) throw new Error(`TheGamesDB HTTP ${r.status}`);
     const body = (await r.json()) as TgdbResponse;
     const games = body.data?.games ?? [];

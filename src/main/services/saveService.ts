@@ -1,5 +1,5 @@
 // Save manager: shows save locations and makes ZIP backups. Restores always
-// back up the current saves first. OmniDeck never deletes save data.
+// back up the current saves first. OmniPC never deletes save data.
 
 import { createWriteStream, existsSync } from 'node:fs';
 import { mkdir, readdir, stat, writeFile } from 'node:fs/promises';
@@ -95,7 +95,7 @@ export class SaveService {
     if (!existsSync(file)) throw new OmniFailure({ code: 'BAD_BACKUP', whatHappened: 'Backup not found.' });
     const entries = await readZip(file);
     const manifestEntry = entries.get('omnideck-save-backup.json');
-    if (!manifestEntry) throw new OmniFailure({ code: 'BAD_BACKUP', whatHappened: 'This file is not an OmniDeck save backup.' });
+    if (!manifestEntry) throw new OmniFailure({ code: 'BAD_BACKUP', whatHappened: 'This file is not an OmniPC save backup.' });
     const manifest = JSON.parse(manifestEntry.toString('utf8')) as { emulatorId: string; locations: { index: number; path: string }[] };
     const safety = await this.backup(manifest.emulatorId, 'pre-restore');
     const targets: string[] = [];

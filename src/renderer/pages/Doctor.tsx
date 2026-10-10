@@ -101,7 +101,7 @@ function ExportModal(props: { onClose: () => void }) {
   return (
     <Modal onClose={props.onClose}>
       <h2>Export diagnostic package</h2>
-      <p className="muted">Creates a ZIP with OmniDeck logs, the latest health report, repair history and system summary. Your user folder path and Windows user name are redacted.</p>
+      <p className="muted">Creates a ZIP with OmniPC logs, the latest health report, repair history and system summary. Your user folder path and Windows user name are redacted.</p>
       <p><strong>Never included:</strong> games/ROMs, BIOS & firmware, keys, saves, personal documents.</p>
       <label className="row"><input type="checkbox" checked={logs} onChange={(e) => setLogs(e.target.checked)} /> Include emulator logs (may mention game titles)</label>
       <label className="row"><input type="checkbox" checked={configs} onChange={(e) => setConfigs(e.target.checked)} /> Include emulator configuration files</label>
@@ -141,7 +141,7 @@ export function RepairHistoryPage() {
   const toast = useStore((s) => s.toast);
   return (
     <div className="page">
-      <div className="page-head"><div><h1>Repair history</h1><p>Every repair OmniDeck performed, automatic or approved, with details and undo where possible.</p></div><Button onClick={() => navigate('/doctor')}>Back</Button></div>
+      <div className="page-head"><div><h1>Repair history</h1><p>Every repair OmniPC performed, automatic or approved, with details and undo where possible.</p></div><Button onClick={() => navigate('/doctor')}>Back</Button></div>
       {!data ? <Spinner /> : data.length === 0 ? <Empty title="No repairs yet" /> : (
         <Panel>
           {data.map((r) => (

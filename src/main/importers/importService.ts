@@ -73,7 +73,7 @@ export class ImportService {
         `BIOS: ${biosDir && existsSync(biosDir) ? biosDir : 'not found'}`,
         `PCSX2 data: ${existsSync(pcsx2Dir) ? pcsx2Dir : 'not installed'}`,
         `Dolphin data: ${existsSync(dolphinUser) ? dolphinUser : 'not installed'}`,
-        'OmniDeck copies what you select; your EmuDeck setup is not modified.',
+        'OmniPC copies what you select; your EmuDeck setup is not modified.',
       ],
       importable: { settings: false, saves: existsSync(pcsx2Dir) || existsSync(dolphinUser), bios: !!biosDir && existsSync(biosDir), romPaths: !!roms && existsSync(roms), useInstallation: false },
       romPaths: roms && existsSync(roms) ? [roms] : [],
@@ -156,13 +156,13 @@ export class ImportService {
     for (const [from, to, label] of copies) {
       if (!existsSync(from)) continue;
       const n = await copyTree(from, to, true);
-      out.push(`${label}: ${n} file(s) copied (existing OmniDeck files were not overwritten)`);
+      out.push(`${label}: ${n} file(s) copied (existing OmniPC files were not overwritten)`);
     }
     return out.length ? out : ['No saves found to import'];
   }
 
   private async importSettings(c: SetupImportCandidate): Promise<string[]> {
-    // Only graphics-level preferences are imported; OmniDeck keeps managing paths/controllers.
+    // Only graphics-level preferences are imported; OmniPC keeps managing paths/controllers.
     if (c.source === 'pcsx2') {
       const doc = await loadIni(join(c.path, 'inis', 'PCSX2.ini'));
       const scale = Number(doc.get('EmuCore/GS', 'upscale_multiplier'));

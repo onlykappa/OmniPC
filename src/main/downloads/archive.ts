@@ -31,7 +31,7 @@ export async function extractArchive(archivePath: string, dest: string): Promise
   const lower = archivePath.toLowerCase();
   if (lower.endsWith('.zip')) return extractZip(archivePath, dest);
   if (lower.endsWith('.7z')) return extract7z(archivePath, dest);
-  throw new OmniFailure({ code: 'UNSUPPORTED_ARCHIVE', whatHappened: `OmniDeck cannot extract ${archivePath}: unsupported archive type.` });
+  throw new OmniFailure({ code: 'UNSUPPORTED_ARCHIVE', whatHappened: `OmniPC cannot extract ${archivePath}: unsupported archive type.` });
 }
 
 function extractZip(archivePath: string, dest: string): Promise<{ files: number }> {

@@ -251,7 +251,7 @@ describe('xemu adapter', () => {
     expect((await a.validateEnvironment(null, join(appDir, 'xemu.exe'))).some((x) => x.id === 'xemu.portable')).toBe(true);
     expect(a.persistentAppPaths()).toContain('xemu.toml');
     expect(await a.prepareInstall(appDir)).toEqual([]);
-    expect(existsSync(join(p.data, 'README-OmniDeck.txt'))).toBe(true);
+    expect(existsSync(join(p.data, 'README-OmniPC.txt'))).toBe(true);
     expect(a.defaultSettings(null, 'balanced').renderer).toBe('opengl');
     expect(a.manifest.implemented).toBe(true);
   });

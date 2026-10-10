@@ -41,7 +41,7 @@
     }
   ],
   "notes": [
-    "OmniDeck launches Dolphin with -b (batch) so stopping emulation exits back to OmniDeck.",
+    "OmniPC launches Dolphin with -b (batch) so stopping emulation exits back to OmniPC.",
     "Dolphin's User folder is kept outside the program folder (-u) so updates and rollbacks never touch settings or saves."
   ],
   "assumptions": [

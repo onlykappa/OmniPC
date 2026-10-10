@@ -17,7 +17,7 @@ export function EmulatorsPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <div><h1>Emulators</h1><p>Installed, configured and kept healthy by OmniDeck. You rarely need to open them directly.</p></div>
+        <div><h1>Emulators</h1><p>Installed, configured and kept healthy by OmniPC. You rarely need to open them directly.</p></div>
         <div className="row"><Button onClick={() => navigate('/bios')}>BIOS & Firmware</Button><Button busy={checking} onClick={() => void check()}>Check for updates</Button></div>
       </div>
       {updates.length > 0 && (

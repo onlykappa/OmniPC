@@ -239,9 +239,9 @@ export class XemuAdapter implements EmulatorAdapter {
       };
     };
     const all = [
-      entry('mcpx', 'Xbox MCPX boot ROM', `Place the 512-byte MCPX boot ROM dumped from your own Xbox (e.g. mcpx_1.0.bin) in ${dir}. OmniDeck never downloads it.`, 'The file in this folder is not 512 bytes, so xemu rejects it ("Invalid BootROM file").', (f) => `Using ${basename(f.path)}.`),
-      entry('flash', 'Xbox flash BIOS', `Place the flash BIOS image (256 KB or 1 MB .bin) dumped from your own Xbox in ${dir}. OmniDeck never downloads it.`, 'The .bin file in this folder is not a valid flash image size (a multiple of 64 KB, normally 256 KB or 1 MB).', (f) => `Using ${basename(f.path)}.`),
-      entry('hdd', 'Xbox hard disk image', `Place your own xemu hard disk image (.qcow2) in ${dir}. It holds the dashboard and your game saves. OmniDeck never downloads it.`, 'The hard disk file in this folder is not a qcow2 image (it must start with the "QFI\\xfb" header).', (f) => `Using ${basename(f.path)}. Your game saves and xemu snapshots live inside this image: back it up.`),
+      entry('mcpx', 'Xbox MCPX boot ROM', `Place the 512-byte MCPX boot ROM dumped from your own Xbox (e.g. mcpx_1.0.bin) in ${dir}. OmniPC never downloads it.`, 'The file in this folder is not 512 bytes, so xemu rejects it ("Invalid BootROM file").', (f) => `Using ${basename(f.path)}.`),
+      entry('flash', 'Xbox flash BIOS', `Place the flash BIOS image (256 KB or 1 MB .bin) dumped from your own Xbox in ${dir}. OmniPC never downloads it.`, 'The .bin file in this folder is not a valid flash image size (a multiple of 64 KB, normally 256 KB or 1 MB).', (f) => `Using ${basename(f.path)}.`),
+      entry('hdd', 'Xbox hard disk image', `Place your own xemu hard disk image (.qcow2) in ${dir}. It holds the dashboard and your game saves. OmniPC never downloads it.`, 'The hard disk file in this folder is not a qcow2 image (it must start with the "QFI\\xfb" header).', (f) => `Using ${basename(f.path)}. Your game saves and xemu snapshots live inside this image: back it up.`),
     ];
     // The launch preflight checks the first entry for the system, so a missing or invalid file is listed first.
     return all.sort((a, b) => Number(a.status === 'found') - Number(b.status === 'found'));
@@ -251,7 +251,7 @@ export class XemuAdapter implements EmulatorAdapter {
   // Configuration
   // -------------------------------------------------------------------------
 
-  /** Keys that keep launches non-interactive and paths that point into OmniDeck folders. */
+  /** Keys that keep launches non-interactive and paths that point into OmniPC folders. */
   async pathValues(): Promise<Managed[]> {
     const files = await this.systemFiles();
     const v: Managed[] = [
@@ -361,7 +361,7 @@ export class XemuAdapter implements EmulatorAdapter {
     // The deprecated global allow_vibration=false disables rumble on every controller at load (xemu-settings.cc).
     if (rumble && doc.get(['input', 'allow_vibration']) === false && doc.set(['input', 'allow_vibration'], true)) changed.push('xemu.toml: input.allow_vibration = true');
     if (doc.hasArrayTables(['input', 'gamepad_mappings'])) {
-      notes.push('xemu.toml lists controllers as [[input.gamepad_mappings]] sections; OmniDeck leaves those hand-edited entries unchanged.');
+      notes.push('xemu.toml lists controllers as [[input.gamepad_mappings]] sections; OmniPC leaves those hand-edited entries unchanged.');
       return;
     }
     const current = doc.get(['input', 'gamepad_mappings']);
@@ -382,11 +382,11 @@ export class XemuAdapter implements EmulatorAdapter {
       return e;
     });
     if (list.length && doc.set(['input', 'gamepad_mappings'], next)) changed.push(`xemu.toml: input.gamepad_mappings (${list.length} controller${list.length === 1 ? '' : 's'})`);
-    if (input.controller.deviceIndex > 0) notes.push('xemu binds controllers to ports itself (the first connected controller goes to port 1); OmniDeck cannot pick a specific device.');
+    if (input.controller.deviceIndex > 0) notes.push('xemu binds controllers to ports itself (the first connected controller goes to port 1); OmniPC cannot pick a specific device.');
     notes.push('xemu has no stick deadzone setting; the profile deadzone is not applied.');
     const menu = input.hotkeys.bindings.menu;
     if (!(menu === 'Guide' || (input.hotkeys.modifier === 'Select' && menu === 'Start') || (input.hotkeys.modifier === 'Start' && menu === 'Select'))) {
-      notes.push('xemu\'s menu opens with Guide or Back+Start; it cannot be remapped to the OmniDeck menu hotkey.');
+      notes.push('xemu\'s menu opens with Guide or Back+Start; it cannot be remapped to the OmniPC menu hotkey.');
     }
   }
 
@@ -543,7 +543,7 @@ export class XemuAdapter implements EmulatorAdapter {
     if (executable && existsSync(join(dirname(executable), 'xemu.toml'))) {
       out.push({
         id: 'xemu.portable', checkId: 'xemu.paths', category: 'emulators', severity: 'info', title: 'xemu.toml next to xemu.exe (portable mode)',
-        detail: 'A xemu.toml next to xemu.exe switches xemu to portable mode: its shader cache moves into the program folder. OmniDeck always passes its own xemu.toml with -config_path, so your settings are not affected.', subject,
+        detail: 'A xemu.toml next to xemu.exe switches xemu to portable mode: its shader cache moves into the program folder. OmniPC always passes its own xemu.toml with -config_path, so your settings are not affected.', subject,
         evidence: [join(dirname(executable), 'xemu.toml')], confidence: 'high', repair: null, manualSteps: [],
       });
     }
@@ -615,7 +615,7 @@ export class XemuAdapter implements EmulatorAdapter {
 
   async prepareInstall(_appDir: string): Promise<string[]> {
     await mkdir(this.paths().data, { recursive: true });
-    await writeFile(join(this.paths().data, 'README-OmniDeck.txt'), 'This folder holds xemu.toml, which OmniDeck passes to xemu with -config_path, and xemu.log. The MCPX boot ROM, flash BIOS and hard disk image live in the OmniDeck BIOS\\xbox folder; eeprom.bin lives in Saves\\xemu.\r\n');
+    await writeFile(join(this.paths().data, 'README-OmniPC.txt'), 'This folder holds xemu.toml, which OmniPC passes to xemu with -config_path, and xemu.log. The MCPX boot ROM, flash BIOS and hard disk image live in the OmniPC BIOS\\xbox folder; eeprom.bin lives in Saves\\xemu.\r\n');
     return [];
   }
 

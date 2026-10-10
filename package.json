@@ -1,12 +1,12 @@
 {
   "name": "omnideck-pc",
-  "productName": "OmniDeck PC",
+  "productName": "OmniPC",
   "version": "1.0.0",
   "description": "Unified Windows emulation platform: one place to install, configure, launch, diagnose and repair your emulators.",
   "main": "dist/main/index.js",
   "license": "MIT",
   "private": true,
-  "author": "OmniDeck PC contributors",
+  "author": "OmniPC contributors",
   "engines": {
     "node": ">=22"
   },

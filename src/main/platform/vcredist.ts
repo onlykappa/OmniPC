@@ -1,7 +1,7 @@
 // Installs the Microsoft Visual C++ runtime. The installer is downloaded only
 // from Microsoft's official aka.ms link, its Authenticode signature must be
 // valid and issued to Microsoft Corporation, and Windows' own UAC prompt asks
-// for administrator permission (the only OmniDeck operation that elevates).
+// for administrator permission (the only OmniPC operation that elevates).
 
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -18,7 +18,7 @@ export async function installVcRedist(downloadDir: string, fetchImpl: typeof fet
   let res: Response | null = null;
   for (let hop = 0; hop < 6; hop++) {
     if (!hostAllowed(url, HOSTS)) throw new OmniFailure({ code: 'UNTRUSTED_REDIRECT', whatHappened: 'The Microsoft download link redirected to an unexpected host; installation was stopped.', detected: [url] });
-    res = await fetchImpl(url, { redirect: 'manual', headers: { 'User-Agent': 'OmniDeck-PC' } });
+    res = await fetchImpl(url, { redirect: 'manual', headers: { 'User-Agent': 'OmniPC-PC' } });
     const loc = res.headers.get('location');
     if (res.status >= 300 && res.status < 400 && loc) {
       url = new globalThis.URL(loc, url).toString();
@@ -34,7 +34,7 @@ export async function installVcRedist(downloadDir: string, fetchImpl: typeof fet
     const p = exe.replace(/'/g, "''");
     const sig = await powershellJson<{ Status: number | string; Subject: string }>(`$s = Get-AuthenticodeSignature -LiteralPath '${p}'; [pscustomobject]@{ Status = [string]$s.Status; Subject = $s.SignerCertificate.Subject } | ConvertTo-Json -Compress`);
     if (!sig || String(sig.Status) !== 'Valid' || !/O=Microsoft Corporation/i.test(sig.Subject ?? '')) {
-      throw new OmniFailure({ code: 'SIGNATURE_INVALID', whatHappened: 'The downloaded runtime installer is not validly signed by Microsoft, so OmniDeck did not run it.', detected: [`Signature status: ${sig?.Status ?? 'unknown'}`, `Signer: ${sig?.Subject ?? 'none'}`] });
+      throw new OmniFailure({ code: 'SIGNATURE_INVALID', whatHappened: 'The downloaded runtime installer is not validly signed by Microsoft, so OmniPC did not run it.', detected: [`Signature status: ${sig?.Status ?? 'unknown'}`, `Signer: ${sig?.Subject ?? 'none'}`] });
     }
     const run = await powershellJson<{ ExitCode: number }>(`$p = Start-Process -FilePath '${p}' -ArgumentList '/install','/quiet','/norestart' -Verb RunAs -Wait -PassThru; [pscustomobject]@{ ExitCode = $p.ExitCode } | ConvertTo-Json -Compress`, 600000);
     if (!run) throw new OmniFailure({ code: 'ELEVATION_DECLINED', whatHappened: 'The installer did not run. Administrator permission may have been declined.' });

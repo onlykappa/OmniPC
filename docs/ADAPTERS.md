@@ -51,7 +51,7 @@ has -datapath, -logfile, -testconfig".
 | `buildLaunch(...)` | Return command/args (never a shell string), optional `prepare`/`cleanup`, and the log file to analyse |
 | `smokeTest(exe)` | Prove the executable starts without a game (e.g. `-testconfig`, `--version`) |
 | `biosStatus()`, `saveLocations()`, `cacheDirs()` | |
-| `recoverSession()` | Undo anything `prepare()` changed if OmniDeck was closed mid-session |
+| `recoverSession()` | Undo anything `prepare()` changed if OmniPC was closed mid-session |
 | `detectExistingSetups()` | Power "Import existing setup" |
 
 Use `controllers/translate.ts` (`physicalFor`, `hotkeyChords`) so the universal profile and

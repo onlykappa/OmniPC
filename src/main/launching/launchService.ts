@@ -42,7 +42,7 @@ export interface LaunchDeps {
   bios: BiosService;
   notifications: NotificationService;
   bus: EventBus;
-  /** UI hooks (minimise/restore the OmniDeck window). */
+  /** UI hooks (minimise/restore the OmniPC window). */
   onSessionStart?: (s: ActiveSession) => void;
   onSessionEnd?: (s: ActiveSession) => void;
   spawnImpl?: typeof spawn;
@@ -91,16 +91,16 @@ export class LaunchService {
     const sys = getSystem(game.system_id);
 
     if (game.availability === 'drive_unavailable') {
-      return { ok: false, launchId: null, error: omniError('DRIVE_UNAVAILABLE', 'Game drive unavailable.', { detected: [`${game.title} is stored on a drive that is not connected.`], userAction: ['Reconnect the drive. OmniDeck restores the game automatically, even if Windows assigns a different drive letter.'], omniCanFix: { actionId: 'library.remapPaths', label: 'Look for the drive again', safety: 'safe', params: {}, description: 'Re-checks connected drives.' } }) };
+      return { ok: false, launchId: null, error: omniError('DRIVE_UNAVAILABLE', 'Game drive unavailable.', { detected: [`${game.title} is stored on a drive that is not connected.`], userAction: ['Reconnect the drive. OmniPC restores the game automatically, even if Windows assigns a different drive letter.'], omniCanFix: { actionId: 'library.remapPaths', label: 'Look for the drive again', safety: 'safe', params: {}, description: 'Re-checks connected drives.' } }) };
     }
     if (game.crash_loop_paused && !opts.ignoreCrashLoop) {
-      return { ok: false, launchId: null, blockedByCrashLoop: true, error: omniError('CRASH_LOOP', `${game.title} has failed ${game.consecutive_failures} times in a row.`, { detected: ['OmniDeck paused automatic launching to prevent a crash loop.'], userAction: ['Review the diagnosis, then choose "Try again anyway" or change the game settings.'] }) };
+      return { ok: false, launchId: null, blockedByCrashLoop: true, error: omniError('CRASH_LOOP', `${game.title} has failed ${game.consecutive_failures} times in a row.`, { detected: ['OmniPC paused automatic launching to prevent a crash loop.'], userAction: ['Review the diagnosis, then choose "Try again anyway" or change the game settings.'] }) };
     }
 
     const { adapter, reason } = this.routeEmulator(gameId);
     if (!adapter) return { ok: false, launchId: null, error: omniError('NO_EMULATOR', `No emulator supports ${sys?.name ?? game.system_id}.`) };
     if (!adapter.manifest.implemented) {
-      return { ok: false, launchId: null, error: omniError('ADAPTER_PLANNED', `${sys?.name} games need ${adapter.manifest.name}, whose OmniDeck integration is not implemented yet.`, { userAction: [adapter.manifest.plannedNote ?? 'Watch for an OmniDeck update.'] }) };
+      return { ok: false, launchId: null, error: omniError('ADAPTER_PLANNED', `${sys?.name} games need ${adapter.manifest.name}, whose OmniPC integration is not implemented yet.`, { userAction: [adapter.manifest.plannedNote ?? 'Watch for an OmniPC update.'] }) };
     }
     const emuId = adapter.manifest.id;
     if (!this.d.emulators.isInstalled(emuId)) {
@@ -134,7 +134,7 @@ export class LaunchService {
     try {
       cmd = await adapter.buildLaunch({ gameId, path: file.path, systemId: game.system_id, serial: game.serial, title: game.title }, exe, settings, profile, version);
     } catch (err) {
-      const f = OmniFailure.wrap(err, 'LAUNCH_BUILD_FAILED', 'OmniDeck could not prepare the launch command.');
+      const f = OmniFailure.wrap(err, 'LAUNCH_BUILD_FAILED', 'OmniPC could not prepare the launch command.');
       return { ok: false, launchId: null, error: f.detail };
     }
     const custom = this.d.emuRepo.getCustom(emuId);
@@ -255,7 +255,7 @@ export class LaunchService {
     this.d.library.setFailureState(gameId, n, pause);
     this.d.ops.addChange('launch.failed', rec.emulatorId, `${game.title} ${rec.outcome.replace('_', ' ')} (exit ${rec.exitCode ?? '?'})`);
     if (pause && !game.crash_loop_paused) {
-      this.d.notifications.add('warning', `${game.title} paused`, `It failed ${n} times in a row. OmniDeck paused automatic launching to prevent a crash loop.`, { link: `/game/${gameId}` });
+      this.d.notifications.add('warning', `${game.title} paused`, `It failed ${n} times in a row. OmniPC paused automatic launching to prevent a crash loop.`, { link: `/game/${gameId}` });
     }
   }
 

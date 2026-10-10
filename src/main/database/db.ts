@@ -1,5 +1,5 @@
 // SQLite access with integrity checking, migrations, rotating backups and
-// automatic recovery. If the database is damaged OmniDeck restores the newest
+// automatic recovery. If the database is damaged OmniPC restores the newest
 // healthy backup; if none exists it starts fresh and rescans. Game files are
 // never touched by any of this: they remain ordinary user-owned files.
 

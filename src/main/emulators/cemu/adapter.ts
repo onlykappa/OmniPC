@@ -3,7 +3,7 @@
 // packs, shader caches and (by default) mlc01 in %APPDATA%\Cemu, unless a
 // folder named "portable" exists next to Cemu.exe, in which case all of that
 // lives in <exe dir>\portable (src/gui/wxgui/CemuApp.cpp DeterminePaths).
-// There is no CLI option for the config/user-data folder, so OmniDeck uses
+// There is no CLI option for the config/user-data folder, so OmniPC uses
 // portable mode and redirects the only relocatable data folder, mlc01 (the
 // emulated NAND with saves, installed updates and DLC), via settings.xml
 // <mlc_path>. Layout:
@@ -89,7 +89,7 @@ const HOTKEYS = {
   fullscreen: { name: 'ToggleFullscreen', keyboard: 350 }, // WXK_F11
 } as const;
 
-/** Options Cemu's boost::program_options parser knows that OmniDeck must own (LaunchSettings::HandleCommandline). */
+/** Options Cemu's boost::program_options parser knows that OmniPC must own (LaunchSettings::HandleCommandline). */
 const RESERVED_WITH_VALUE = new Set(['g', 'game', 't', 'title-id', 'm', 'mlc', 'e', 'extract', 'p', 'path', 'o', 'output']);
 const RESERVED_FLAGS = new Set(['h', 'help', 'v', 'version', 'f', 'fullscreen']);
 
@@ -250,7 +250,7 @@ export class CemuAdapter implements EmulatorAdapter {
         set(['Hotkeys', h.name], hotkeyValue(getText(root, ['Hotkeys', h.name]), h.keyboard, modifier === null ? -1 : id ?? -1));
       }
       if (await this.writeControllerProfile(input, api)) changed.push(`controllerProfiles/controller0.xml (${api.api} ${api.uuid})`);
-      if (api.api === 'XInput') notes.push(`Wii U GamePad mapped to XInput controller ${api.uuid}. Non-XInput pads (e.g. DualSense) can be assigned in Cemu's Input settings; OmniDeck then keeps that SDL device and only updates the button mapping.`);
+      if (api.api === 'XInput') notes.push(`Wii U GamePad mapped to XInput controller ${api.uuid}. Non-XInput pads (e.g. DualSense) can be assigned in Cemu's Input settings; OmniPC then keeps that SDL device and only updates the button mapping.`);
     }
     // The getting-started wizard runs whenever settings.xml is missing (CemuApp::OnInit isFirstStart),
     // so the file is always written, even for a controller-only change.
@@ -263,7 +263,7 @@ export class CemuAdapter implements EmulatorAdapter {
 
   /**
    * Cemu identifies SDL pads by their GUID ("<n>_<guid>", ControllerFactory::CreateController),
-   * which OmniDeck cannot know in advance; XInput pads are identified by slot ("0".."3").
+   * which OmniPC cannot know in advance; XInput pads are identified by slot ("0".."3").
    * If the user already picked an SDL pad in Cemu, keep it; otherwise use XInput.
    */
   async controllerApi(deviceIndex: number): Promise<ControllerApi> {
@@ -330,7 +330,7 @@ export class CemuAdapter implements EmulatorAdapter {
       const existing = existsSync(dst) ? await readFile(dst, 'utf8').catch(() => '') : '';
       const extra = parseKeys(existing).keys.filter((k) => !parsed.keys.includes(k) && k !== EXAMPLE_KEY);
       let out = parsed.sanitized;
-      if (extra.length) out += `${out.endsWith('\n') ? '' : '\r\n'}# keys that were only in Cemu's own keys.txt (kept by OmniDeck)\r\n${extra.join('\r\n')}\r\n`;
+      if (extra.length) out += `${out.endsWith('\n') ? '' : '\r\n'}# keys that were only in Cemu's own keys.txt (kept by OmniPC)\r\n${extra.join('\r\n')}\r\n`;
       if (out !== existing) {
         await atomicWrite(dst, out);
         changed.push(`keys.txt (${parsed.keys.length} keys from ${src})`);
@@ -386,7 +386,7 @@ export class CemuAdapter implements EmulatorAdapter {
     return { files, drift };
   }
 
-  /** Drops options OmniDeck controls; boost would reject a repeated option and exit. Unknown options are ignored by Cemu (allow_unregistered). */
+  /** Drops options OmniPC controls; boost would reject a repeated option and exit. Unknown options are ignored by Cemu (allow_unregistered). */
   sanitizeCustomArgs(raw: string): { args: string[]; dropped: string[] } {
     const args: string[] = [];
     const dropped: string[] = [];
@@ -412,7 +412,7 @@ export class CemuAdapter implements EmulatorAdapter {
     if (profile?.customArgs) {
       const { args: extra, dropped } = this.sanitizeCustomArgs(profile.customArgs);
       args.push(...extra);
-      if (dropped.length) notes.push(`Ignored custom arguments OmniDeck controls (game path, mlc path, fullscreen, version/help/extract): ${dropped.join(' ')}`);
+      if (dropped.length) notes.push(`Ignored custom arguments OmniPC controls (game path, mlc path, fullscreen, version/help/extract): ${dropped.join(' ')}`);
     }
     // -g quick-launches the game without the game list; closing the window exits Cemu (MainWindow ctor).
     args.push('-g', target.path);
@@ -521,7 +521,7 @@ export class CemuAdapter implements EmulatorAdapter {
     if (hw && hw.isWindows === false) {
       out.push({
         id: 'cemu.platform', checkId: 'cemu.platform', category: 'emulators', severity: 'warning', title: 'Cemu Windows build on a non-Windows system',
-        detail: 'OmniDeck installs the Windows build of Cemu.', subject: { kind: 'emulator', id: 'cemu', label: 'Cemu' },
+        detail: 'OmniPC installs the Windows build of Cemu.', subject: { kind: 'emulator', id: 'cemu', label: 'Cemu' },
         evidence: [], confidence: 'high', repair: null, manualSteps: [],
       });
     }
@@ -545,7 +545,7 @@ export class CemuAdapter implements EmulatorAdapter {
     const keysFile = join(dir, 'keys.txt');
     const files: BiosStatus['files'] = [];
     let status: BiosStatus['status'] = 'missing';
-    let note = 'Only needed for encrypted disc images (.wud/.wux). Put a keys.txt with the disc keys dumped from your own Wii U/games (one 32-digit hex key per line) in this folder. Decrypted dumps (.wua, .rpx folders, .wuhb) need no keys. OmniDeck never downloads keys.';
+    let note = 'Only needed for encrypted disc images (.wud/.wux). Put a keys.txt with the disc keys dumped from your own Wii U/games (one 32-digit hex key per line) in this folder. Decrypted dumps (.wua, .rpx folders, .wuhb) need no keys. OmniPC never downloads keys.';
     const st = await stat(keysFile).catch(() => null);
     if (st?.isFile()) {
       const parsed = parseKeys(await readFile(keysFile, 'utf8'));
@@ -557,7 +557,7 @@ export class CemuAdapter implements EmulatorAdapter {
           ? `${parsed.keys.length} key(s)${parsed.invalidLines.length ? `; invalid line(s) ${parsed.invalidLines.join(', ')} are ignored` : ''}`
           : 'No 32-digit hex keys found',
       });
-      note = valid ? 'OmniDeck copies keys.txt into Cemu\'s folder before every launch. Cemu picks the matching key automatically.' : 'keys.txt must contain one 32-digit hex key per line (text after # is a comment).';
+      note = valid ? 'OmniPC copies keys.txt into Cemu\'s folder before every launch. Cemu picks the matching key automatically.' : 'keys.txt must contain one 32-digit hex key per line (text after # is a comment).';
     }
     for (const [name, size] of [['otp.bin', 1024], ['seeprom.bin', 512]] as const) {
       const f = join(dir, name);
@@ -627,7 +627,7 @@ export class CemuAdapter implements EmulatorAdapter {
     const dir = join(appDir, 'portable');
     if (existsSync(dir)) return [];
     await mkdir(dir, { recursive: true });
-    return ['Enabled Cemu portable mode (portable folder) so its settings stay inside the OmniDeck folder.'];
+    return ['Enabled Cemu portable mode (portable folder) so its settings stay inside the OmniPC folder.'];
   }
 
   persistentAppPaths(): string[] {
@@ -684,7 +684,7 @@ export function parseKeys(text: string): { keys: string[]; invalidLines: number[
       return;
     }
     invalidLines.push(idx + 1);
-    out.push(`# ${raw.replace(/[#;]/g, '')} (invalid, disabled by OmniDeck)`);
+    out.push(`# ${raw.replace(/[#;]/g, '')} (invalid, disabled by OmniPC)`);
   });
   let sanitized = out.join('\r\n');
   if (sanitized && !sanitized.endsWith('\n')) sanitized += '\r\n';

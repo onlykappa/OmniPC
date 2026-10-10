@@ -66,7 +66,7 @@ export function startGamepadLoop(actions: PadActions): () => void {
       const was = prev.get(p.index) ?? [];
       const pressed = p.buttons.map((b) => b.pressed);
       const down = (i: number) => pressed[i] && !was[i];
-      // Only react when OmniDeck has focus (the emulator gets input while a game runs).
+      // Only react when OmniPC has focus (the emulator gets input while a game runs).
       if (document.hasFocus()) {
         if (down(0)) (document.activeElement as HTMLElement | null)?.click();
         if (down(1)) actions.back();

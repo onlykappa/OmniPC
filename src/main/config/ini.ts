@@ -1,5 +1,5 @@
 // Order- and comment-preserving INI document. Emulators (PCSX2, Dolphin) use
-// INI; OmniDeck must change individual keys without destroying the user's other
+// INI; OmniPC must change individual keys without destroying the user's other
 // settings, comments or ordering.
 
 export type IniLine =

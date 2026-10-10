@@ -155,7 +155,7 @@ export class EmulatorManager {
   private requireImplemented(id: string): EmulatorAdapter {
     const a = this.d.registry.require(id);
     if (!a.manifest.implemented) {
-      throw new OmniFailure({ code: 'ADAPTER_NOT_IMPLEMENTED', whatHappened: `${a.manifest.name} support is planned but not implemented in this build.`, userAction: ['Watch for an OmniDeck update.'] });
+      throw new OmniFailure({ code: 'ADAPTER_NOT_IMPLEMENTED', whatHappened: `${a.manifest.name} support is planned but not implemented in this build.`, userAction: ['Watch for an OmniPC update.'] });
     }
     return a;
   }
@@ -235,7 +235,7 @@ export class EmulatorManager {
     const p = a.paths();
     const row = this.d.emuRepo.get(id);
     if (row.install_state === 'external' && reason !== 'install') {
-      throw new OmniFailure({ code: 'EXTERNAL_INSTALL', whatHappened: `${a.manifest.name} uses an existing installation that OmniDeck does not manage, so it cannot be updated here.`, userAction: ['Update it with its own updater, or switch to an OmniDeck-managed installation by installing it from the Emulators page.'] });
+      throw new OmniFailure({ code: 'EXTERNAL_INSTALL', whatHappened: `${a.manifest.name} uses an existing installation that OmniPC does not manage, so it cannot be updated here.`, userAction: ['Update it with its own updater, or switch to an OmniPC-managed installation by installing it from the Emulators page.'] });
     }
     ctx.step(`Finding the latest ${a.manifest.name} release`);
     const rel = await this.resolveLatest(id);
@@ -266,7 +266,7 @@ export class EmulatorManager {
       await extractArchive(dl.path, staging);
       const root = await findContentRoot(staging, a.manifest.executable);
       if (!root) {
-        throw new OmniFailure({ code: 'BAD_ARCHIVE_LAYOUT', whatHappened: `The downloaded archive does not contain ${a.manifest.executable}.`, probableCause: 'The upstream package layout changed or the download is not a Windows build.', userAction: ['Check for an OmniDeck update.'] });
+        throw new OmniFailure({ code: 'BAD_ARCHIVE_LAYOUT', whatHappened: `The downloaded archive does not contain ${a.manifest.executable}.`, probableCause: 'The upstream package layout changed or the download is not a Windows build.', userAction: ['Check for an OmniPC update.'] });
       }
       ctx.stepDone();
 
@@ -311,7 +311,7 @@ export class EmulatorManager {
     this.d.emuRepo.saveSettings(id, settings);
     if (custom.customConfigActive && reason !== 'install') {
       await a.applyConfig(this.configInput(id), 'paths');
-      ctx.stepDone('Custom configuration active: only OmniDeck folder paths were updated');
+      ctx.stepDone('Custom configuration active: only OmniPC folder paths were updated');
     } else {
       const res = await a.applyConfig(this.configInput(id), 'all');
       if (res.changed.length) this.d.ops.addChange('config.generated', id, `${a.manifest.name} configuration ${reason === 'install' ? 'created' : 'refreshed'} (${res.changed.length} values)`);
@@ -410,7 +410,7 @@ export class EmulatorManager {
       }
       ctx.step('Backing up configuration');
       await this.d.backups.create(id, 'Before repair', 'pre-repair', a.configTargets());
-      ctx.step('Recreating folders and OmniDeck-managed settings');
+      ctx.step('Recreating folders and OmniPC-managed settings');
       const custom = this.d.emuRepo.getCustom(id);
       const res = await a.applyConfig(this.configInput(id), custom.customConfigActive ? 'paths' : 'all');
       ctx.stepDone(`${res.changed.length} value(s) corrected`);
@@ -502,7 +502,7 @@ export class EmulatorManager {
       const id = a.manifest.id;
       if (!this.isInstalled(id)) continue;
       if (this.d.emuRepo.getCustom(id).customConfigActive && !opts.force) {
-        skipped.push({ emulatorId: id, reason: 'Custom configuration is active; OmniDeck will not overwrite it without permission.' });
+        skipped.push({ emulatorId: id, reason: 'Custom configuration is active; OmniPC will not overwrite it without permission.' });
         continue;
       }
       await this.d.backups.create(id, 'Before controller profile update', 'pre-controller', a.configTargets());

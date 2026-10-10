@@ -75,7 +75,7 @@ const HOTKEY_NAMES = {
 /**
  * PPSSPP's Windows defaults for keyboard (QWERTY) and DirectInput pads
  * (Core/KeyMapDefaults.cpp). KeyMap::LoadFromIni erases the default of every
- * key missing from [ControlMapping], so these are seeded when OmniDeck creates
+ * key missing from [ControlMapping], so these are seeded when OmniPC creates
  * the section to keep the keyboard and DirectInput pads working.
  */
 const SEED_DEFAULTS: Record<string, string[]> = {
@@ -208,7 +208,7 @@ export class PpssppAdapter implements EmulatorAdapter {
   }
 
   /**
-   * Writes installed.txt so PPSSPP uses the OmniDeck memstick instead of
+   * Writes installed.txt so PPSSPP uses the OmniPC memstick instead of
    * <exe>/memstick (Windows/main.cpp InitMemstickDirectory). No line ending:
    * fgets keeps a '\r', which would make the path invalid.
    */

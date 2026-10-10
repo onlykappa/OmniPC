@@ -178,7 +178,7 @@ function SavesTab({ game }: { game: GameDetails }) {
   if (!game.saveLocations.length) return <Empty title="No save locations">Install the emulator for this system to see its save folders.</Empty>;
   return (
     <Panel title="Save data" actions={<Button onClick={async () => { const r = await api('saves.backup', game.saveLocations[0].emulatorId); toast('success', `Backed up ${r.length} save set(s)`); }}>Back up saves</Button>}>
-      <p className="small muted">Emulators store saves per memory card or console NAND, not always per game. These are the folders used for this game's emulator. OmniDeck never deletes save data.</p>
+      <p className="small muted">Emulators store saves per memory card or console NAND, not always per game. These are the folders used for this game's emulator. OmniPC never deletes save data.</p>
       {game.saveLocations.map((s) => (
         <div key={s.path} className="list-item"><div className="grow"><div>{s.label}</div><div className="mono tiny faint">{s.path}</div></div><span className="small muted">{s.fileCount} files · {bytes(s.sizeBytes)}</span>{s.exists && <Button size="sm" onClick={() => void api('app.openPath', s.path)}>Open folder</Button>}</div>
       ))}

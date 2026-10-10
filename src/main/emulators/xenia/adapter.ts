@@ -33,7 +33,7 @@ export const XENIA_CONFIG_NAME = 'xenia-canary.config.toml';
 
 /**
  * cvar::IConfigVarUpdate::kLastCommittedUpdateDate at the verified commit (base/cvar.h).
- * Written as [Config] defaults_date into a config OmniDeck creates: without it Xenia
+ * Written as [Config] defaults_date into a config OmniPC creates: without it Xenia
  * treats the file as ancient and resets every cvar with an UPDATE_from_* history
  * (config.cc ReadConfig -> ApplyUpdates(0)).
  */
@@ -94,7 +94,7 @@ export class XeniaAdapter implements EmulatorAdapter {
   /**
    * xenia_canary.exe has no VERSIONINFO resource (app/main_resources.rc only holds the icon)
    * and no flag that prints a version and exits (--help shows a message box on GUI launches),
-   * so the installed version is the release OmniDeck installed.
+   * so the installed version is the release OmniPC installed.
    */
   async detectVersion(_executable: string): Promise<string | null> {
     return null;
@@ -214,7 +214,7 @@ export class XeniaAdapter implements EmulatorAdapter {
       doc = TomlDocument.empty();
     }
     const changed: string[] = [];
-    // A file OmniDeck creates (or regenerates) gets the defaults version Xenia expects.
+    // A file OmniPC creates (or regenerates) gets the defaults version Xenia expects.
     if (doc.toString() === '' && doc.set('Config', 'defaults_date', XENIA_DEFAULTS_DATE)) changed.push(`Config.defaults_date = ${XENIA_DEFAULTS_DATE}`);
     const values: XeniaValue[] = [];
     if (scope === 'all' || scope === 'paths') values.push(...this.pathValues());
@@ -245,7 +245,7 @@ export class XeniaAdapter implements EmulatorAdapter {
       for (const [t, k, v] of this.pathValues()) {
         const actual = doc.get(t, k) ?? null;
         const ok = typeof v === 'string' ? actual !== null && norm(actual) === norm(v) : actual === String(v);
-        // content_root holds profiles and saves: pointing elsewhere hides them from OmniDeck backups.
+        // content_root holds profiles and saves: pointing elsewhere hides them from OmniPC backups.
         if (!ok) drift.push({ file: path, key: `${t}.${k}`, expected: String(v), actual, critical: k === 'content_root' });
       }
       // A wrongly typed value is reset by Xenia with a blocking warning box (config.cc ReadConfig).
@@ -279,7 +279,7 @@ export class XeniaAdapter implements EmulatorAdapter {
     return vals.map(([, k, v]) => `--${k}=${typeof v === 'object' ? v.float : v}`);
   }
 
-  /** Flags that pin every Xenia data location to OmniDeck folders (xenia_main.cc, base/logging.cc). */
+  /** Flags that pin every Xenia data location to OmniPC folders (xenia_main.cc, base/logging.cc). */
   rootArgs(): string[] {
     const p = this.paths();
     return [`--storage_root=${p.data}`, `--content_root=${p.saves}`, `--cache_root=${p.cache}`, `--log_file=${this.logPath()}`];
@@ -362,7 +362,7 @@ export class XeniaAdapter implements EmulatorAdapter {
       if (stray.length) {
         out.push({
           id: 'xenia.app-data', checkId: 'xenia.paths', category: 'saves', severity: 'info', title: 'Xenia data in the program folder',
-          detail: `Xenia was started outside OmniDeck at some point and kept data next to xenia_canary.exe (portable is the default on Windows). OmniDeck uses ${this.paths().data} and ${this.paths().saves}; the program-folder data is kept across updates, copy profiles/saves over if you need them.`,
+          detail: `Xenia was started outside OmniPC at some point and kept data next to xenia_canary.exe (portable is the default on Windows). OmniPC uses ${this.paths().data} and ${this.paths().saves}; the program-folder data is kept across updates, copy profiles/saves over if you need them.`,
           subject, evidence: stray, confidence: 'high', repair: null, manualSteps: [],
         });
       }
@@ -371,7 +371,7 @@ export class XeniaAdapter implements EmulatorAdapter {
       out.push({
         id: 'xenia.profile', checkId: 'xenia.profile', category: 'saves', severity: 'info', title: 'No Xenia profile yet',
         detail: 'Xenia shows a "No Profiles Found" window until a profile exists, and games cannot save without one. Open Xenia (without a game) and create a profile once in Profiles > Create profile.',
-        subject, evidence: [this.paths().saves], confidence: 'medium', repair: null, manualSteps: ['Open Xenia from OmniDeck, choose Profiles > Create profile, then sign in to it.'],
+        subject, evidence: [this.paths().saves], confidence: 'medium', repair: null, manualSteps: ['Open Xenia from OmniPC, choose Profiles > Create profile, then sign in to it.'],
       });
     }
     return out;
@@ -451,7 +451,7 @@ export class XeniaAdapter implements EmulatorAdapter {
   }
 
   /**
-   * Started without OmniDeck's flags, Xenia keeps everything next to the exe (portable is the
+   * Started without OmniPC's flags, Xenia keeps everything next to the exe (portable is the
    * Windows default, xenia_main.cc). Those paths are carried across updates and never deleted.
    */
   persistentAppPaths(): string[] {

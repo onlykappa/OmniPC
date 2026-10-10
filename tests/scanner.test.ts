@@ -14,7 +14,7 @@ const root = join(t.dir, 'Games');
 const db = new Database(':memory:');
 migrate(db);
 const repo = new LibraryRepo(db);
-const scanner = new LibraryScanner(repo, () => [join(t.dir, 'OmniDeck')]);
+const scanner = new LibraryScanner(repo, () => [join(t.dir, 'OmniPC')]);
 
 beforeAll(() => {
   write(join(root, 'PS2', 'Ico (USA).iso'), ps2Iso('SCUS_971.13'));
@@ -26,7 +26,7 @@ beforeAll(() => {
   write(join(root, 'PS2', 'Copy of Ico.iso'), ps2Iso('SCUS_971.13'));
   write(join(root, 'docs', 'notes.txt'), 'not a game');
   write(join(root, 'PS2', 'broken.iso'), Buffer.alloc(0));
-  write(join(t.dir, 'OmniDeck', 'Emulators', 'x.iso'), ps2Iso());
+  write(join(t.dir, 'OmniPC', 'Emulators', 'x.iso'), ps2Iso());
 });
 
 describe('library scanner', () => {
@@ -59,7 +59,7 @@ describe('library scanner', () => {
     expect(ico?.games).toHaveLength(2);
   });
 
-  it('does not scan OmniDeck-managed folders', () => {
+  it('does not scan OmniPC-managed folders', () => {
     expect(repo.query({ search: 'x', limit: 50 }).items.some((g) => g.title === 'x')).toBe(false);
   });
 

@@ -1,5 +1,5 @@
 // Storage manager: shows where everything lives and relocates folders safely.
-// Relocation copies, verifies, switches OmniDeck + emulator configs to the new
+// Relocation copies, verifies, switches OmniPC + emulator configs to the new
 // location, and leaves the old copy in place for the user to remove.
 
 import { existsSync } from 'node:fs';
@@ -66,8 +66,8 @@ export class StorageService {
     ctx.throwIfCancelled();
     ctx.step('Verifying copy');
     const after = await measure(to, 60000);
-    if (after.files < m.files || after.size < m.size) throw new OmniFailure({ code: 'COPY_INCOMPLETE', whatHappened: 'The copy could not be verified; OmniDeck kept using the original location.', detected: [`Source ${m.files} files / ${m.size} bytes`, `Copy ${after.files} files / ${after.size} bytes`] });
-    ctx.step('Switching OmniDeck to the new location');
+    if (after.files < m.files || after.size < m.size) throw new OmniFailure({ code: 'COPY_INCOMPLETE', whatHappened: 'The copy could not be verified; OmniPC kept using the original location.', detected: [`Source ${m.files} files / ${m.size} bytes`, `Copy ${after.files} files / ${after.size} bytes`] });
+    ctx.step('Switching OmniPC to the new location');
     this.paths.update({ overrides: { [key]: to } });
     const notes: string[] = [`${LABELS[key]} moved to ${to}`, `The original folder was left in place at ${from}; delete it once you have confirmed everything works.`];
     if (key === 'emulators') {

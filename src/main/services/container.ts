@@ -272,7 +272,7 @@ export class AppContainer {
     if (orphans) log.warn(`closed ${orphans} launch record(s) left running by a previous session`);
     for (const note of await this.emulators.recoverSessions()) this.ops.addChange('session.recovered', null, note);
     if (this.dbRecovery.recovered !== 'none') {
-      this.notifications.add('warning', 'OmniDeck repaired its database', this.dbRecovery.notes.join(' '), { link: '/doctor' });
+      this.notifications.add('warning', 'OmniPC repaired its database', this.dbRecovery.notes.join(' '), { link: '/doctor' });
     }
     if (this.safeMode) {
       log.info('safe mode: background services disabled');

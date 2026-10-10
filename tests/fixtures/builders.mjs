@@ -1,5 +1,5 @@
 // Synthetic test fixtures. These are NOT game data: they are minimal files
-// with just the header structures OmniDeck's identification code reads.
+// with just the header structures OmniPC's identification code reads.
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';

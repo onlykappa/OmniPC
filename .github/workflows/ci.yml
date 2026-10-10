@@ -43,6 +43,6 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       - uses: actions/upload-artifact@v4
         with:
-          name: OmniDeck-Setup
+          name: OmniPC-Setup
           path: release/*.exe
           if-no-files-found: error

@@ -1,4 +1,4 @@
-// Drive enumeration and volume identity. Volume serial numbers let OmniDeck
+// Drive enumeration and volume identity. Volume serial numbers let OmniPC
 // recognise an external game drive even when Windows assigns a new letter.
 
 import { statfs } from 'node:fs/promises';

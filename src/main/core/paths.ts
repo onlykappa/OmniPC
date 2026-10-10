@@ -1,5 +1,5 @@
-// OmniDeck storage layout. Everything OmniDeck manages lives under one root
-// (default: %USERPROFILE%\OmniDeck) so users can find, back up and move it.
+// OmniPC storage layout. Everything OmniPC manages lives under one root
+// (default: %USERPROFILE%\OmniPC) so users can find, back up and move it.
 // A tiny bootstrap file in Electron's userData directory remembers where the
 // root is, which is what makes storage relocation possible.
 
@@ -19,7 +19,17 @@ export class AppPaths {
 
   constructor(readonly userDataDir: string, homeDir: string) {
     this.bootstrapFile = join(userDataDir, 'bootstrap.json');
-    this.config = AppPaths.readBootstrap(this.bootstrapFile) ?? { dataRoot: join(homeDir, 'OmniDeck'), overrides: {} };
+    this.config = AppPaths.readBootstrap(this.bootstrapFile) ?? { dataRoot: AppPaths.defaultRoot(homeDir), overrides: {} };
+  }
+
+  /**
+   * %USERPROFILE%\OmniPC. Installs from before the rename to OmniPC keep using
+   * their existing %USERPROFILE%\OmniDeck folder so nothing is orphaned.
+   */
+  static defaultRoot(homeDir: string): string {
+    const current = join(homeDir, 'OmniPC');
+    const legacy = join(homeDir, 'OmniDeck');
+    return !existsSync(current) && existsSync(legacy) ? legacy : current;
   }
 
   private static readBootstrap(file: string): BootstrapConfig | null {
@@ -98,7 +108,7 @@ export class AppPaths {
     renameSync(tmp, this.bootstrapFile);
   }
 
-  /** True when `p` is inside any OmniDeck-managed location (used by safety checks). */
+  /** True when `p` is inside any OmniPC-managed location (used by safety checks). */
   isManagedPath(p: string): boolean {
     const target = resolve(p).toLowerCase();
     const roots = [this.root, ...Object.values(this.config.overrides)].map((r) => resolve(r).toLowerCase());

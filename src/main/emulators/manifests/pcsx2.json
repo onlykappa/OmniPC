@@ -36,12 +36,12 @@
     }
   ],
   "notes": [
-    "OmniDeck launches PCSX2 with -nogui (batch mode) so closing the game returns to OmniDeck.",
+    "OmniPC launches PCSX2 with -nogui (batch mode) so closing the game returns to OmniPC.",
     "All PCSX2 data is kept outside the program folder via -datapath, so updates and rollbacks never touch settings or saves."
   ],
   "assumptions": [
     "Verified against PCSX2 v2.8.2 source (pcsx2-qt/QtHost.cpp): -batch, -nogui, -fullscreen, -datapath, -logfile and -testconfig exist in the stable release.",
-    "-gamecfg (per-game INI override) only exists in v2.9 nightlies; on older builds OmniDeck applies per-game overrides by writing them into the base config for the session and restoring it afterwards.",
+    "-gamecfg (per-game INI override) only exists in v2.9 nightlies; on older builds OmniPC applies per-game overrides by writing them into the base config for the session and restoring it afterwards.",
     "Release assets are named pcsx2-v<version>-windows-x64[-AVX2|-SSE4]-Qt.7z (.github/workflows/scripts/releases/rename-release-assets.py).",
     "With -datapath <dir>, PCSX2 stores data in <dir>/PCSX2 (Pcsx2Config.cpp EmuFolders::SetDataDirectory).",
     "Settings keys: [Folders] Bios/MemoryCards/Savestates/Snapshots/Cache, [EmuCore/GS] Renderer (int enum), upscale_multiplier, AspectRatio (string), VsyncEnable; [UI] SetupWizardIncomplete, ConfirmShutdown, StartFullscreen; [AutoUpdater] CheckAtStartup; [Logging] EnableFileLogging.",

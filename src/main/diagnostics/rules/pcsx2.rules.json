@@ -13,7 +13,7 @@
       "probableCause": "No valid PS2 BIOS is in the BIOS folder PCSX2 is configured to use.",
       "fix": null,
       "userSupplied": true,
-      "manual": ["Dump the BIOS from your own PlayStation 2 and add it in Settings > BIOS & Firmware.", "OmniDeck cannot download BIOS files for legal reasons."],
+      "manual": ["Dump the BIOS from your own PlayStation 2 and add it in Settings > BIOS & Firmware.", "OmniPC cannot download BIOS files for legal reasons."],
       "references": ["https://pcsx2.net/docs/setup/bios/"]
     },
     {
@@ -25,7 +25,7 @@
       "exitCodes": [],
       "patterns": ["Configured BIOS '.*' does not exist"],
       "probableCause": "The BIOS file was moved or renamed after PCSX2 was configured.",
-      "fix": { "actionId": "emulator.regenerateConfig", "label": "Re-apply OmniDeck folder settings", "safety": "low", "params": { "scope": "paths" } },
+      "fix": { "actionId": "emulator.regenerateConfig", "label": "Re-apply OmniPC folder settings", "safety": "low", "params": { "scope": "paths" } },
       "manual": [],
       "references": []
     },

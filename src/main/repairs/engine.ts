@@ -1,6 +1,6 @@
 // Self-healing engine. Every repair:
 //  - has a safety level (safe / low / high / never); "never" actions don't exist
-//    as code at all (deleting saves, ROMs or BIOS is not something OmniDeck does)
+//    as code at all (deleting saves, ROMs or BIOS is not something OmniPC does)
 //  - backs up configuration before changing it
 //  - is recorded in Repair History with details, and is undoable when feasible
 // Only "safe" repairs run automatically; "low" needs approval and "high" needs
@@ -121,7 +121,7 @@ export const ACTIONS: RepairAction[] = [
         await atomicWrite(f.path, doc.toString());
         details.push(...changes.map((c) => `${f.label}: ${c}`));
       }
-      // Ensure OmniDeck-managed values survived the cleanup.
+      // Ensure OmniPC-managed values survived the cleanup.
       const res = await a.applyConfig(d.emulators.configInput(a.manifest.id), 'paths');
       details.push(...res.changed);
       d.ops.addChange('config.repaired', a.manifest.id, `${a.manifest.name} configuration file format repaired`);

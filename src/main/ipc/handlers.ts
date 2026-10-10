@@ -128,7 +128,7 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
       ui.openPath(p);
     },
     'app.openExternal': (url) => {
-      if (!ALLOWED_EXTERNAL.test(url)) throw new OmniFailure({ code: 'URL_BLOCKED', whatHappened: 'OmniDeck only opens https links to known project sites.' });
+      if (!ALLOWED_EXTERNAL.test(url)) throw new OmniFailure({ code: 'URL_BLOCKED', whatHappened: 'OmniPC only opens https links to known project sites.' });
       ui.openExternal(url);
     },
     'app.pickFolder': (title) => ui.pickFolder(title),
@@ -143,7 +143,7 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
         const keepOnboarding = kind === 'settings';
         c.settings.reset();
         if (keepOnboarding) c.settings.set({ onboardingComplete: true });
-        summary.push('OmniDeck settings reset to defaults.');
+        summary.push('OmniPC settings reset to defaults.');
       }
       if (kind === 'emulator-configs' || kind === 'complete') {
         for (const a of c.registry.implemented()) {
@@ -402,7 +402,7 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
       return { systems: sys, emulators: [...ids.values()], libraryPaths: c.library.listPaths().map((p) => p.path), preset: c.hardware()?.recommendedPreset ?? 'balanced' };
     },
     'onboarding.run': (plan) => {
-      const job = c.jobs.start('onboarding', 'Setting up OmniDeck', async (ctx) => {
+      const job = c.jobs.start('onboarding', 'Setting up OmniPC', async (ctx) => {
         c.settings.set({ defaultPreset: plan.preset });
         for (const a of c.registry.implemented()) {
           if (!c.emuRepo.getSettings(a.manifest.id)) c.emuRepo.saveSettings(a.manifest.id, a.defaultSettings(c.hardware(), plan.preset));

@@ -251,7 +251,7 @@ export function migrate(db: BetterSqlite3.Database, migrations: Migration[] = MI
   const applied: string[] = [];
   const latest = migrations[migrations.length - 1]?.version ?? 0;
   if (from > latest) {
-    throw new Error(`Database schema version ${from} is newer than this OmniDeck build supports (${latest}). Update OmniDeck or restore an older database backup.`);
+    throw new Error(`Database schema version ${from} is newer than this OmniPC build supports (${latest}). Update OmniPC or restore an older database backup.`);
   }
   for (const m of migrations) {
     if (m.version <= from) continue;

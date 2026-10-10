@@ -76,8 +76,8 @@ export const CHECKS: HealthCheck[] = [
     quick: true,
     async run(d) {
       const hw = d.hardware();
-      if (!hw) return [f(this.id, this.category, { severity: 'warning', title: 'Computer has not been scanned', detail: 'Run the computer scan so OmniDeck can tailor settings to your hardware.', repair: repair('hardware.scan', 'Scan this PC', 'safe', {}, 'Reads CPU, GPU, RAM, displays and drives.'), confidence: 'high' })];
-      if (!hw.isWindows) return [f(this.id, this.category, { severity: 'warning', title: `Running on ${hw.osName}`, detail: 'OmniDeck PC targets Windows 10/11 x64. Emulator installation and launching only work on Windows.' })];
+      if (!hw) return [f(this.id, this.category, { severity: 'warning', title: 'Computer has not been scanned', detail: 'Run the computer scan so OmniPC can tailor settings to your hardware.', repair: repair('hardware.scan', 'Scan this PC', 'safe', {}, 'Reads CPU, GPU, RAM, displays and drives.'), confidence: 'high' })];
+      if (!hw.isWindows) return [f(this.id, this.category, { severity: 'warning', title: `Running on ${hw.osName}`, detail: 'OmniPC targets Windows 10/11 x64. Emulator installation and launching only work on Windows.' })];
       const build = Number(hw.osBuild ?? 0);
       if (build && build < 19041) return [f(this.id, this.category, { severity: 'warning', title: `Windows build ${build} is old`, detail: 'Windows 10 version 2004 (build 19041) or newer is recommended. Newer emulator builds may not start.', evidence: [hw.osName] })];
       return [f(this.id, this.category, { severity: 'pass', title: `${hw.osName} (build ${hw.osBuild ?? '?'})` })];
@@ -124,28 +124,28 @@ export const CHECKS: HealthCheck[] = [
   {
     id: 'storage.locations',
     category: 'storage',
-    label: 'OmniDeck folders',
+    label: 'OmniPC folders',
     quick: true,
     async run(d) {
       const out: Finding[] = [];
       const locs: [string, string][] = [['Emulators', d.paths.emulators], ['Saves', d.paths.saves], ['BIOS', d.paths.bios], ['Cache', d.paths.cache], ['Backups', d.paths.backups], ['Artwork', d.paths.artwork], ['Logs', d.paths.logs]];
       const missing = locs.filter(([, p]) => !existsSync(p));
-      if (missing.length) out.push(f(this.id, this.category, { severity: 'warning', title: `${missing.length} OmniDeck folder(s) missing`, detail: missing.map(([n, p]) => `${n}: ${p}`).join('\n'), evidence: missing.map(([, p]) => p), repair: repair('folders.recreate', 'Recreate folders', 'safe', {}, 'Creates the missing empty folders.') }, 'missing'));
-      else out.push(f(this.id, this.category, { severity: 'pass', title: 'All OmniDeck folders exist' }, 'missing'));
+      if (missing.length) out.push(f(this.id, this.category, { severity: 'warning', title: `${missing.length} OmniPC folder(s) missing`, detail: missing.map(([n, p]) => `${n}: ${p}`).join('\n'), evidence: missing.map(([, p]) => p), repair: repair('folders.recreate', 'Recreate folders', 'safe', {}, 'Creates the missing empty folders.') }, 'missing'));
+      else out.push(f(this.id, this.category, { severity: 'pass', title: 'All OmniPC folders exist' }, 'missing'));
       for (const [name, p] of locs.filter(([, p]) => existsSync(p))) {
         const probe = join(p, `.omnideck-write-test-${process.pid}`);
         try {
           await writeFile(probe, 'ok');
           await rm(probe, { force: true });
         } catch (e) {
-          out.push(f('storage.writable', this.category, { severity: 'problem', title: `Cannot write to the ${name} folder`, detail: `${p}: ${(e as NodeJS.ErrnoException).code ?? (e as Error).message}`, evidence: [p], manualSteps: ['Check folder permissions and that the drive is not read-only.', 'If you use Controlled Folder Access (Windows Security), allow OmniDeck PC.'], confidence: 'high' }, name));
+          out.push(f('storage.writable', this.category, { severity: 'problem', title: `Cannot write to the ${name} folder`, detail: `${p}: ${(e as NodeJS.ErrnoException).code ?? (e as Error).message}`, evidence: [p], manualSteps: ['Check folder permissions and that the drive is not read-only.', 'If you use Controlled Folder Access (Windows Security), allow OmniPC.'], confidence: 'high' }, name));
         }
       }
       const free = await freeSpace(d.paths.root);
       if (free !== null) {
-        if (free < 2 * GB) out.push(f('storage.free', this.category, { severity: 'problem', title: `Only ${(free / GB).toFixed(1)} GB free on the OmniDeck drive`, detail: 'Installs, updates, shader caches and save states may fail.', evidence: [d.paths.root], manualSteps: ['Free up space or move OmniDeck storage in Settings > Storage.'] }));
-        else if (free < 10 * GB) out.push(f('storage.free', this.category, { severity: 'warning', title: `${(free / GB).toFixed(1)} GB free on the OmniDeck drive`, detail: 'Consider freeing space; emulator updates and shader caches need room.' }));
-        else out.push(f('storage.free', this.category, { severity: 'pass', title: `${(free / GB).toFixed(0)} GB free on the OmniDeck drive` }));
+        if (free < 2 * GB) out.push(f('storage.free', this.category, { severity: 'problem', title: `Only ${(free / GB).toFixed(1)} GB free on the OmniPC drive`, detail: 'Installs, updates, shader caches and save states may fail.', evidence: [d.paths.root], manualSteps: ['Free up space or move OmniPC storage in Settings > Storage.'] }));
+        else if (free < 10 * GB) out.push(f('storage.free', this.category, { severity: 'warning', title: `${(free / GB).toFixed(1)} GB free on the OmniPC drive`, detail: 'Consider freeing space; emulator updates and shader caches need room.' }));
+        else out.push(f('storage.free', this.category, { severity: 'pass', title: `${(free / GB).toFixed(0)} GB free on the OmniPC drive` }));
       }
       return out;
     },
@@ -193,7 +193,7 @@ export const CHECKS: HealthCheck[] = [
         title: `${rows.length} game file(s) look damaged or incomplete`,
         detail: 'These files failed basic validation (empty, unreadable, unfinished downloads or missing tracks). This is a game file problem, not an emulator problem.',
         evidence: rows.slice(0, 10).map((r) => `${r.title}: ${r.validation_note ?? r.path}`),
-        manualSteps: ['Re-copy or re-dump the affected games. OmniDeck never deletes game files.'],
+        manualSteps: ['Re-copy or re-dump the affected games. OmniPC never deletes game files.'],
       })];
     },
   },
@@ -216,7 +216,7 @@ export const CHECKS: HealthCheck[] = [
           severity: d.registry.get(s.emulatorId)?.manifest.implemented ? 'problem' : 'warning',
           title: `${s.label} missing`,
           // The adapter's note says where this particular file comes from (e.g. PS3 firmware from Sony).
-          detail: `${getSystem(s.systemId)?.name} games cannot start without it. ${s.note || 'OmniDeck cannot download BIOS files; you must supply one dumped from your own console.'}`,
+          detail: `${getSystem(s.systemId)?.name} games cannot start without it. ${s.note || 'OmniPC cannot download BIOS files; you must supply one dumped from your own console.'}`,
           subject,
           evidence: [`Expected in ${s.expectedLocation}`],
           manualSteps: ['Open Settings > BIOS & Firmware and import your BIOS file.'],
@@ -253,7 +253,7 @@ export const CHECKS: HealthCheck[] = [
           continue;
         }
         if (st.health === 'error') {
-          out.push(f(this.id, this.category, { severity: 'problem', title: `${a.manifest.name} failed its last health test`, detail: st.healthNote ?? '', subject, evidence: st.healthNote ? [st.healthNote] : [], repair: repair('emulator.repair', `Repair ${a.manifest.name}`, 'low', { emulatorId: id }, 'Recreates folders, re-applies OmniDeck settings (with backup) and re-tests.') }, id));
+          out.push(f(this.id, this.category, { severity: 'problem', title: `${a.manifest.name} failed its last health test`, detail: st.healthNote ?? '', subject, evidence: st.healthNote ? [st.healthNote] : [], repair: repair('emulator.repair', `Repair ${a.manifest.name}`, 'low', { emulatorId: id }, 'Recreates folders, re-applies OmniPC settings (with backup) and re-tests.') }, id));
         } else {
           out.push(f(this.id, this.category, { severity: 'pass', title: `${a.manifest.name} ${st.version ?? ''} installed`.trim(), subject }, id));
         }
@@ -280,11 +280,11 @@ export const CHECKS: HealthCheck[] = [
         if (missing.length) out.push(f(this.id, this.category, { severity: 'problem', title: `${a.manifest.name}: ${missing.length} configuration file(s) missing`, subject, evidence: missing.map((x) => x.path), repair: repair('emulator.regenerateConfig', 'Regenerate configuration', 'low', { emulatorId: id, scope: 'all' }, 'Creates the recommended configuration (existing files are backed up first).') }, `${id}:missing`));
         if (broken.length) out.push(f(this.id, this.category, { severity: 'problem', title: `${a.manifest.name}: configuration file is malformed`, detail: 'The emulator may ignore or reset these settings.', subject, evidence: broken.flatMap((x) => x.issues.slice(0, 5).map((i) => `${x.label}: ${i}`)), repair: repair('config.repairFormat', 'Repair file format', 'low', { emulatorId: id }, 'Backs up the file, removes unparseable lines and merges duplicate sections.') }, `${id}:format`));
         if (insp.drift.length) {
-          if (custom.customConfigActive) out.push(f(this.id, this.category, { severity: 'info', title: `${a.manifest.name}: custom configuration active`, detail: `${insp.drift.length} value(s) differ from OmniDeck's defaults. Treated as intentional.`, subject, evidence: insp.drift.map((x) => `${x.key}: ${x.actual ?? '(unset)'} (OmniDeck: ${x.expected})`) }, `${id}:drift`));
+          if (custom.customConfigActive) out.push(f(this.id, this.category, { severity: 'info', title: `${a.manifest.name}: custom configuration active`, detail: `${insp.drift.length} value(s) differ from OmniPC's defaults. Treated as intentional.`, subject, evidence: insp.drift.map((x) => `${x.key}: ${x.actual ?? '(unset)'} (OmniPC: ${x.expected})`) }, `${id}:drift`));
           else out.push(f(this.id, this.category, {
             severity: insp.drift.some((x) => x.critical) ? 'problem' : 'warning',
             title: `${a.manifest.name}: folder settings point to the wrong place`,
-            detail: 'BIOS, save or cache folders in the emulator configuration no longer match OmniDeck. Saves may be written somewhere unexpected.',
+            detail: 'BIOS, save or cache folders in the emulator configuration no longer match OmniPC. Saves may be written somewhere unexpected.',
             subject,
             evidence: insp.drift.map((x) => `${x.key} = ${x.actual ?? '(unset)'}; expected ${x.expected}`),
             repair: repair('emulator.regenerateConfig', 'Correct folder paths', 'low', { emulatorId: id, scope: 'paths' }, 'Rewrites only the folder paths (backup first).'),
@@ -292,7 +292,7 @@ export const CHECKS: HealthCheck[] = [
         }
         if (!missing.length && !broken.length && !insp.drift.length) out.push(f(this.id, this.category, { severity: 'pass', title: `${a.manifest.name} configuration OK`, subject }, `${id}:ok`));
         const journal = insp.files.find((x) => existsSync(`${x.path}.omnideck-session`));
-        if (journal) out.push(f(this.id, this.category, { severity: 'warning', title: `${a.manifest.name}: a per-game session override was not restored`, detail: 'OmniDeck closed while a game with a custom profile was running.', subject, repair: repair('emulator.recoverSession', 'Restore global settings', 'safe', { emulatorId: id }, 'Restores the configuration saved before the session.') }, `${id}:session`));
+        if (journal) out.push(f(this.id, this.category, { severity: 'warning', title: `${a.manifest.name}: a per-game session override was not restored`, detail: 'OmniPC closed while a game with a custom profile was running.', subject, repair: repair('emulator.recoverSession', 'Restore global settings', 'safe', { emulatorId: id }, 'Restores the configuration saved before the session.') }, `${id}:session`));
       }
       return out;
     },
@@ -372,12 +372,12 @@ export const CHECKS: HealthCheck[] = [
   {
     id: 'database.integrity',
     category: 'database',
-    label: 'OmniDeck database',
+    label: 'OmniPC database',
     quick: false,
     async run(d) {
       const out: Finding[] = [];
       const res = d.db.pragma('quick_check', { simple: true });
-      out.push(f(this.id, this.category, res === 'ok' ? { severity: 'pass', title: 'Database integrity OK' } : { severity: 'problem', title: 'Database integrity check failed', evidence: [String(res)], repair: repair('database.reindex', 'Rebuild indexes', 'safe', {}, 'Rebuilds database indexes. If that fails OmniDeck restores the newest backup on next start.') }));
+      out.push(f(this.id, this.category, res === 'ok' ? { severity: 'pass', title: 'Database integrity OK' } : { severity: 'problem', title: 'Database integrity check failed', evidence: [String(res)], repair: repair('database.reindex', 'Rebuild indexes', 'safe', {}, 'Rebuilds database indexes. If that fails OmniPC restores the newest backup on next start.') }));
       const age = newestBackupAgeHours(d.paths.databaseBackups);
       if (age === null || age > 72) out.push(f('database.backup', this.category, { severity: 'info', title: age === null ? 'No database backup yet' : `Last database backup ${Math.round(age)} hours ago`, repair: repair('database.backup', 'Back up now', 'safe', {}, 'Creates a database backup (keeps the newest 7).') }));
       else out.push(f('database.backup', this.category, { severity: 'pass', title: `Database backed up ${Math.round(age)} hour(s) ago` }));

@@ -1,7 +1,7 @@
 // KytyPS5 adapter (PlayStation 5, experimental).
 // Layout:
 //   Emulators/kyty/app                 program files (kyty_emulator.exe, launcher.exe, kyty_updater.exe)
-//   Emulators/kyty/data/omnideck-kyty.json  OmniDeck-owned launch options (KytyPS5 has no config file;
+//   Emulators/kyty/data/omnideck-kyty.json  OmniPC-owned launch options (KytyPS5 has no config file;
 //                                       every option is a command-line flag, see src/main.cpp)
 //   Emulators/kyty/data/Kyty.ini       Qt launcher settings (portable: used when launched with cwd=data)
 //   Emulators/kyty/data/logs/kyty.log  emulator log (--printf-direction File)
@@ -40,7 +40,7 @@ export const KYTY_RESOLUTIONS: Record<number, [number, number]> = {
 export const KYTY_TAG_RE = /^KytyPS5-\d{4}-\d{2}-\d{2}-[0-9a-f]{7,40}$/;
 
 /**
- * Value-taking options OmniDeck lets users pass through settings.advanced
+ * Value-taking options OmniPC lets users pass through settings.advanced
  * (key = option without the leading dashes). Validated in src/main.cpp ParseArgs.
  */
 const ADVANCED_VALUE_OPTIONS = new Set([
@@ -75,12 +75,12 @@ export interface KytyManaged {
 export interface KytyConfigFile {
   _comment?: string;
   managed?: Partial<KytyManaged>;
-  /** User-owned: never touched by OmniDeck. */
+  /** User-owned: never touched by OmniPC. */
   user?: { keymap?: string[]; extraArgs?: string[] };
   [k: string]: unknown;
 }
 
-const COMMENT = 'Written by OmniDeck PC. KytyPS5 has no settings file; OmniDeck turns "managed" into kyty_emulator command-line flags. Put your own --keymap entries (e.g. "Cross=Space") in user.keymap and extra flags in user.extraArgs; OmniDeck never changes "user".';
+const COMMENT = 'Written by OmniPC. KytyPS5 has no settings file; OmniPC turns "managed" into kyty_emulator command-line flags. Put your own --keymap entries (e.g. "Cross=Space") in user.keymap and extra flags in user.extraArgs; OmniPC never changes "user".';
 
 export class KytyAdapter implements EmulatorAdapter {
   readonly manifest = KYTY_MANIFEST;
@@ -209,7 +209,7 @@ export class KytyAdapter implements EmulatorAdapter {
       set('logFile', mp.logFile);
       // The Qt launcher checks GitHub for updates on startup and can replace the program
       // files itself (src/launcher/src/mainDialog.cpp FindInterpreter, [MainDialog]
-      // check_updates_on_startup, default true). OmniDeck manages versions instead.
+      // check_updates_on_startup, default true). OmniPC manages versions instead.
       const ini = await loadIni(this.launcherIniPath());
       let iniChanged = !existsSync(this.launcherIniPath());
       if (ini.set('MainDialog', 'check_updates_on_startup', false)) {
@@ -339,7 +339,7 @@ export class KytyAdapter implements EmulatorAdapter {
    */
   buildUiLaunch(executable: string): LaunchCommand {
     const launcher = join(dirname(executable), isWindows || executable.toLowerCase().endsWith('.exe') ? 'launcher.exe' : 'launcher');
-    const notes = ['Games started from the KytyPS5 launcher keep their saves in the program folder (upstream behaviour); OmniDeck carries them across updates.'];
+    const notes = ['Games started from the KytyPS5 launcher keep their saves in the program folder (upstream behaviour); OmniPC carries them across updates.'];
     if (!existsSync(launcher)) notes.push(`${launcher} not found; KytyPS5 has no UI without the launcher.`);
     return { command: existsSync(launcher) ? launcher : executable, args: existsSync(launcher) ? [] : ['--help'], cwd: this.paths().data, logFile: this.logPath(), notes };
   }
@@ -384,7 +384,7 @@ export class KytyAdapter implements EmulatorAdapter {
     } else if (hw && hw.graphicsApis.vulkan === null) {
       out.push({
         id: 'kyty.vulkan-unknown', checkId: 'kyty.graphics', category: 'emulators', severity: 'warning', title: 'Vulkan support could not be confirmed',
-        detail: 'KytyPS5 requires Vulkan 1.3. OmniDeck could not determine whether a Vulkan driver is installed.', subject, evidence: hw.graphicsApis.notes, confidence: 'low', repair: null,
+        detail: 'KytyPS5 requires Vulkan 1.3. OmniPC could not determine whether a Vulkan driver is installed.', subject, evidence: hw.graphicsApis.notes, confidence: 'low', repair: null,
         manualSteps: ['Install the latest graphics driver from your GPU vendor.'],
       });
     }
@@ -397,7 +397,7 @@ export class KytyAdapter implements EmulatorAdapter {
     if (existsSync(stray)) {
       out.push({
         id: 'kyty.app-saves', checkId: 'kyty.saves', category: 'saves', severity: 'info', title: 'KytyPS5 saves in the program folder',
-        detail: `Games started from the KytyPS5 launcher saved to ${stray}. Games started from OmniDeck save to ${join(this.paths().saves, '_SaveData')}. OmniDeck keeps both across updates; copy title folders between them if you switch.`,
+        detail: `Games started from the KytyPS5 launcher saved to ${stray}. Games started from OmniPC save to ${join(this.paths().saves, '_SaveData')}. OmniPC keeps both across updates; copy title folders between them if you switch.`,
         subject, evidence: [stray], confidence: 'high', repair: null, manualSteps: [],
       });
     }

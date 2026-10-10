@@ -52,9 +52,9 @@ export function EmulatorDetailsPage(props: { id: string }) {
             <div className="row">
               <Button variant="primary" onClick={() => void api('emulators.launchUi', emu.id)}>Launch</Button>
               <Button onClick={() => { const el = document.getElementById('settings'); el?.scrollIntoView({ behavior: 'smooth' }); }}>Configure</Button>
-              <Button disabled={!emu.updateAvailable || emu.installState !== 'installed'} title={emu.installState !== 'installed' ? 'External installations are updated outside OmniDeck' : undefined} onClick={job(() => api('emulators.update', emu.id), `Updating ${emu.name}`)}>{emu.updateAvailable ? `Update to ${emu.latestVersion}` : 'Up to date'}</Button>
+              <Button disabled={!emu.updateAvailable || emu.installState !== 'installed'} title={emu.installState !== 'installed' ? 'External installations are updated outside OmniPC' : undefined} onClick={job(() => api('emulators.update', emu.id), `Updating ${emu.name}`)}>{emu.updateAvailable ? `Update to ${emu.latestVersion}` : 'Up to date'}</Button>
               <Button onClick={job(() => api('emulators.repair', emu.id), `Repairing ${emu.name}`)}>Repair</Button>
-              <Button onClick={() => setConfirm({ title: `Reset ${emu.name} configuration?`, body: 'OmniDeck backs up the current configuration, then generates recommended defaults for this PC, re-applies your controller profile, hotkeys and OmniDeck folders, and runs a health test. Saves, BIOS files and games are not touched.', run: () => api('emulators.resetConfig', emu.id) })}>Reset configuration</Button>
+              <Button onClick={() => setConfirm({ title: `Reset ${emu.name} configuration?`, body: 'OmniPC backs up the current configuration, then generates recommended defaults for this PC, re-applies your controller profile, hotkeys and OmniPC folders, and runs a health test. Saves, BIOS files and games are not touched.', run: () => api('emulators.resetConfig', emu.id) })}>Reset configuration</Button>
               <Button onClick={() => void api('app.openPath', emu.installDir ?? '')} disabled={!emu.installDir}>Open folder</Button>
               <Button busy={checking} onClick={() => void health()}>Health check</Button>
               {emu.rollbackVersion && <Button onClick={() => setConfirm({ title: `Restore ${emu.name} ${emu.rollbackVersion}?`, body: 'The current version is moved aside and the previous version is restored together with the configuration from before the update.', run: () => api('emulators.rollback', emu.id) })}>Roll back to {emu.rollbackVersion}</Button>}
@@ -77,7 +77,7 @@ export function EmulatorDetailsPage(props: { id: string }) {
           </Panel>
           <div className="col" style={{ gap: 16 }}>
             <Panel title="Configuration backups" actions={<Button size="sm" onClick={async () => { await api('backups.create', emu.id, 'Manual backup'); reload(); }} disabled={!installed}>Back up now</Button>}>
-              {emu.backups.length === 0 ? <p className="muted">No backups yet. OmniDeck creates one automatically before every change.</p> : (
+              {emu.backups.length === 0 ? <p className="muted">No backups yet. OmniPC creates one automatically before every change.</p> : (
                 <div className="list">
                   <div className="list-item"><strong className="grow">Current</strong></div>
                   {emu.backups.slice(0, 12).map((b) => (
@@ -98,7 +98,7 @@ export function EmulatorDetailsPage(props: { id: string }) {
             </Panel>
           </div>
           <Panel title="Advanced (custom executable, arguments, configuration)" actions={<Button busy={savingCustom} onClick={() => void saveCustom()}>Save</Button>}>
-            <p className="small muted">Deviations are allowed. When "custom configuration active" is on, OmniDoctor treats differences as intentional and OmniDeck never overwrites your configuration automatically.</p>
+            <p className="small muted">Deviations are allowed. When "custom configuration active" is on, OmniDoctor treats differences as intentional and OmniPC never overwrites your configuration automatically.</p>
             <label className="field">Custom emulator executable<input type="text" value={custom.customExecutable ?? ''} onChange={(e) => setCustom({ ...custom, customExecutable: e.target.value || null })} placeholder={emu.executable ?? ''} /></label>
             <label className="field">Extra launch arguments<input type="text" value={custom.customArgs ?? ''} onChange={(e) => setCustom({ ...custom, customArgs: e.target.value || null })} /></label>
             <label className="field">Note<input type="text" value={custom.customConfigNote ?? ''} onChange={(e) => setCustom({ ...custom, customConfigNote: e.target.value || null })} /></label>

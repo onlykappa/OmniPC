@@ -1,4 +1,4 @@
-// BIOS/firmware validators. They inspect structure only; OmniDeck never
+// BIOS/firmware validators. They inspect structure only; OmniPC never
 // downloads or distributes BIOS files.
 
 import { open, stat } from 'node:fs/promises';

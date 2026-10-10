@@ -35,7 +35,7 @@ export function Layout(props: { children: ReactNode; health: { problems: number;
     <div className={`app ${consoleMode ? 'console' : ''}`}>
       {!consoleMode && (
         <nav className="sidebar" aria-label="Main">
-          <div className="brand"><span className="brand-mark" />OmniDeck</div>
+          <div className="brand"><span className="brand-mark" />OmniPC</div>
           {NAV.filter((n) => !n.dev || settings?.devMode).map((n) => (
             <button key={n.path} className={`nav-item ${current === n.path || (n.path === '/emulators' && current === '/bios') ? 'active' : ''}`} onClick={() => navigate(n.path)}>
               <span className="icon">{n.icon}</span>

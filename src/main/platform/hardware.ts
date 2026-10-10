@@ -26,15 +26,15 @@ $gpus = @(Get-CimInstance Win32_VideoController | Select-Object Name, AdapterRAM
 $vram = @(Get-ItemProperty -Path 'HKLM:\\SYSTEM\\ControlSet001\\Control\\Class\\{4d36e968-e325-11ce-bfc1-08002be10318}\\0*' -ErrorAction SilentlyContinue |
   Where-Object { $_.'HardwareInformation.qwMemorySize' } |
   ForEach-Object { [pscustomobject]@{ DriverDesc = $_.DriverDesc; QwMemorySize = [int64]$_.'HardwareInformation.qwMemorySize' } })
-Add-Type -Namespace OmniDeck -Name Cpu -MemberDefinition '[DllImport("kernel32.dll")] public static extern bool IsProcessorFeaturePresent(uint f);'
+Add-Type -Namespace OmniPC -Name Cpu -MemberDefinition '[DllImport("kernel32.dll")] public static extern bool IsProcessorFeaturePresent(uint f);'
 $features = [ordered]@{
-  sse3 = [OmniDeck.Cpu]::IsProcessorFeaturePresent(13)
-  ssse3 = [OmniDeck.Cpu]::IsProcessorFeaturePresent(36)
-  sse41 = [OmniDeck.Cpu]::IsProcessorFeaturePresent(37)
-  sse42 = [OmniDeck.Cpu]::IsProcessorFeaturePresent(38)
-  avx = [OmniDeck.Cpu]::IsProcessorFeaturePresent(39)
-  avx2 = [OmniDeck.Cpu]::IsProcessorFeaturePresent(40)
-  avx512f = [OmniDeck.Cpu]::IsProcessorFeaturePresent(41)
+  sse3 = [OmniPC.Cpu]::IsProcessorFeaturePresent(13)
+  ssse3 = [OmniPC.Cpu]::IsProcessorFeaturePresent(36)
+  sse41 = [OmniPC.Cpu]::IsProcessorFeaturePresent(37)
+  sse42 = [OmniPC.Cpu]::IsProcessorFeaturePresent(38)
+  avx = [OmniPC.Cpu]::IsProcessorFeaturePresent(39)
+  avx2 = [OmniPC.Cpu]::IsProcessorFeaturePresent(40)
+  avx512f = [OmniPC.Cpu]::IsProcessorFeaturePresent(41)
 }
 [pscustomobject]@{ os = $os; cpu = $cpu; gpus = $gpus; vram = $vram; features = $features } | ConvertTo-Json -Depth 4 -Compress
 `;

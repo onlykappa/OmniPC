@@ -81,7 +81,7 @@ export function LibraryPage() {
       </div>
       {loading ? <Spinner /> : games.length === 0 ? (
         <Empty title={search ? 'No matches' : 'No games here yet'} action={!search ? <Button variant="primary" onClick={() => setManage(true)}>Add game folder</Button> : undefined}>
-          {!search && 'Add the folders where your games are stored. OmniDeck scans them recursively across all drives.'}
+          {!search && 'Add the folders where your games are stored. OmniPC scans them recursively across all drives.'}
         </Empty>
       ) : (
         <GameGrid games={games} scrollParent={scroller} onNearEnd={loadMore} />
@@ -129,7 +129,7 @@ function FoldersModal(props: { onClose: () => void }) {
   return (
     <Modal onClose={props.onClose} wide>
       <div className="row"><h2>Game folders</h2><span className="right" /><Button variant="primary" onClick={add} busy={busy}>Add folder…</Button></div>
-      <p className="muted small">Folders can be on any drive, including external drives. Removing a folder only removes it from OmniDeck — files are never deleted.</p>
+      <p className="muted small">Folders can be on any drive, including external drives. Removing a folder only removes it from OmniPC — files are never deleted.</p>
       {preview && (
         <Panel title={`Found ${preview.total} game${preview.total === 1 ? '' : 's'} in ${preview.path}`} flat>
           <div className="row">
@@ -161,7 +161,7 @@ export function DuplicatesPage() {
   const { data } = useLoad(() => api('library.duplicates'), []);
   return (
     <div className="page">
-      <div className="page-head"><div><h1>Possible duplicates</h1><p>OmniDeck never deletes duplicates. Review them and remove files yourself if you want.</p></div></div>
+      <div className="page-head"><div><h1>Possible duplicates</h1><p>OmniPC never deletes duplicates. Review them and remove files yourself if you want.</p></div></div>
       {!data ? <Spinner /> : data.length === 0 ? <Empty title="No duplicates found" /> : data.map((g) => (
         <Panel key={g.key} title={g.reason === 'same_serial' ? `Same disc serial` : 'Same title'}>
           {g.games.map((x) => (

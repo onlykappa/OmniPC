@@ -80,7 +80,7 @@ export class LaunchRepo {
     return (this.db.prepare(sql).all(...params, Math.min(opts.limit, 500)) as LaunchRow[]).map(toRecord);
   }
 
-  /** Marks launches left 'running' by a previous OmniDeck crash. */
+  /** Marks launches left 'running' by a previous OmniPC crash. */
   closeOrphans(): number {
     return this.db.prepare("UPDATE launch_history SET outcome = 'killed', ended_at = COALESCE(ended_at, started_at) WHERE outcome = 'running'").run().changes;
   }

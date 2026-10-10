@@ -3,7 +3,7 @@
 // trees with yaml-cpp as nested block mappings (Utilities/Config.cpp
 // cfg::encode), so a line-based editor that understands block mappings,
 // treats lists / flow collections as opaque values and keeps every other line
-// untouched is enough to merge OmniDeck-managed keys without clobbering user
+// untouched is enough to merge OmniPC-managed keys without clobbering user
 // settings. RPCS3 itself ignores unknown keys and keeps defaults for missing
 // ones (cfg::decode with strict=false), so partial files are valid input.
 

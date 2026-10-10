@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="resources/icon.png" width="96" alt="OmniDeck PC icon">
+<img src="resources/icon.png" width="96" alt="OmniPC icon">
 
-# OmniDeck PC
+# OmniPC
 
 **Every console. One app. Zero config files.**
 
-OmniDeck installs your emulators, builds one library from all your game folders, maps your
+OmniPC installs your emulators, builds one library from all your game folders, maps your
 controller once for every emulator, and when something breaks, tells you why and fixes it.
 
 [![CI](https://github.com/onlykappa/emudeck-pc/actions/workflows/ci.yml/badge.svg)](https://github.com/onlykappa/emudeck-pc/actions/workflows/ci.yml)
@@ -15,7 +15,7 @@ controller once for every emulator, and when something breaks, tells you why and
 
 [**Download**](../../releases/latest) · [User guide](docs/USER_GUIDE.md) · [What works](docs/STATUS.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
 
-<img src="docs/images/home.png" alt="OmniDeck home screen" width="900">
+<img src="docs/images/home.png" alt="OmniPC home screen" width="900">
 
 </div>
 
@@ -48,7 +48,7 @@ roll back in one click.
 <td width="50%" valign="top">
 
 ### 🎮 One library
-Point OmniDeck at your game folders, across drives. It identifies games by their contents,
+Point OmniPC at your game folders, across drives. It identifies games by their contents,
 not just file names: disc headers, `SYSTEM.CNF`, `PARAM.SFO` and PS3/PS5 game folders. It
 groups multi-disc games, flags broken dumps, and remembers games on drives that are unplugged.
 
@@ -68,9 +68,9 @@ groups multi-disc games, flags broken dumps, and remembers games on drives that 
 <td valign="top">
 
 ### ⚙️ Emulators that just work
-One click installs and configures each emulator. OmniDeck turns off first-run wizards,
+One click installs and configures each emulator. OmniPC turns off first-run wizards,
 update nags and exit confirmations, so games start fullscreen and closing them brings you
-back. Saves live in one OmniDeck folder that survives updates.
+back. Saves live in one OmniPC folder that survives updates.
 
 </td>
 </tr>
@@ -78,7 +78,7 @@ back. Saves live in one OmniDeck folder that survives updates.
 <td valign="top">
 
 ### 🕹️ Set up your controller once
-Map your controller and hotkeys once (exit, save/load state, fast-forward, volume) and OmniDeck
+Map your controller and hotkeys once (exit, save/load state, fast-forward, volume) and OmniPC
 writes them into every emulator's own format. There's an optional Nintendo button layout for
 Nintendo systems.
 
@@ -129,19 +129,19 @@ everything without a keyboard.
 
 ## Install
 
-1. Download **OmniDeck-Setup-<version>.exe** from the [latest release](../../releases/latest).
-2. Run it. OmniDeck installs per-user and never runs as Administrator. It asks for elevation
+1. Download **OmniPC-Setup-<version>.exe** from the [latest release](../../releases/latest).
+2. Run it. OmniPC installs per-user and never runs as Administrator. It asks for elevation
    only for specific tasks, such as installing the Visual C++ runtime, and explains why.
 3. The first-run wizard scans your PC, asks which systems you want and where your games are,
    sets up your controller, and installs the emulators.
-4. Put BIOS/firmware files from your own consoles in the folders OmniDeck shows you
+4. Put BIOS/firmware files from your own consoles in the folders OmniPC shows you
    (**Emulators → BIOS & Firmware**).
 
 Windows SmartScreen may warn about an unsigned installer. Choose **More info → Run anyway**.
 
 ## Your files, your responsibility
 
-OmniDeck **never** downloads or distributes games, BIOS files, firmware or encryption keys,
+OmniPC **never** downloads or distributes games, BIOS files, firmware or encryption keys,
 and never circumvents copy protection. Use games and system files you dumped from hardware
 you own. Diagnostic packages and the optional AI troubleshooter exclude games, BIOS, keys,
 saves and personal documents.
@@ -157,7 +157,7 @@ npm install
 npm run dev          # Vite + Electron with hot reload
 npm test             # unit, integration and end-to-end tests
 npm run typecheck
-npm run dist         # Windows installer → release/OmniDeck-Setup-<version>.exe
+npm run dist         # Windows installer → release/OmniPC-Setup-<version>.exe
 ```
 
 Adding an emulator means writing one adapter and a manifest; see
@@ -176,9 +176,9 @@ Adding an emulator means writing one adapter and a manifest; see
 
 ## License
 
-OmniDeck PC is released under the [MIT License](LICENSE). Emulators are downloaded from their
+OmniPC is released under the [MIT License](LICENSE). Emulators are downloaded from their
 official sources and remain under their own licenses; see
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-OmniDeck is an independent project. It is not affiliated with EmuDeck, Sony, Nintendo,
+OmniPC is an independent project. It is not affiliated with EmuDeck, Sony, Nintendo,
 Microsoft, Sega or any emulator project. Product names are used only to identify compatibility.

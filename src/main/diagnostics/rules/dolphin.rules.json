@@ -76,7 +76,7 @@
       "exitCodes": [],
       "patterns": ["Cannot start the game, because the GC IPL could not be found", "Cannot find the GC IPL"],
       "probableCause": "Dolphin was told to boot through the GameCube main menu (IPL) but no IPL is installed.",
-      "fix": { "actionId": "emulator.regenerateConfig", "label": "Re-apply OmniDeck defaults (skips the IPL)", "safety": "low", "params": { "scope": "all" } },
+      "fix": { "actionId": "emulator.regenerateConfig", "label": "Re-apply OmniPC defaults (skips the IPL)", "safety": "low", "params": { "scope": "all" } },
       "userSupplied": true,
       "manual": ["Either add an IPL dumped from your own GameCube in BIOS & Firmware, or disable 'Skip main menu' changes."],
       "references": []

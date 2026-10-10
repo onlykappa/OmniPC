@@ -106,7 +106,7 @@ export class LibraryRepo {
     );
   }
 
-  /** Removing a library path removes OmniDeck's records only, never files. */
+  /** Removing a library path removes OmniPC's records only, never files. */
   removePath(id: number): void {
     this.db.transaction(() => {
       this.db.prepare('DELETE FROM games WHERE library_path_id = ?').run(id);

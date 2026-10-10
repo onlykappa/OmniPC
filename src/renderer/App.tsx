@@ -57,7 +57,7 @@ export function App() {
 
   useEffect(() => {
     if (!hasBridge()) {
-      setFatal('The OmniDeck backend is not available. Start the app through Electron (npm run dev).');
+      setFatal('The OmniPC backend is not available. Start the app through Electron (npm run dev).');
       return;
     }
     void bootstrapStore().then(() => setReady(true)).catch((e) => setFatal(String(e?.message ?? e)));
@@ -106,7 +106,7 @@ export function App() {
     return () => { stop(); window.removeEventListener('keydown', onKey); };
   }, []);
 
-  if (fatal) return <div className="onboarding"><div className="frame"><h1>OmniDeck could not start</h1><p className="muted">{fatal}</p></div></div>;
+  if (fatal) return <div className="onboarding"><div className="frame"><h1>OmniPC could not start</h1><p className="muted">{fatal}</p></div></div>;
   if (!ready || !settings) return <div className="onboarding"><Spinner /></div>;
   if (!settings.onboardingComplete && route.parts[0] !== 'settings') return <Onboarding onDone={async () => { useStore.getState().setSettings(await api('app.settings.get')); navigate('/home'); }} />;
   return <Layout health={health}><Router /></Layout>;

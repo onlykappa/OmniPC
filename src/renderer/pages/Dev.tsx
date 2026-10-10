@@ -18,7 +18,7 @@ export function DevPage() {
         <div className="row">
           <select value={id} onChange={(e) => setId(e.target.value)} style={{ maxWidth: 260 }}>{(emus ?? []).map((e) => <option key={e.id} value={e.id}>{e.name}{e.implemented ? '' : ' (planned)'}</option>)}</select>
           <Button variant="primary" busy={busy} onClick={async () => { setBusy(true); try { setReport(await api('dev.adapterReport', id)); } finally { setBusy(false); } }}>Inspect adapter</Button>
-          <Button onClick={async () => setLog(await api('app.logTail', 300))}>OmniDeck log tail</Button>
+          <Button onClick={async () => setLog(await api('app.logTail', 300))}>OmniPC log tail</Button>
         </div>
       </Panel>
       {busy && <Spinner />}
@@ -32,7 +32,7 @@ export function DevPage() {
           <Panel title="Manifest"><pre>{JSON.stringify(report.manifest, null, 2)}</pre></Panel>
         </div>
       )}
-      {log && <Panel title="OmniDeck log"><pre>{log}</pre></Panel>}
+      {log && <Panel title="OmniPC log"><pre>{log}</pre></Panel>}
       <Panel title="Diagnostic knowledge base">
         {(rules ?? []).map((f) => <div key={f.emulatorId} className="col"><strong>{f.emulatorId === '*' ? 'Generic' : f.emulatorId}</strong>{f.rules.map((r) => <div key={r.id} className="small"><code>{r.id}</code> — {r.title} ({r.severity}){r.fix ? ` → ${r.fix}` : ''}</div>)}</div>)}
       </Panel>

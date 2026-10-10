@@ -1,8 +1,9 @@
-# Windows installer (NSIS). Emulators are NOT bundled: OmniDeck downloads the
+# Windows installer (NSIS). Emulators are NOT bundled: OmniPC downloads the
 # ones the user selects from their official sources during onboarding.
+# Kept from before the rename to OmniPC so new installers upgrade existing installs in place.
 appId: pc.omnideck.app
-productName: OmniDeck PC
-copyright: Copyright © OmniDeck PC contributors
+productName: OmniPC
+copyright: Copyright © OmniPC contributors
 directories:
   output: release
   buildResources: resources
@@ -24,7 +25,7 @@ win:
   target:
     - target: nsis
       arch: [x64]
-  artifactName: OmniDeck-Setup-${version}.exe
+  artifactName: OmniPC-Setup-${version}.exe
   # Never run the whole app elevated; specific operations request elevation themselves.
   requestedExecutionLevel: asInvoker
 nsis:
@@ -33,6 +34,6 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: OmniDeck PC
-  # User data (games, saves, BIOS, emulators under %USERPROFILE%\OmniDeck) is never removed on uninstall.
+  shortcutName: OmniPC
+  # User data (games, saves, BIOS, emulators under %USERPROFILE%\OmniPC) is never removed on uninstall.
   deleteAppDataOnUninstall: false
