@@ -704,6 +704,8 @@ export interface AppSettings {
   aiProvider: 'none' | 'anthropic';
   aiApiKey: string;
   aiModel: string;
+  /** RetroAchievements sign-in (the login token is stored separately, encrypted, never here). */
+  retroAchievements: import('./achievements').RetroAchievementsSettings;
   hotkeys: HotkeyConfig;
   devMode: boolean;
   saveBackup: SaveBackupSettings;

@@ -9,6 +9,7 @@ import type { ConfigBackup, ConfigDiff } from '@shared/models';
 import type { OpsRepo } from '../database/opsRepo';
 import { logger } from '../core/logger';
 import { diffLines } from './diff';
+import { redactAchievementFile } from '../achievements/emulatorConfig';
 
 const log = logger.scope('backups');
 
@@ -90,8 +91,9 @@ export class ConfigBackupService {
     const files: ConfigDiff['files'] = [];
     for (const e of manifest.entries) {
       const live = join(e.root, e.rel);
-      const before = e.existed ? await readFile(join(b.path, 'files', e.rel), 'utf8').catch(() => '') : null;
-      const now = existsSync(live) ? await readFile(live, 'utf8').catch(() => '') : null;
+      // Diffs are shown in the UI: RetroAchievements tokens are blanked.
+      const before = e.existed ? redactAchievementFile(e.rel, await readFile(join(b.path, 'files', e.rel), 'utf8').catch(() => '')) : null;
+      const now = existsSync(live) ? redactAchievementFile(e.rel, await readFile(live, 'utf8').catch(() => '')) : null;
       if (before === null && now === null) continue;
       if (before === null) files.push({ relPath: e.rel, status: 'added', lines: diffLines('', now!) });
       else if (now === null) files.push({ relPath: e.rel, status: 'removed', lines: diffLines(before, '') });

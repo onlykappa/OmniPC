@@ -24,6 +24,7 @@ import { fileVersion, isWindows } from '../../platform/powershell';
 import { inspectPs2Bios } from '../../bios/validators';
 import { compareVersions } from '../versions';
 import { readFile } from 'node:fs/promises';
+import { writeAchievementsConfig, type RaFiles } from '../../achievements/emulatorConfig';
 
 export const PCSX2_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
@@ -221,7 +222,12 @@ export class Pcsx2Adapter implements EmulatorAdapter {
       }
     }
     if (changed.length || !existsSync(this.iniPath())) await saveIni(this.iniPath(), doc);
+    if (input.achievements && (scope === 'all' || scope === 'paths')) changed.push(...(await writeAchievementsConfig(this.achievements(), input.achievements)));
     return { changed, notes: [] };
+  }
+
+  achievements(): RaFiles {
+    return { kind: 'pcsx2', ini: this.iniPath() };
   }
 
   async inspectConfig(): Promise<ConfigInspection> {

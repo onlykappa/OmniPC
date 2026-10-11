@@ -40,6 +40,9 @@ import { defaultProfile } from '../controllers/translate';
 import { scanHardware } from '../platform/hardware';
 import { errorMessage } from '../core/errors';
 import { SteamService, defaultSelfLauncher, type SelfLauncher } from '../steam/service';
+import { RetroAchievementsService } from '../achievements/service';
+import { TokenVault, type SecretCipher, type StoredRaToken } from '../achievements/tokenVault';
+import { raUserAgent } from '../achievements/raApi';
 
 const log = logger.scope('container');
 
@@ -53,6 +56,9 @@ export interface Host {
   extraAdapters?: (paths: AppPaths) => EmulatorAdapter[];
   /** How Steam shortcuts start OmniPC (defaults to the running executable). */
   selfLauncher?: () => SelfLauncher;
+  /** Encrypts secrets at rest (Electron safeStorage); without it the RetroAchievements token is stored unprotected. */
+  secretCipher?: SecretCipher;
+  appVersion?: string;
 }
 
 export interface ContainerOptions {
@@ -89,6 +95,7 @@ export class AppContainer {
   readonly launcher: LaunchService;
   readonly importer: ImportService;
   readonly steam: SteamService;
+  readonly achievements: RetroAchievementsService;
   readonly safeMode: boolean;
   private hardwareProfile: HardwareProfile | null;
   private pads: { pads: DetectedController[]; reportedAt: number | null } = { pads: [], reportedAt: null };
@@ -126,7 +133,18 @@ export class AppContainer {
       notifications: this.notifications,
       hardware: () => this.hardwareProfile,
       controllerProfile: () => this.controllerProfile(),
+      achievements: () => this.achievements.credentials(),
       fetchImpl: opts.host.fetchImpl,
+    });
+    this.achievements = new RetroAchievementsService({
+      settings: this.settings,
+      registry: this.registry,
+      isInstalled: (id) => this.emulators.isInstalled(id),
+      backups: this.backups,
+      ops: this.ops,
+      vault: new TokenVault({ read: () => this.settings.getInternal<StoredRaToken | null>('retroAchievementsToken', null), write: (v) => this.settings.setInternal('retroAchievementsToken', v) }, opts.host.secretCipher ?? null),
+      fetchImpl: opts.host.fetchImpl ?? fetch,
+      userAgent: raUserAgent(opts.host.appVersion ?? '0.0.0'),
     });
     this.bios = new BiosService(this.registry, this.paths, this.ops);
     this.saves = new SaveService(this.registry, this.emulators, this.paths, this.ops, this.settings, { homeDir: opts.homeDir, installDir: dirname(process.execPath) });
@@ -156,6 +174,7 @@ export class AppContainer {
       controllers: () => this.pads,
       bus: this.bus,
       saves: this.saves,
+      raCanApply: () => !!this.achievements.credentials(),
     };
     this.doctor = new OmniDoctor(checkDeps);
     this.repairs = new RepairEngine({
@@ -173,6 +192,7 @@ export class AppContainer {
       scanLibrary: () => this.scanLibrary(false).done,
       rescanHardware: () => this.scanHardware(),
       saves: this.saves,
+      achievements: this.achievements,
     });
     this.launcher = new LaunchService({
       registry: this.registry,

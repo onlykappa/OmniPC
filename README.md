@@ -72,7 +72,8 @@ groups multi-disc games, flags broken dumps, and remembers games on drives that 
 ### ⚙️ Emulators that just work
 One click installs and configures each emulator. OmniPC turns off first-run wizards,
 update nags and exit confirmations, so games start fullscreen and closing them brings you
-back. Saves live in one OmniPC folder that survives updates.
+back. Saves live in one OmniPC folder that survives updates. Sign in to RetroAchievements
+once and achievements work in RetroArch, DuckStation, PCSX2, PPSSPP and Dolphin.
 
 </td>
 </tr>

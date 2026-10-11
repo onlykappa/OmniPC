@@ -25,6 +25,7 @@ implemented is labelled *planned* or disabled, never a button that silently does
 | OmniDoctor: 17 checks, real health score, rule knowledge base, log analysis, change correlation, confidence/evidence, repairs with safety levels, repair history + undo, repair-all-safe, automatic safe repairs | ✅ |
 | Config backups (compare/restore/delete), save backups/restore, storage relocation | ✅ |
 | Automatic save backups (daily/weekly, after playing, before emulator updates; unchanged saves skipped; retention for automatic backups only), backup folder in OneDrive/Google Drive/Dropbox with per-PC subfolders, restore from other PCs | ✅ (cloud folders not yet tested on Windows) |
+| RetroAchievements: one sign-in in Settings (password never stored, token encrypted with safeStorage/DPAPI), written into RetroArch, DuckStation, PCSX2, PPSSPP and Dolphin (kept across updates/repairs), hardcore toggle, sign-out clears every emulator, OmniDoctor check + safe repair | ✅ (not yet run on Windows) |
 | BIOS & firmware manager (validation for PS2 BIOS, GameCube IPL; file listing for other systems) | ✅ |
 | Download manager (progress, speed, pause/resume via Range, retry, cancel, verification) | ✅ |
 | Import existing setups: PCSX2 (Documents), Dolphin (AppData/Documents), standalone installs, EmuDeck for Windows (ROM paths, BIOS, saves) | ✅ |

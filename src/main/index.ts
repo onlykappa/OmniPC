@@ -1,7 +1,7 @@
 // Electron main process entry: window, IPC bridge, artwork protocol, safe
 // mode, console mode and lifecycle. Business logic lives in AppContainer.
 
-import { app, BrowserWindow, dialog, ipcMain, nativeImage, net, protocol, screen, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, net, protocol, safeStorage, screen, shell } from 'electron';
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -130,6 +130,13 @@ app.whenReady().then(async () => {
     host: {
       thumbnailer,
       displays,
+      appVersion: app.getVersion(),
+      // RetroAchievements token at rest: DPAPI on Windows.
+      secretCipher: {
+        available: () => safeStorage.isEncryptionAvailable(),
+        encrypt: (plain) => safeStorage.encryptString(plain),
+        decrypt: (data) => safeStorage.decryptString(data),
+      },
       onSessionStart: () => win?.minimize(),
       onSessionEnd: () => {
         if (!win) return;

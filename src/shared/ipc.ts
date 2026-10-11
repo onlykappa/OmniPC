@@ -209,6 +209,14 @@ export interface OmniApi {
   'controllers.saveProfile': (p: Omit<UniversalControllerProfile, 'id' | 'updatedAt'>) => UniversalControllerProfile;
   'controllers.apply': () => { applied: string[]; skipped: { emulatorId: string; reason: string }[] };
 
+  // RetroAchievements (sign in once; OmniPC configures every supporting emulator)
+  'ra.status': () => import('./achievements').RaStatus;
+  /** The password is sent to retroachievements.org once and never stored. */
+  'ra.login': (username: string, password: string) => import('./achievements').RaStatus;
+  'ra.logout': () => import('./achievements').RaStatus;
+  'ra.setHardcore': (on: boolean) => import('./achievements').RaStatus;
+  'ra.apply': () => import('./achievements').RaStatus;
+
   // BIOS
   'bios.status': () => BiosStatus[];
   'bios.import': (systemId: SystemId, filePath: string) => BiosStatus;

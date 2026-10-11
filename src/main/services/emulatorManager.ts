@@ -24,6 +24,7 @@ import { OmniFailure, errorMessage } from '../core/errors';
 import { logger } from '../core/logger';
 import { freeSpace } from '../platform/drives';
 import { isNewer } from '../emulators/versions';
+import type { RaCredentials } from '../achievements/emulatorConfig';
 
 const log = logger.scope('emulators');
 
@@ -48,6 +49,8 @@ export interface EmulatorManagerDeps {
   notifications: NotificationService;
   hardware: () => HardwareProfile | null;
   controllerProfile: () => UniversalControllerProfile;
+  /** RetroAchievements sign-in written into supporting emulators' configs (null = leave them alone). */
+  achievements?: () => RaCredentials | null;
   fetchImpl?: typeof fetch;
 }
 
@@ -440,7 +443,7 @@ export class EmulatorManager {
   }
 
   configInput(id: string) {
-    return { settings: this.settingsFor(id), controller: this.d.controllerProfile(), hotkeys: this.hotkeys(), hardware: this.d.hardware() };
+    return { settings: this.settingsFor(id), controller: this.d.controllerProfile(), hotkeys: this.hotkeys(), hardware: this.d.hardware(), achievements: this.d.achievements?.() ?? null };
   }
 
   /** Smoke test + record health. */

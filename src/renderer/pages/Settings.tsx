@@ -6,6 +6,7 @@ import { navigate } from '../lib/router';
 import { useStore } from '../lib/store';
 import { Button, Chip, Modal, Panel, ProgressBar, Segmented, Toggle } from '../components/ui';
 import { SaveBackupSettingsForm } from '../components/SaveBackups';
+import { RetroAchievementsPanel } from '../components/RetroAchievementsPanel';
 
 export function SettingsPage() {
   const settings = useStore((s) => s.settings);
@@ -46,6 +47,7 @@ export function SettingsPage() {
           <label className="field">Launch timeout warning: {settings.launchTimeoutSeconds} s<input type="range" min={5} max={120} value={settings.launchTimeoutSeconds} onChange={(e) => set({ launchTimeoutSeconds: Number(e.target.value) })} /></label>
           <div className="row"><Button onClick={() => navigate('/doctor/history')}>Repair history</Button><Button onClick={() => navigate('/bios')}>BIOS & Firmware</Button></div>
         </Panel>
+        <RetroAchievementsPanel />
         <Panel id="ai" title="AI troubleshooter (optional)">
           <p className="small muted">Off by default. When enabled, "Ask OmniDoctor" sends a redacted diagnostic summary (you can preview it) to the Anthropic API. ROMs, BIOS, saves and keys are never sent. All local diagnostics and repairs work without it.</p>
           <Toggle label="Enable AI troubleshooter" value={settings.aiEnabled} onChange={(v) => set({ aiEnabled: v, aiProvider: v ? 'anthropic' : 'none' })} />

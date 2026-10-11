@@ -31,6 +31,7 @@ import { fileVersion, isWindows } from '../../platform/powershell';
 import { OmniFailure } from '../../core/errors';
 import { splitArgs } from '../pcsx2/adapter';
 import { CfgDocument, checkCfg } from './cfg';
+import { writeAchievementsConfig, type RaFiles } from '../../achievements/emulatorConfig';
 
 export const RETROARCH_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
@@ -346,7 +347,12 @@ export class RetroArchAdapter implements EmulatorAdapter {
       }
     }
     if (changed.length || !existsSync(cfg)) await atomicWrite(cfg, doc.toString());
+    if (input.achievements && (scope === 'all' || scope === 'paths')) changed.push(...(await writeAchievementsConfig(this.achievements(), input.achievements)));
     return { changed, notes };
+  }
+
+  achievements(): RaFiles {
+    return { kind: 'retroarch', cfg: this.cfgPath() };
   }
 
   /** Resolves a RetroArch path value: ":\" is the executable folder (file_path.c fill_pathname_expand_special). */

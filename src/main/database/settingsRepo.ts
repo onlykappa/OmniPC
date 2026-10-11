@@ -23,6 +23,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   aiProvider: 'none',
   aiApiKey: '',
   aiModel: 'claude-opus-5-5',
+  retroAchievements: { enabled: false, username: null, hardcore: false },
   hotkeys: {
     modifier: 'Select',
     bindings: {
