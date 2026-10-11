@@ -53,10 +53,11 @@ export function SettingsPage() {
         </Panel>
         <Panel id="library" title="Library & metadata">
           <Toggle label="Online metadata & artwork" description="Fetched once, cached locally. The library works fully offline." value={settings.metadataOnline} onChange={(v) => set({ metadataOnline: v })} />
-          {[['local-files', 'Artwork next to your games (offline)'], ['emulator-databases', "Titles & compatibility from PCSX2/Dolphin's bundled databases (offline)"], ['gametdb', 'GameTDB covers for GameCube/Wii (art.gametdb.com)'], ['ps2-covers', 'PS2 covers from the community xlenore/ps2-covers repository']].map(([id, label]) => (
+          {[['local-files', 'Artwork next to your games (offline)'], ['emulator-databases', "Titles & compatibility from PCSX2/Dolphin's bundled databases (offline)"], ['gametdb', 'GameTDB covers for GameCube/Wii (art.gametdb.com)'], ['ps2-covers', 'PS2 covers from the community xlenore/ps2-covers repository'], ['libretro-thumbnails', 'Box art & screenshots for all systems (libretro-thumbnails on GitHub, no account needed)']].map(([id, label]) => (
             <Toggle key={id} label={label} value={settings.artworkProviders.includes(id)} onChange={(v) => set({ artworkProviders: v ? [...settings.artworkProviders, id] : settings.artworkProviders.filter((x) => x !== id) })} />
           ))}
           <label className="field">TheGamesDB API key (optional, for descriptions)<input type="password" value={settings.theGamesDbApiKey} onChange={(e) => set({ theGamesDbApiKey: e.target.value })} /></label>
+          <p className="small faint">Box art and screenshots work without a key. For descriptions, release year and player counts, request a free personal API key on the TheGamesDB forum (forums.thegamesdb.net) and paste it here, then click "Refresh all metadata".</p>
           <div className="row"><Button onClick={() => void api('metadata.refreshAll')}>Refresh all metadata</Button><Button onClick={() => navigate('/storage')}>Storage</Button></div>
         </Panel>
         <Panel id="updates" title="Updates">

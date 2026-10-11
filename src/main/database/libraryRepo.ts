@@ -389,6 +389,11 @@ export class LibraryRepo {
     return this.db.prepare(`SELECT g.* FROM games g LEFT JOIN metadata m ON m.game_id = g.id WHERE g.availability != 'missing' AND COALESCE(m.locked, 0) = 0 AND g.system_id IN (${systems.map(() => '?').join(',')})`).all(...systems) as GameRow[];
   }
 
+  /** Games with no cover yet whose metadata was not edited by the user (re-fetch when new providers arrive). */
+  gamesWithoutCover(limit = 20000): GameRow[] {
+    return this.db.prepare("SELECT g.* FROM games g LEFT JOIN metadata m ON m.game_id = g.id WHERE g.availability != 'missing' AND (m.game_id IS NULL OR (m.cover_path IS NULL AND m.locked = 0)) LIMIT ?").all(limit) as GameRow[];
+  }
+
   gamesNeedingMetadata(limit = 500): GameRow[] {
     return this.db.prepare("SELECT g.* FROM games g LEFT JOIN metadata m ON m.game_id = g.id WHERE g.availability != 'missing' AND (m.game_id IS NULL OR (m.fetched_at IS NULL AND m.locked = 0)) LIMIT ?").all(limit) as GameRow[];
   }

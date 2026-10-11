@@ -27,6 +27,7 @@ import { atomicWrite } from '../config/iniFile';
 import { backupDatabase } from '../database/db';
 import { DEFAULT_SETTINGS } from '../database/settingsRepo';
 import { installVcRedist } from '../platform/vcredist';
+import { applyCueRepair, applyM3uRebuild, extractGameArchive, planCueRepair, planM3uRebuild, restoreFiles, revalidateGame } from '../library/gameFix';
 
 const log = logger.scope('repairs');
 
@@ -62,6 +63,15 @@ export interface RepairAction {
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+
+/** The game file a game-fix repair acts on (must belong to the game). */
+function requireGameFile(params: Record<string, unknown>, d: RepairDeps) {
+  const gameId = num(params.gameId);
+  const fileId = num(params.fileId);
+  const file = gameId === null ? undefined : d.library.filesForGame(gameId).find((f) => f.id === fileId);
+  if (gameId === null || !file) throw new OmniFailure({ code: 'REPAIR_PARAMS', whatHappened: 'The game file for this repair is no longer in your library. Rescan and try again.' });
+  return { gameId, file };
+}
 
 function requireEmulator(params: Record<string, unknown>, d: RepairDeps) {
   const id = str(params.emulatorId);
@@ -287,6 +297,70 @@ export const ACTIONS: RepairAction[] = [
     },
   },
   {
+    id: 'game.revalidate',
+    label: 'Check game files again',
+    safety: 'safe',
+    async run(params, d) {
+      const gameId = num(params.gameId);
+      if (gameId === null) throw new OmniFailure({ code: 'REPAIR_PARAMS', whatHappened: 'No game specified.' });
+      const bad = await revalidateGame(d.library, gameId);
+      d.bus.emit('library.changed', { reason: 'validation' });
+      return { message: bad ? `${bad} file(s) still have a problem` : 'Game files look fine now', details: [], backupIds: [], undo: null };
+    },
+  },
+  {
+    id: 'game.revalidateAll',
+    label: 'Check all problem games again',
+    safety: 'safe',
+    async run(_p, d) {
+      const ids = (d.db.prepare("SELECT id FROM games WHERE validation IN ('invalid', 'warning') AND availability = 'available'").all() as { id: number }[]).map((r) => r.id);
+      let fixed = 0;
+      for (const id of ids) if ((await revalidateGame(d.library, id)) === 0) fixed++;
+      d.bus.emit('library.changed', { reason: 'validation' });
+      return { message: `Checked ${ids.length} game(s); ${fixed} are fine now`, details: [], backupIds: [], undo: null };
+    },
+  },
+  {
+    id: 'game.repairCue',
+    label: 'Fix CUE sheet',
+    safety: 'low',
+    async run(params, d) {
+      const { gameId, file } = requireGameFile(params, d);
+      const plan = await planCueRepair(file.path);
+      if (!plan.changes.length) throw new OmniFailure({ code: 'CUE_NO_MATCH', whatHappened: 'OmniPC could not find the missing track files under another name.', userAction: ['Copy the missing .bin track(s) next to the .cue sheet.'] });
+      const backup = await applyCueRepair(file.path, plan);
+      await revalidateGame(d.library, gameId);
+      d.bus.emit('library.changed', { reason: 'validation' });
+      return { message: `Fixed ${plan.changes.length} track reference(s) in the CUE sheet`, details: [...plan.changes.map((c) => `${c.from} → ${c.to}`), ...plan.unresolved.map((u) => `Still missing: ${u}`), `Backup: ${backup}`], backupIds: [], undo: { kind: 'restore-files', files: [{ path: file.path, backup }] } };
+    },
+  },
+  {
+    id: 'game.rebuildM3u',
+    label: 'Rebuild multi-disc playlist',
+    safety: 'low',
+    async run(params, d) {
+      const { gameId, file } = requireGameFile(params, d);
+      const discs = await planM3uRebuild(file.path);
+      if (!discs) throw new OmniFailure({ code: 'M3U_NO_DISCS', whatHappened: 'OmniPC could not find a complete set of disc files next to the playlist.', userAction: ['Put every disc of the game in the same folder as the .m3u.'] });
+      const backup = await applyM3uRebuild(file.path, discs);
+      await revalidateGame(d.library, gameId);
+      d.bus.emit('library.changed', { reason: 'validation' });
+      return { message: `Playlist rebuilt with ${discs.length} discs`, details: [...discs, `Backup: ${backup}`], backupIds: [], undo: { kind: 'restore-files', files: [{ path: file.path, backup }] } };
+    },
+  },
+  {
+    id: 'game.extractArchive',
+    label: 'Extract zipped game',
+    safety: 'low',
+    async run(params, d) {
+      const { gameId, file } = requireGameFile(params, d);
+      const r = await extractGameArchive(file.path);
+      await d.scanLibrary();
+      await revalidateGame(d.library, gameId);
+      return { message: `Extracted ${r.files} file(s); the archive was kept`, details: [`Extracted to ${r.folder}`, `You can delete ${file.path} yourself once the game works.`], backupIds: [], undo: null };
+    },
+  },
+  {
     id: 'database.backup',
     label: 'Back up database',
     safety: 'safe',
@@ -401,6 +475,10 @@ export class RepairEngine {
         await this.d.emulators.applyControllerProfile({ force: false });
       }
       details.push('Previous settings restored');
+    } else if (undo.kind === 'restore-files') {
+      for (const p of await restoreFiles(undo.files ?? [])) details.push(`Restored ${p}`);
+      if (rec.subject?.startsWith('game:')) await revalidateGame(this.d.library, Number(rec.subject.slice(5))).catch(() => undefined);
+      this.d.bus.emit('library.changed', { reason: 'validation' });
     }
     this.d.ops.setRepairStatus(repairId, 'undone');
     this.d.ops.addChange('repair.undone', rec.subject, `Undid repair: ${rec.message}`);

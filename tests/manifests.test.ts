@@ -15,7 +15,7 @@ describe('emulator manifests & registry', () => {
 
   it('marks only real integrations as implemented', () => {
     for (const a of reg.all()) expect(a.manifest.implemented, a.manifest.id).toBe(!(a instanceof PlannedAdapter));
-    expect(reg.implemented().map((a) => a.manifest.id)).toEqual(expect.arrayContaining(['cemu', 'dolphin', 'duckstation', 'kyty', 'pcsx2', 'ppsspp', 'rpcs3', 'xenia', 'melonds', 'xemu', 'retroarch', 'shadps4']));
+    expect(reg.implemented().map((a) => a.manifest.id)).toEqual(expect.arrayContaining(['cemu', 'dolphin', 'duckstation', 'kyty', 'pcsx2', 'ppsspp', 'rpcs3', 'xenia', 'melonds', 'xemu', 'retroarch', 'shadps4', 'ryujinx']));
   });
 
   it('every system has at least one emulator in the registry', () => {

@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { EventBus } from '../src/main/core/events';
 import { DownloadManager } from '../src/main/downloads/downloadManager';
-import { DolphinUpdateSource, GitHubReleaseSource, VersionedUrlSource, hostAllowed, pickAsset, releaseVersion } from '../src/main/downloads/sources';
+import { DolphinUpdateSource, ForgejoReleaseSource, GitHubReleaseSource, VersionedUrlSource, hostAllowed, pickAsset, releaseVersion } from '../src/main/downloads/sources';
 import { tempDir } from './helpers';
 import { compareVersions } from '../src/main/emulators/versions';
 
@@ -47,6 +47,21 @@ describe('trusted sources', () => {
     const rel = await src.resolveLatest({ channel: 'stable', cpuFeatures: [], fetchImpl: fakeFetch({ 'https://api.github.com/repos/PCSX2/pcsx2/releases/latest': () => Response.json({ tag_name: 'v2.8.2', prerelease: false, draft: false, assets: [{ name: 'pcsx2-v2.8.2-windows-x64-Qt.7z', browser_download_url: 'https://github.com/PCSX2/pcsx2/releases/download/v2.8.2/pcsx2-v2.8.2-windows-x64-Qt.7z', size: 10, digest: `sha256:${digest}` }] }) }) });
     expect(rel.version).toBe('2.8.2');
     expect(rel.sha256).toBe(digest);
+  });
+
+  it('resolves Ryubing releases from its Forgejo server (stable and canary repos)', async () => {
+    const api = 'https://git.ryujinx.app/api/v1';
+    const asset = (n: string) => ({ name: n, browser_download_url: `https://git.ryujinx.app/x/${n}`, size: 5 });
+    const src = new ForgejoReleaseSource(api, 'projects/Ryubing', 'Ryubing/Canary', ['^ryujinx-\\d+\\.\\d+\\.\\d+-win_x64\\.zip$', '^ryujinx-canary-\\d+\\.\\d+\\.\\d+-win_x64\\.zip$'], ['\\.7z$', 'arm64'], ['git.ryujinx.app'], '^ryujinx-(?:canary-)?(\\d+\\.\\d+\\.\\d+)-win_x64\\.zip$');
+    const fetchImpl = fakeFetch({
+      [`${api}/repos/projects/Ryubing/releases/latest`]: () => Response.json({ tag_name: '1.3.3', assets: [asset('ryujinx-1.3.3-win_x64.7z'), asset('ryujinx-1.3.3-win_arm64.zip'), asset('ryujinx-1.3.3-win_x64.zip')] }),
+      [`${api}/repos/Ryubing/Canary/releases?limit=10`]: () => Response.json([{ tag_name: '1.3.250', draft: true, assets: [asset('ryujinx-canary-1.3.250-win_x64.zip')] }, { tag_name: '1.3.249', assets: [asset('ryujinx-canary-1.3.249-win_x64.zip')] }]),
+    });
+    const stable = await src.resolveLatest({ channel: 'stable', cpuFeatures: [], fetchImpl });
+    expect([stable.version, stable.fileName, stable.sha256]).toEqual(['1.3.3', 'ryujinx-1.3.3-win_x64.zip', null]);
+    expect(src.label).toBe('git.ryujinx.app/projects/Ryubing');
+    expect((await src.resolveLatest({ channel: 'nightly', cpuFeatures: [], fetchImpl })).version).toBe('1.3.249');
+    expect(() => new ForgejoReleaseSource('http://evil', 'a/b', undefined, [], [], [])).toThrow();
   });
 
   it('turns rolling tags into comparable versions', () => {

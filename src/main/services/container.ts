@@ -26,7 +26,9 @@ import { BiosService } from './biosService';
 import { SaveService } from './saveService';
 import { StorageService } from './storageService';
 import { LibraryScanner } from '../library/scanner';
-import { MetadataService, type Thumbnailer } from '../metadata/service';
+import { join } from 'node:path';
+import { MetadataService, defaultProviders, type Thumbnailer } from '../metadata/service';
+import { LibretroThumbnails } from '../metadata/libretroThumbnails';
 import { OmniDoctor } from '../diagnostics/doctor';
 import { RepairEngine } from '../repairs/engine';
 import { LaunchService } from '../launching/launchService';
@@ -129,6 +131,7 @@ export class AppContainer {
       this.paths.thumbnails,
       { emulatorAppDir: (id) => (this.emulators.isInstalled(id) ? this.registry.require(id).paths().app : null), fetchImpl: opts.host.fetchImpl ?? fetch },
       opts.host.thumbnailer,
+      defaultProviders(new LibretroThumbnails(join(this.paths.cache, 'metadata'), opts.host.fetchImpl ?? fetch)),
     );
     const checkDeps = {
       registry: this.registry,
@@ -293,6 +296,41 @@ export class AppContainer {
         }
       }).catch(() => undefined);
     }, 15000));
+    // New artwork providers (v2: libretro-thumbnails): enable them for existing
+    // installs once and fetch art for games that have no cover yet.
+    const providersVersion = this.settings.getInternal('metadataProvidersVersion', 1);
+    if (providersVersion < 2) {
+      const cur = this.settings.get('artworkProviders');
+      if (!cur.includes('libretro-thumbnails')) this.settings.set({ artworkProviders: [...cur, 'libretro-thumbnails'] });
+      this.settings.setInternal('metadataProvidersVersion', 2);
+      if (settings.onboardingComplete && settings.metadataOnline && !this.safeMode) {
+        setTimeout(() => {
+          this.jobs.start('metadata.refresh', 'Downloading box art and screenshots', async (ctx) => {
+            const r = await this.metadata.refreshAll(ctx, { onlyMissing: false, withoutCover: true });
+            this.bus.emit('library.changed', { reason: 'metadata' });
+            return r;
+          }, { lockKey: 'metadata' });
+        }, 25000);
+      }
+    }
+    // Validation rules changed (v2: N64 .z64 ROMs were mistaken for split ZIP
+    // parts): re-check files previously flagged so stale warnings clear.
+    if (this.settings.getInternal('validationVersion', 1) < 2) {
+      this.settings.setInternal('validationVersion', 2);
+      setTimeout(() => {
+        this.jobs.start('library.revalidate', 'Re-checking flagged game files', async (ctx) => {
+          const { revalidateGame } = await import('../library/gameFix');
+          const ids = (this.db.prepare("SELECT id FROM games WHERE validation IN ('invalid', 'warning') AND availability = 'available'").all() as { id: number }[]).map((r) => r.id);
+          for (const [i, id] of ids.entries()) {
+            ctx.throwIfCancelled();
+            ctx.progress(i / Math.max(ids.length, 1), `${i}/${ids.length}`);
+            await revalidateGame(this.library, id);
+          }
+          this.bus.emit('library.changed', { reason: 'validation' });
+          return { checked: ids.length };
+        }, { lockKey: 'library' });
+      }, 5000);
+    }
     if (settings.onboardingComplete) {
       if (this.library.listPaths().length) this.scanLibrary(false);
       if (settings.backgroundHealthChecks) setTimeout(() => this.runHealthCheck('quick'), 8000);

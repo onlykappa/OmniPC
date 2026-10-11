@@ -175,8 +175,12 @@ export interface EmulatorManifest {
   implemented: boolean;
   plannedNote?: string;
   download: {
-    kind: 'github-release' | 'dolphin-update' | 'versioned-url' | 'none';
+    kind: 'github-release' | 'dolphin-update' | 'versioned-url' | 'forgejo-release' | 'none';
     repo?: string;
+    /** forgejo-release: API root of the Forgejo/Gitea server, e.g. https://git.ryujinx.app/api/v1 */
+    apiBase?: string;
+    /** forgejo-release: repository with nightly/canary builds (defaults to repo). */
+    nightlyRepo?: string;
     /**
      * github-release: how the version is derived. 'tag' (default) uses the tag;
      * 'published-at' uses the publish time (YYYY.MM.DD.HHMM) plus the tag's trailing
@@ -742,7 +746,7 @@ export interface AppInfo {
 
 export interface SetupImportCandidate {
   id: string;
-  source: 'pcsx2' | 'dolphin' | 'emudeck' | 'retroarch' | 'rpcs3' | 'cemu' | 'duckstation' | 'ppsspp' | 'kyty' | 'melonds' | 'xenia' | 'xemu' | 'shadps4';
+  source: 'pcsx2' | 'dolphin' | 'emudeck' | 'retroarch' | 'rpcs3' | 'cemu' | 'duckstation' | 'ppsspp' | 'kyty' | 'melonds' | 'xenia' | 'xemu' | 'shadps4' | 'ryujinx';
   label: string;
   path: string;
   details: string[];
@@ -758,4 +762,23 @@ export interface AiContextPreview {
   json: string;
   redactions: string[];
   bytes: number;
+}
+
+/** One problem OmniDoctor > Games found with a game, with the fixes it can apply. */
+export interface GameIssue {
+  kind: 'missing-file' | 'unavailable' | 'cue-missing-track' | 'm3u-missing-disc' | 'archived' | 'split-archive' | 'incomplete' | 'unreadable' | 'suspicious-size' | 'crash-loop' | 'failures' | 'other';
+  severity: 'problem' | 'warning';
+  title: string;
+  detail: string;
+  /** Repairs OmniPC can run for this issue (empty when only manual steps apply). */
+  fixes: RepairSuggestion[];
+  manualSteps: string[];
+}
+
+export interface GameProblem {
+  gameId: number;
+  title: string;
+  systemId: string;
+  path: string;
+  issues: GameIssue[];
 }

@@ -12,7 +12,20 @@ import type { SettingsRepo } from '../database/settingsRepo';
 import type { JobContext } from '../core/jobs';
 import { logger } from '../core/logger';
 import { hostAllowed } from '../downloads/sources';
-import { ALL_PROVIDERS, type ArtworkCandidate, type MetadataProvider, type MetadataSubject, type ProviderEnv } from './providers';
+import { ALL_PROVIDERS, theGamesDbProvider, type ArtworkCandidate, type MetadataProvider, type MetadataSubject, type ProviderEnv } from './providers';
+import { libretroThumbnailsProvider, type LibretroThumbnails } from './libretroThumbnails';
+
+/**
+ * Provider order: offline sources, then system-specific online art (GameTDB,
+ * PS2 covers), then libretro-thumbnails for every system, then TheGamesDB.
+ * The first provider that supplies a cover wins; later ones fill gaps.
+ */
+export function defaultProviders(lt: LibretroThumbnails): MetadataProvider[] {
+  const base = ALL_PROVIDERS.filter((p) => p !== theGamesDbProvider);
+  return [...base, libretroThumbnailsProvider(lt), theGamesDbProvider];
+}
+
+const MAX_SCREENSHOTS = 4;
 
 const log = logger.scope('metadata');
 
@@ -59,6 +72,7 @@ export class MetadataService {
     const sources: string[] = [];
     let cover: string | null = null;
     let background: string | null = null;
+    const screenshots: string[] = [];
     for (const p of this.enabledProviders()) {
       if (p.online && this.offline) continue;
       let res;
@@ -91,6 +105,10 @@ export class MetadataService {
       for (const a of res.artwork ?? []) {
         if (a.kind === 'cover' && !cover && (cover = await this.fetchArtwork(gameId, a))) contributed = true;
         if (a.kind === 'background' && !background && (background = await this.fetchArtwork(gameId, a))) contributed = true;
+        if (a.kind === 'screenshot' && screenshots.length < MAX_SCREENSHOTS) {
+          const shot = await this.fetchArtwork(gameId, a, screenshots.length);
+          if (shot) { screenshots.push(shot); contributed = true; }
+        }
       }
       if (contributed) {
         sources.push(p.label);
@@ -101,6 +119,7 @@ export class MetadataService {
       ...patch,
       coverPath: cover ?? (current.coverPath && existsSync(current.coverPath) ? current.coverPath : null),
       backgroundPath: background ?? (current.backgroundPath && existsSync(current.backgroundPath) ? current.backgroundPath : null),
+      screenshots: screenshots.length ? screenshots : (current.screenshots ?? []).filter((p) => existsSync(p)),
       source: sources.length ? sources.join(', ') : current.source,
       fetchedAt: new Date().toISOString(),
     });
@@ -108,8 +127,8 @@ export class MetadataService {
     return this.repo.getMetadata(gameId);
   }
 
-  async refreshAll(ctx?: JobContext, opts: { onlyMissing: boolean } = { onlyMissing: true }): Promise<{ processed: number }> {
-    const games = opts.onlyMissing ? this.repo.gamesNeedingMetadata(5000) : this.repo.allGames();
+  async refreshAll(ctx?: JobContext, opts: { onlyMissing: boolean; withoutCover?: boolean } = { onlyMissing: true }): Promise<{ processed: number }> {
+    const games = opts.withoutCover ? this.repo.gamesWithoutCover() : opts.onlyMissing ? this.repo.gamesNeedingMetadata(5000) : this.repo.allGames();
     this.offline = false;
     let i = 0;
     for (const g of games) {
@@ -121,7 +140,7 @@ export class MetadataService {
     return { processed: i };
   }
 
-  private async fetchArtwork(gameId: number, a: ArtworkCandidate): Promise<string | null> {
+  private async fetchArtwork(gameId: number, a: ArtworkCandidate, index?: number): Promise<string | null> {
     await mkdir(this.artDir, { recursive: true });
     if (!/^https:/i.test(a.location)) {
       if (!existsSync(a.location)) return null;
@@ -130,7 +149,7 @@ export class MetadataService {
     }
     if (!a.allowedHosts || !hostAllowed(a.location, a.allowedHosts)) return null;
     const ext = (extname(new URL(a.location).pathname) || '.jpg').toLowerCase();
-    const dest = join(this.artDir, `${gameId}-${a.kind}${ext}`);
+    const dest = join(this.artDir, `${gameId}-${a.kind}${index !== undefined ? `-${index}` : ''}${ext}`);
     try {
       const r = await this.env.fetchImpl(a.location, { headers: { 'User-Agent': 'OmniPC-PC' }, redirect: 'manual' });
       if (!r.ok) return null;
@@ -177,7 +196,7 @@ export class MetadataService {
 
   async clear(gameId: number): Promise<void> {
     const m = this.repo.getMetadata(gameId);
-    for (const p of [m.coverPath, m.backgroundPath]) {
+    for (const p of [m.coverPath, m.backgroundPath, ...(m.screenshots ?? [])]) {
       if (p && p.startsWith(this.artDir)) await rm(p, { force: true }).catch(() => undefined);
     }
     await rm(join(this.thumbDir, `${gameId}.jpg`), { force: true }).catch(() => undefined);

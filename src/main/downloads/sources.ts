@@ -87,24 +87,30 @@ export function releaseVersion(rel: Pick<GhRelease, 'tag_name' | 'published_at'>
 }
 
 export class GitHubReleaseSource implements TrustedSource {
-  readonly label: string;
-  constructor(private readonly repo: string, private readonly patterns: string[], private readonly exclude: string[], private readonly allowedHosts: string[], private readonly versionFrom: 'tag' | 'published-at' = 'tag', private readonly versionPattern?: string) {
+  label: string;
+  constructor(protected readonly repo: string, private readonly patterns: string[], private readonly exclude: string[], private readonly allowedHosts: string[], private readonly versionFrom: 'tag' | 'published-at' = 'tag', private readonly versionPattern?: string) {
     if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) throw new Error(`invalid GitHub repo ${repo}`);
     this.label = `GitHub Releases (github.com/${repo})`;
   }
 
+  /** Release list URLs: the latest stable release, or recent releases for nightly. */
+  protected urls(): { latest: string; recent: string } {
+    const base = `https://api.github.com/repos/${this.repo}/releases`;
+    return { latest: `${base}/latest`, recent: `${base}?per_page=10` };
+  }
+
   async resolveLatest(ctx: SourceContext): Promise<ReleaseInfo> {
     const f = ctx.fetchImpl ?? fetch;
-    const base = `https://api.github.com/repos/${this.repo}/releases`;
+    const urls = this.urls();
     const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'OmniPC-PC', 'X-GitHub-Api-Version': '2022-11-28' };
     let releases: GhRelease[];
     try {
       if (ctx.channel === 'stable') {
-        const r = await f(`${base}/latest`, { headers });
+        const r = await f(urls.latest, { headers });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         releases = [(await r.json()) as GhRelease];
       } else {
-        const r = await f(`${base}?per_page=10`, { headers });
+        const r = await f(urls.recent, { headers });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         releases = ((await r.json()) as GhRelease[]).filter((x) => !x.draft);
       }
@@ -140,6 +146,25 @@ export class GitHubReleaseSource implements TrustedSource {
       probableCause: 'The project may have changed its release file naming. The adapter manifest needs an update.',
       userAction: ['Check for an OmniPC update.', 'Advanced: point OmniPC at an existing installation with "Use existing installation".'],
     });
+  }
+}
+
+/**
+ * Releases on a Forgejo/Gitea server (same JSON shape as GitHub's API, but
+ * no asset digests). Used for Ryubing, whose official builds are published on
+ * git.ryujinx.app; nightly builds can come from a separate repository.
+ */
+export class ForgejoReleaseSource extends GitHubReleaseSource {
+  constructor(private readonly apiBase: string, repo: string, private readonly nightlyRepo: string | undefined, patterns: string[], exclude: string[], allowedHosts: string[], versionPattern?: string) {
+    super(repo, patterns, exclude, allowedHosts, 'tag', versionPattern);
+    if (!/^https:\/\/[\w.-]+(\/[\w./-]*)?$/.test(apiBase)) throw new Error(`invalid Forgejo API base ${apiBase}`);
+    if (nightlyRepo && !/^[\w.-]+\/[\w.-]+$/.test(nightlyRepo)) throw new Error(`invalid Forgejo repo ${nightlyRepo}`);
+    this.label = `${new URL(apiBase).host}/${repo}`;
+  }
+
+  protected override urls(): { latest: string; recent: string } {
+    const base = this.apiBase.replace(/\/$/, '');
+    return { latest: `${base}/repos/${this.repo}/releases/latest`, recent: `${base}/repos/${this.nightlyRepo ?? this.repo}/releases?limit=10` };
   }
 }
 
@@ -218,6 +243,7 @@ export function sourceForManifest(m: EmulatorManifest): TrustedSource | null {
   const d = m.download;
   if (d.kind === 'versioned-url' && d.repo && d.urlTemplate) return new VersionedUrlSource(d.repo, d.urlTemplate, d.allowedHosts);
   if (d.kind === 'github-release' && d.repo) return new GitHubReleaseSource(d.repo, d.assetPatterns ?? [], d.assetExclude ?? [], d.allowedHosts, d.versionFrom, d.versionPattern);
+  if (d.kind === 'forgejo-release' && d.repo && d.apiBase) return new ForgejoReleaseSource(d.apiBase, d.repo, d.nightlyRepo, d.assetPatterns ?? [], d.assetExclude ?? [], d.allowedHosts, d.versionPattern);
   if (d.kind === 'dolphin-update') return new DolphinUpdateSource(d.track ?? 'beta', d.allowedHosts);
   return null;
 }

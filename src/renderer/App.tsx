@@ -1,3 +1,4 @@
+import { DoctorGamesPage } from './pages/DoctorGames';
 import { useEffect, useState } from 'react';
 import { api, hasBridge, onEvent } from './lib/api';
 import { back, navigate, useRoute } from './lib/router';
@@ -38,6 +39,7 @@ function Router() {
       if (b === 'finding') return <FindingPage id={decodeURIComponent(c ?? '')} />;
       if (b === 'history') return <RepairHistoryPage />;
       if (b === 'ask') return <AskPage />;
+      if (b === 'games') return <DoctorGamesPage />;
       return <DoctorPage />;
     case 'failure': return <FailurePage key={b} launchId={Number(b)} />;
     case 'storage': case 'saves': return <StoragePage />;

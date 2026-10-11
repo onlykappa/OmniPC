@@ -33,6 +33,7 @@ Note the commit shown on the run (e.g. `d165b17`) so we know which build you tes
 | KytyPS5 | PS5 | Ported, **experimental** (limited compatibility) | nothing; needs a Vulkan 1.3 GPU |
 | xemu | Xbox | Ported | MCPX boot ROM (512 B), flash BIOS, HDD image (.qcow2) → `BIOS\xbox`; CPU with AVX2 |
 | RetroArch | NES, SNES, N64, GB/GBC/GBA, Genesis, Arcade | Ported (cores download on install) | nothing; optional `gba_bios.bin` → `BIOS\gba`, `disksys.rom` → `BIOS\nes` |
+| Ryujinx (Ryubing) | Switch | Ported | `prod.keys` (+ `title.keys`) → `BIOS\switch`; firmware installed once via Ryujinx Tools → Install Firmware |
 | shadPS4 | PS4 | Ported | nothing required; optional firmware modules (`.sprx`) + fonts → `BIOS\ps4`; CPU with AVX2, Vulkan GPU |
 
 OmniPC never downloads BIOS, firmware or keys. Use files from your own consoles.
@@ -117,6 +118,7 @@ melonDS      |  |  |  |  |  |  |
 Xenia Canary |  |  |  |  |  |  |
 KytyPS5      |  |  |  |  |  |  |
 shadPS4      |  |  |  |  |  |  |
+Ryujinx      |  |  |  |  |  |  |
 
 Exact text of any error / "Needs attention" check:
 

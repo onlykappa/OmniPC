@@ -37,6 +37,9 @@ write(join(dumps, 'Xbox', 'mcpx_1.0.bin'), Buffer.alloc(512, 8));
 write(join(dumps, 'Xbox', 'Complex_4627.bin'), Buffer.alloc(256 * 1024, 9));
 write(join(dumps, 'Xbox', 'xbox_hdd.qcow2'), Buffer.concat([Buffer.from([0x51, 0x46, 0x49, 0xfb]), Buffer.alloc(4096)]));
 write(join(dumps, 'PS4', 'sys_modules', 'libSceNgs2.sprx'), Buffer.alloc(2048, 1));
+write(join(dumps, 'Switch', 'prod.keys'), `header_key = ${'0'.repeat(64)}\nkey_area_key_application_00 = ${'1'.repeat(32)}\n`);
+write(join(dumps, 'Switch', 'title.keys'), `${'2'.repeat(32)} = ${'3'.repeat(32)}\n`);
+write(join(dumps, 'Switch', 'old', 'prod.keys'), `key_area_key_application_00 = ${'1'.repeat(32)}\n`);
 // Decoys that must not be picked up
 write(join(dumps, 'random-512k.bin'), Buffer.alloc(512 * 1024, 9));
 write(join(dumps, 'fake.PUP'), Buffer.alloc(64, 1));
@@ -64,6 +67,9 @@ describe('Scan for BIOS & keys', () => {
       'Xbox/Complex_4627.bin': 'xbox:ok',
       'Xbox/xbox_hdd.qcow2': 'xbox:ok',
       'PS4/sys_modules/libSceNgs2.sprx': 'ps4:ok',
+      'Switch/prod.keys': 'switch:ok',
+      'Switch/title.keys': 'switch:ok',
+      'Switch/old/prod.keys': 'switch:bad',
       'fake.PUP': 'ps3:bad',
     });
   });
@@ -77,7 +83,8 @@ describe('Scan for BIOS & keys', () => {
     expect(scan.found.every((f) => !f.alreadyImported)).toBe(true);
     const pick = scan.found.filter((f) => f.valid).map((f) => f.path);
     const r = await bios.importFound([...pick, join(dumps, 'fake.PUP'), join(dumps, 'random-512k.bin')]);
-    expect(r.imported).toHaveLength(16);
+    expect(r.imported).toHaveLength(18);
+    expect(existsSync(join(paths.systemBiosDir('switch'), 'prod.keys'))).toBe(true);
     expect(r.skipped).toHaveLength(2);
     expect(readFileSync(join(paths.systemBiosDir('ps2'), 'SCPH-70012.bin')).equals(readFileSync(join(dumps, 'PS2', 'SCPH-70012.bin')))).toBe(true);
     expect(existsSync(join(paths.systemBiosDir('gc'), 'IPL.bin'))).toBe(true);

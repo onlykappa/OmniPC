@@ -27,7 +27,7 @@ export function defaultProfile(): Omit<UniversalControllerProfile, 'id' | 'updat
   };
 }
 
-const NINTENDO_SYSTEMS: SystemId[] = ['nes', 'snes', 'n64', 'gb', 'gbc', 'gba', 'nds', 'wiiu'];
+const NINTENDO_SYSTEMS: SystemId[] = ['nes', 'snes', 'n64', 'gb', 'gbc', 'gba', 'nds', 'wiiu', 'switch'];
 
 /**
  * Returns the physical button that should trigger `logical` for `system`,

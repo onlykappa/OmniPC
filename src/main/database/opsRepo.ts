@@ -11,8 +11,10 @@ const parse = <T>(s: string | null, fallback: T): T => {
 };
 
 export interface RepairUndo {
-  kind: 'restore-backups' | 'restore-settings' | 'none';
+  kind: 'restore-backups' | 'restore-settings' | 'restore-files' | 'none';
   backupIds?: number[];
+  /** restore-files: copies made by OmniDoctor > Games before rewriting a CUE/M3U. */
+  files?: { path: string; backup: string }[];
   settings?: Record<string, unknown>;
   emulatorId?: string;
 }

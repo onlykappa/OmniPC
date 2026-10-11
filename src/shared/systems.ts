@@ -15,6 +15,7 @@ export type SystemId =
   | 'gc'
   | 'wii'
   | 'wiiu'
+  | 'switch'
   | 'nds'
   | 'xbox'
   | 'x360'
@@ -184,6 +185,19 @@ export const SYSTEMS: SystemDefinition[] = [
     biosNote: 'Console keys (keys.txt) dumped from your own Wii U for encrypted images.',
     emulators: ['cemu'],
     accent: '#0aa5c9',
+  },
+  {
+    id: 'switch',
+    name: 'Nintendo Switch',
+    shortName: 'Switch',
+    manufacturer: 'Nintendo',
+    year: 2017,
+    extensions: ['.nsp', '.xci', '.nca', '.nro', '.nso'],
+    folderHints: ['switch', 'ns', 'nintendo switch', 'nintendoswitch'],
+    bios: 'firmware',
+    biosNote: 'prod.keys (and optional title.keys) and the system firmware dumped from your own Switch. OmniPC never downloads keys or firmware.',
+    emulators: ['ryujinx'],
+    accent: '#e60012',
   },
   {
     id: 'nds',

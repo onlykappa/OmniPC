@@ -17,6 +17,7 @@ implemented is labelled *planned* or disabled, never a button that silently does
 | **Dolphin**: install (official update service), update, rollback, repair, reset, uninstall, config generation, GC pad + Wii Remote/Nunchuk, hotkeys, per-game `-C` overrides, smoke test, IPL handling, log rules | ✅ |
 | **DuckStation** (PS1), **PPSSPP** (PSP), **RPCS3** (PS3, incl. firmware install), **Cemu** (Wii U), **melonDS** (DS), **Xenia Canary** (Xbox 360): install, update, rollback, repair, reset, uninstall, config generation with first-run prompts suppressed, controller + hotkeys (within each emulator's limits), save folders under OmniPC, BIOS/firmware/keys status | ✅ (not yet run on Windows) |
 | **xemu** (Xbox, user-supplied MCPX/BIOS/HDD) and **RetroArch** (NES, SNES, N64, GB/GBC/GBA, Genesis, Arcade; cores downloaded per system) | ✅ (not yet run on Windows) |
+| **Ryujinx / Ryubing** (Switch): portable data folder, keys copied from BIOS/switch, firmware detected (installed via Ryujinx's Tools menu), per-game profiles, controller buttons/sticks | ✅ (not yet run on Windows; download source unverified from CI) |
 | **shadPS4** (PS4): GUI-less core launched by OmniPC, saves under OmniPC Saves, optional firmware modules/fonts from BIOS/ps4, controller + hotkeys | ✅ (not yet run on Windows) |
 | **KytyPS5** (PS5, experimental upstream): install from daily releases, CLI launch of game folders, saves under OmniPC, Vulkan check | ✅ (not yet run on Windows) |
 | Folder-format games: PS3 `PS3_GAME/USRDIR/EBOOT.BIN`, PS4/PS5 `eboot.bin` + `sce_sys` | ✅ |

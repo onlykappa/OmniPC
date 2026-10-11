@@ -58,6 +58,17 @@ export async function identifyBiosFile(path: string, size: number): Promise<Omit
     const keys = text.split(/\r?\n/).filter((l) => /^\s*[0-9a-f]{32}\b/i.test(l)).length;
     return keys ? c('wiiu', 'keys', 'Wii U keys (keys.txt)', true, `${keys} key line(s)`) : null;
   }
+  // --- Nintendo Switch (Ryujinx): text "name = hex" key files from the user's console ---
+  if (/^(prod|title|console)\.keys$/.test(lower) && size < 1 * MB) {
+    const text = (await head(path, size)).toString('utf8');
+    const lines = text.split(/\r?\n/).filter((l) => /^\s*[\w]+\s*=\s*[0-9a-f]{32,}\s*$/i.test(l)).length;
+    if (!lines) return null;
+    if (lower === 'prod.keys') {
+      const ok = /^\s*header_key\s*=\s*[0-9a-f]{64}\s*$/im.test(text);
+      return c('switch', 'keys', 'Nintendo Switch keys (prod.keys)', ok, ok ? `${lines} key(s)` : `${lines} key(s), but header_key is missing; Ryujinx needs it`);
+    }
+    return c('switch', 'keys', `Nintendo Switch keys (${lower})`, true, `${lines} key(s)`);
+  }
   if (lower === 'otp.bin' && size === 1024) return c('wiiu', 'keys', 'Wii U OTP (otp.bin)', true, '1024 bytes');
   if (lower === 'seeprom.bin' && size === 512) return c('wiiu', 'keys', 'Wii U SEEPROM (seeprom.bin)', true, '512 bytes');
   if (/^ipl\.bin$/.test(lower)) return c('gc', 'bios', 'GameCube IPL (boot ROM)', size === 2 * MB, size === 2 * MB ? '2 MB' : `Unexpected size ${size} bytes (expected 2 MB)`, 'IPL.bin');
