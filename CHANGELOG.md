@@ -2,7 +2,7 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
-## [Unreleased]
+## [1.1.0] - 2026-10-11
 
 ### Added
 - **Nintendo Switch** via Ryujinx (Ryubing, the maintained Ryujinx continuation), installed from
