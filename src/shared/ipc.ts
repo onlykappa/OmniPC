@@ -8,6 +8,7 @@ import type {
   AiContextPreview,
   AppInfo,
   AppUpdateState,
+  BiosScanFound,
   AppNotification,
   AppSettings,
   BiosStatus,
@@ -207,6 +208,10 @@ export interface OmniApi {
   'bios.status': () => BiosStatus[];
   'bios.import': (systemId: SystemId, filePath: string) => BiosStatus;
   'bios.openFolder': (systemId: SystemId) => void;
+  /** Scans folders (default: the library's game folders) for BIOS, firmware and key files. */
+  'bios.scan': (roots: string[] | null) => BiosScanFound;
+  /** Copies the chosen found files into BIOS/<system> (originals untouched). */
+  'bios.importFound': (paths: string[]) => { imported: string[]; skipped: string[] };
 
   // Saves
   'saves.locations': () => SaveLocation[];

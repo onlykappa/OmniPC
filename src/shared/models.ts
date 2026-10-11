@@ -691,6 +691,29 @@ export interface SearchResult {
   route: string;
 }
 
+/** A BIOS / firmware / key file found by "Scan for BIOS & keys". */
+export interface BiosScanItem {
+  path: string;
+  sizeBytes: number;
+  systemId: SystemId;
+  kind: 'bios' | 'firmware' | 'keys';
+  label: string;
+  valid: boolean;
+  detail: string;
+  destName: string;
+  /** Where it will be copied. */
+  dest: string;
+  /** A file with the same name and size is already in OmniPC's BIOS folder. */
+  alreadyImported: boolean;
+}
+
+export interface BiosScanFound {
+  roots: string[];
+  filesSeen: number;
+  errors: string[];
+  found: BiosScanItem[];
+}
+
 /** OmniPC self-update status (Settings > Updates). */
 export interface AppUpdateState {
   status: 'unsupported' | 'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'ready' | 'error';

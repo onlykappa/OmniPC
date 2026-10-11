@@ -360,6 +360,19 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
 
     // ------------------------------------------------------------------ bios
     'bios.status': () => c.bios.status(),
+    'bios.scan': (roots) => {
+      for (const r of roots ?? []) requirePath(r);
+      return c.bios.scan(roots ?? c.library.listPaths().filter((p) => p.available).map((p) => p.path));
+    },
+    'bios.importFound': async (paths) => {
+      for (const p of paths) requirePath(p);
+      const r = await c.bios.importFound(paths);
+      if (r.imported.length) {
+        c.bus.emit('emulators.changed', { id: null });
+        void c.runHealthCheck('quick');
+      }
+      return r;
+    },
     'bios.import': (sys, file) => {
       requirePath(file);
       return c.bios.import(sys, file);
