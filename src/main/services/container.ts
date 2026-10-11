@@ -38,6 +38,7 @@ import { ImportService } from '../importers/importService';
 import { defaultProfile } from '../controllers/translate';
 import { scanHardware } from '../platform/hardware';
 import { errorMessage } from '../core/errors';
+import { SteamService, defaultSelfLauncher, type SelfLauncher } from '../steam/service';
 
 const log = logger.scope('container');
 
@@ -49,6 +50,8 @@ export interface Host {
   fetchImpl?: typeof fetch;
   spawnImpl?: typeof spawn;
   extraAdapters?: (paths: AppPaths) => EmulatorAdapter[];
+  /** How Steam shortcuts start OmniPC (defaults to the running executable). */
+  selfLauncher?: () => SelfLauncher;
 }
 
 export interface ContainerOptions {
@@ -83,6 +86,7 @@ export class AppContainer {
   readonly repairs: RepairEngine;
   readonly launcher: LaunchService;
   readonly importer: ImportService;
+  readonly steam: SteamService;
   readonly safeMode: boolean;
   private hardwareProfile: HardwareProfile | null;
   private pads: { pads: DetectedController[]; reportedAt: number | null } = { pads: [], reportedAt: null };
@@ -182,6 +186,7 @@ export class AppContainer {
       onSessionEnd: () => opts.host.onSessionEnd?.(),
     });
     this.importer = new ImportService(this.registry, this.emulators, this.library, this.ops, this.bios, this.paths);
+    this.steam = new SteamService({ library: this.library, paths: this.paths, launcher: opts.host.selfLauncher ?? defaultSelfLauncher });
     // When an emulator becomes available, its bundled title/compatibility
     // database can improve metadata for games scanned earlier.
     const installed = new Set(this.registry.implemented().filter((a) => this.emulators.isInstalled(a.manifest.id)).map((a) => a.manifest.id));

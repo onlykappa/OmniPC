@@ -31,6 +31,7 @@ implemented is labelled *planned* or disabled, never a button that silently does
 | Optional AI troubleshooter (Anthropic API, off by default, context preview) | ✅ |
 | Safe Mode (manual or automatic after repeated unclean exits), factory reset options | ✅ |
 | Developer page (manifest, paths, version source, raw checks, launch command, latest log, rules) | ✅ |
+| Add to Steam: non-Steam shortcuts (binary shortcuts.vdf, OmniPC entries only, backup + atomic write), grid artwork, `--launch-game=<id>` command line, close Steam via `-shutdown` | ✅ (not yet run against a real Steam client) |
 | Windows installer (NSIS via electron-builder), CI (Ubuntu + Windows tests, installer artifact) | ✅ |
 
 ## Verified where

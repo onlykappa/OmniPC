@@ -20,6 +20,7 @@ import { StoragePage } from './pages/Storage';
 import { SettingsPage } from './pages/Settings';
 import { AboutPage } from './pages/About';
 import { DevPage } from './pages/Dev';
+import { SteamPage } from './pages/Steam';
 import { FailurePage } from './pages/Failure';
 import { Onboarding } from './pages/Onboarding';
 import { Spinner } from './components/ui';
@@ -44,6 +45,7 @@ function Router() {
     case 'failure': return <FailurePage key={b} launchId={Number(b)} />;
     case 'storage': case 'saves': return <StoragePage />;
     case 'settings': return <SettingsPage />;
+    case 'steam': return <SteamPage />;
     case 'about': return <AboutPage />;
     case 'dev': return <DevPage />;
     default: return <HomePage />;

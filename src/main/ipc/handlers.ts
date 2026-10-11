@@ -459,6 +459,27 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
     },
 
     // ------------------------------------------------------------- developer
+    // -------------------------------------------------------------- steam
+    'steam.status': (userId) => c.steam.status(userId),
+    'steam.sync': (opts) => {
+      const job = c.jobs.start('steam.sync', 'Adding games to Steam', async (ctx) => {
+        const r = await c.steam.sync(opts ?? {}, ctx).catch((err: unknown) => {
+          c.notifications.add('error', "Couldn't update Steam shortcuts", err instanceof Error ? err.message : String(err), { link: '/steam' });
+          throw err;
+        });
+        c.notifications.add('success', 'Steam shortcuts updated', `${r.added} added, ${r.updated} updated, ${r.removed} removed, ${r.artwork} image(s). Start Steam to see your games.`, { link: '/steam' });
+        c.ops.addChange('steam.sync', null, `Steam shortcuts: ${r.added} added, ${r.updated} updated, ${r.removed} removed`);
+        return r;
+      }, { lockKey: 'steam' });
+      return { jobId: job.id };
+    },
+    'steam.removeAll': async (opts) => {
+      const r = await c.steam.removeAll(opts?.userId);
+      c.ops.addChange('steam.removeAll', null, `Removed ${r.removed} OmniPC shortcut(s) from Steam`);
+      return r;
+    },
+    'steam.closeSteam': () => c.steam.closeSteam(),
+
     'dev.adapterReport': async (id): Promise<DevAdapterReport> => {
       const a = c.registry.require(id);
       const p = a.paths();

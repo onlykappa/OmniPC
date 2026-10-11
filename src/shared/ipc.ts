@@ -49,6 +49,7 @@ import type {
   DuplicateGroup,
 } from './models';
 import type { SystemId } from './systems';
+import type { SteamStatus, SteamSyncOptions, SteamSyncResult } from './steam';
 
 export interface SystemSummary {
   id: SystemId;
@@ -243,6 +244,15 @@ export interface OmniApi {
   'onboarding.run': (plan: OnboardingInstallPlan) => { jobId: string };
   'import.detect': () => SetupImportCandidate[];
   'import.apply': (candidateId: string, what: { settings: boolean; saves: boolean; bios: boolean; romPaths: boolean; useInstallation: boolean }) => { summary: string[] };
+
+  // Steam (non-Steam game shortcuts; see src/main/steam)
+  'steam.status': (userId?: string | null) => SteamStatus;
+  /** Adds/updates OmniPC shortcuts and artwork as a job. Steam must be closed. */
+  'steam.sync': (opts: SteamSyncOptions) => { jobId: string };
+  /** Removes only OmniPC's shortcuts (and the artwork OmniPC wrote). */
+  'steam.removeAll': (opts: { userId?: string }) => SteamSyncResult;
+  /** Asks Steam to exit (steam.exe -shutdown) and waits for it. */
+  'steam.closeSteam': () => { closed: boolean };
 
   // Developer
   'dev.adapterReport': (emulatorId: string) => DevAdapterReport;
