@@ -20,6 +20,7 @@ import type { AppPaths } from '../core/paths';
 import type { LibraryScanner } from '../library/scanner';
 import type { MetadataService } from '../metadata/service';
 import type { EventBus } from '../core/events';
+import type { SaveService } from '../services/saveService';
 import { OmniFailure, errorMessage } from '../core/errors';
 import { logger } from '../core/logger';
 import { IniDocument } from '../config/ini';
@@ -45,6 +46,7 @@ export interface RepairDeps {
   bus: EventBus;
   scanLibrary: () => Promise<unknown>;
   rescanHardware: () => Promise<unknown>;
+  saves?: SaveService;
 }
 
 export interface RepairOutcome {
@@ -367,6 +369,17 @@ export const ACTIONS: RepairAction[] = [
     async run(_p, d) {
       const dest = await backupDatabase(d.db, d.paths.databaseBackups);
       return { message: 'Database backed up', details: [dest], backupIds: [], undo: null };
+    },
+  },
+  {
+    id: 'saves.backupAll',
+    label: 'Back up all saves',
+    safety: 'safe',
+    async run(_p, d) {
+      if (!d.saves) throw new OmniFailure({ code: 'REPAIR_UNAVAILABLE', whatHappened: 'Save backups are not available right now.' });
+      // Unchanged saves whose backup still exists are skipped; anything else is backed up now.
+      const made = await d.saves.backup(null, 'auto');
+      return { message: made.length ? `Backed up saves of ${made.length} emulator(s)` : 'Saves were already backed up', details: made.map((b) => b.path), backupIds: [], undo: null };
     },
   },
   {

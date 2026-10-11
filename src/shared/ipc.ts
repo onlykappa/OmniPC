@@ -38,6 +38,8 @@ import type {
   RepairRecord,
   RendererOption,
   SaveBackup,
+  SaveBackupFolderSuggestion,
+  SaveBackupSettings,
   SaveLocation,
   SearchResult,
   SetupImportCandidate,
@@ -220,6 +222,14 @@ export interface OmniApi {
   'saves.backup': (emulatorId: string | null) => SaveBackup[];
   'saves.backups': () => SaveBackup[];
   'saves.restore': (backupId: string) => { restoredTo: string; safetyBackup: string };
+  /** Existing OneDrive / Google Drive / Dropbox folders to offer as the backup folder. */
+  'saves.settingsSuggestions': () => SaveBackupFolderSuggestion[];
+  /** Validates (exists, writable, not a save or program folder) and stores the backup folder; null = OmniPC's own folder. */
+  'saves.setDestination': (folder: string | null) => SaveBackupSettings;
+  /** Backup folder state: problem is set when the chosen folder is missing or unwritable. */
+  'saves.destinationStatus': () => { destination: string | null; problem: string | null; activeFolder: string; computer: string };
+  /** Opens a backup's folder, or the folder new backups go to (null). */
+  'saves.openFolder': (backupId: string | null) => void;
 
   // Storage
   'storage.locations': () => StorageLocation[];

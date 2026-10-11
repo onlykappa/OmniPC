@@ -385,6 +385,14 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
     'saves.backup': (emu) => c.saves.backup(emu),
     'saves.backups': () => c.saves.list(),
     'saves.restore': (id) => c.saves.restore(id),
+    'saves.settingsSuggestions': () => c.saves.suggestions(),
+    'saves.setDestination': async (folder) => {
+      const r = await c.saves.setDestination(folder);
+      void c.runHealthCheck('quick').done.catch(() => undefined);
+      return r;
+    },
+    'saves.destinationStatus': async () => ({ ...(await c.saves.destinationStatus()), activeFolder: c.saves.activeFolder().dir, computer: c.saves.computer }),
+    'saves.openFolder': async (id) => ui.openPath(await c.saves.folderFor(id)),
 
     // --------------------------------------------------------------- storage
     'storage.locations': () => c.storage.locations(),

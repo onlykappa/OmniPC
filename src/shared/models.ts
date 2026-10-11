@@ -579,6 +579,32 @@ export interface SaveBackup {
   path: string;
   createdAt: string;
   sizeBytes: number;
+  /** Why the backup was made. Older backups without a kind in their name count as manual. */
+  kind: SaveBackupKind;
+  /** Name of the PC that made it (its folder name in the sync folder). */
+  computer: string;
+  thisComputer: boolean;
+  /** OmniPC's own backups folder, or the chosen backup/sync folder. */
+  location: 'local' | 'destination';
+}
+
+export type SaveBackupKind = 'manual' | 'auto' | 'pre-update' | 'pre-restore' | 'after-play';
+
+export interface SaveBackupSettings {
+  schedule: 'off' | 'daily' | 'weekly';
+  /** Back up a game's emulator saves when a play session ends (only if they changed). */
+  afterPlay: boolean;
+  /** Back up an emulator's saves before it is updated or rolled back. */
+  beforeEmulatorUpdate: boolean;
+  /** Backup/sync folder (e.g. OneDrive). null = OmniPC's own Backups folder. */
+  destination: string | null;
+  /** Automatic backups kept per emulator on this PC (manual and pre-restore backups are never removed). */
+  keepPerEmulator: number;
+}
+
+export interface SaveBackupFolderSuggestion {
+  provider: 'OneDrive' | 'Google Drive' | 'Dropbox';
+  path: string;
 }
 
 export type StorageKey = 'emulators' | 'saves' | 'bios' | 'cache' | 'backups' | 'artwork' | 'downloads' | 'logs';
@@ -680,6 +706,7 @@ export interface AppSettings {
   aiModel: string;
   hotkeys: HotkeyConfig;
   devMode: boolean;
+  saveBackup: SaveBackupSettings;
 }
 
 export interface SettingDescriptor {

@@ -5,6 +5,7 @@ import { useLoad } from '../lib/hooks';
 import { navigate } from '../lib/router';
 import { useStore } from '../lib/store';
 import { Button, Chip, Modal, Panel, ProgressBar, Segmented, Toggle } from '../components/ui';
+import { SaveBackupSettingsForm } from '../components/SaveBackups';
 
 export function SettingsPage() {
   const settings = useStore((s) => s.settings);
@@ -66,6 +67,10 @@ export function SettingsPage() {
           <Toggle label="Check for emulator updates at startup" value={settings.checkUpdatesOnStart} onChange={(v) => set({ checkUpdatesOnStart: v })} />
           <Toggle label="Install emulator updates automatically" description="At startup and every 6 hours, never while a game is running. Each update backs up the configuration and is health-tested; if the test fails, the previous version is restored automatically." value={settings.autoUpdateEmulators} onChange={(v) => set({ autoUpdateEmulators: v })} />
           <p className="small faint">OmniPC updates itself from its official GitHub releases (the download is checked against the published SHA-512). Emulators never update without a configuration backup and a health test. Your library, settings, emulators and saves live outside the program folder and are kept.</p>
+        </Panel>
+        <Panel id="saves" title="Save backups">
+          <SaveBackupSettingsForm />
+          <div className="row"><Button onClick={() => navigate('/storage')}>See and restore backups</Button></div>
         </Panel>
         <ImportPanel />
         <ResetPanel />

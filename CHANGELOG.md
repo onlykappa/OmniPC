@@ -2,6 +2,22 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+- **Automatic save backups**: daily or weekly (checked hourly, never while a game is running),
+  after playing a game, and before an emulator is updated or rolled back. Unchanged saves are not
+  backed up again. OmniPC keeps the newest automatic backups per emulator (10 by default); manual
+  backups and the backups made before a restore are never removed. Older backups keep working.
+- **Save backups in a cloud folder**: choose a OneDrive, Google Drive or Dropbox folder (found
+  automatically) or any other folder. Each PC writes to its own subfolder of
+  `OmniPC Save Backups`, ZIPs are written completely before they appear, and backups made on your
+  other PCs are listed and can be restored here.
+- Save backups on the Storage page are grouped by emulator with date, kind and PC, plus
+  "Restore an emulator from a date". Restores always back up the current saves first.
+- OmniDoctor warns when saves have not been backed up for 14 days (one-click backup) and when the
+  backup folder is missing or not writable.
+
 ## [1.1.1] - 2026-10-11
 
 ### Added
