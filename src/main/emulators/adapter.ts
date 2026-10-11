@@ -2,6 +2,7 @@
 // OmniDoctor, repair engine) only talk to adapters through this interface, so
 // adding an emulator means adding an adapter + manifest, not editing the core.
 
+import type { SettingDef } from '@shared/emulatorSettings';
 import type {
   BiosStatus,
   EmulatorManifest,
@@ -154,6 +155,16 @@ export interface EmulatorAdapter {
   installComponents?(installer: ComponentInstaller, input: ConfigInput): Promise<string[]>;
   /** Optional: where this emulator keeps its RetroAchievements settings (supporting emulators only). */
   achievements?(): RaFiles;
+  /**
+   * Optional: the emulator's common settings for OmniPC's settings menu. Each
+   * key is a key of EmulatorSettings.advanced that applyConfig writes (and
+   * per-game profiles override).
+   */
+  settingsSchema?(): SettingDef[];
+  /** Optional: current values of the schema's settings in the emulator's config file (missing keys omitted). */
+  readSettings?(): Promise<Record<string, string>>;
+  /** Optional: advanced values this emulator should use on this PC ("Optimize for my PC"). */
+  optimize?(hw: HardwareProfile): { key: string; value: string; reason: string }[];
 }
 
 export interface ComponentInstaller {

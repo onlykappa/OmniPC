@@ -166,6 +166,12 @@ export interface OmniApi {
   'emulators.saveSettings': (id: string, settings: EmulatorSettings) => EmulatorDetailsDto;
   'emulators.saveCustom': (id: string, custom: CustomEmulatorSettings) => EmulatorDetailsDto;
   'emulators.renderers': (id: string) => RendererOption[];
+  /** Settings menu: schema, values in the emulator's config now, and OmniPC's saved values. */
+  'emulators.settingsView': (id: string) => import('./emulatorSettings').EmulatorSettingsView;
+  /** "Optimize for my PC": proposed changes (nothing is applied). */
+  'emulators.optimizePreview': (id: string) => import('./emulatorSettings').OptimizeSuggestion[];
+  /** Applies the chosen proposals (fields from optimizePreview); configuration is backed up first. */
+  'emulators.optimizeApply': (id: string, fields: string[]) => EmulatorDetailsDto;
   'emulators.useExisting': (id: string, executable: string) => EmulatorStatus;
 
   // Backups

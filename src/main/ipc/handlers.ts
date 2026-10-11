@@ -1,6 +1,7 @@
 // Implementation of the typed OmniApi contract. Electron-specific actions
 // (dialogs, shell, relaunch) arrive via `UiHost` so this module stays testable.
 
+import { applySuggestions, optimizeSuggestions, settingsView } from '../emulators/settingsView';
 import { existsSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import type { OmniApi, SystemSummary, HomeData, OnboardingInstallPlan, DevAdapterReport } from '@shared/ipc';
@@ -281,6 +282,14 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
       return c.emulators.details(id);
     },
     'emulators.renderers': (id) => c.registry.require(id).renderers(c.hardware()),
+    'emulators.settingsView': (id) => settingsView(c.registry.require(id), c.emulators.settingsFor(id), c.emulators.isInstalled(id)),
+    'emulators.optimizePreview': (id) => optimizeSuggestions(c.registry.require(id), c.emulators.settingsFor(id), c.hardware()),
+    'emulators.optimizeApply': async (id, fields) => {
+      const hw = c.hardware();
+      if (!hw) throw new OmniFailure({ code: 'NO_HARDWARE_PROFILE', whatHappened: 'OmniPC has not scanned this PC yet.', userAction: ['Run a health check first.'] });
+      await c.emulators.saveSettings(id, applySuggestions(c.registry.require(id), c.emulators.settingsFor(id), hw, fields));
+      return c.emulators.details(id);
+    },
     'emulators.useExisting': (id, exe) => c.emulators.useExisting(id, exe),
 
     // --------------------------------------------------------------- backups
