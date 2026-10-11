@@ -17,6 +17,7 @@ import { readLogTail, excerpt } from '../diagnostics/logs';
 import { RULE_FILES } from '../diagnostics/rules';
 
 import { sourceForManifest } from '../downloads/sources';
+import type { AppUpdateService } from '../services/appUpdater';
 
 export interface UiHost {
   appInfo(): Omit<AppInfo, 'dataRoot' | 'databasePath' | 'logPath' | 'dbRecoveredFromBackup' | 'safeMode'>;
@@ -27,6 +28,8 @@ export interface UiHost {
   relaunch(safeMode: boolean): void;
   setConsoleMode(enabled: boolean): void;
   setStartWithWindows(enabled: boolean): void;
+  /** OmniPC self-update (electron-updater in the packaged app, "unsupported" otherwise). */
+  updater: AppUpdateService;
 }
 
 type Impl = { [K in keyof OmniApi]: (...args: Parameters<OmniApi[K]>) => ReturnType<OmniApi[K]> | Promise<ReturnType<OmniApi[K]>> };
@@ -103,6 +106,10 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
   return {
     // ---------------------------------------------------------------- app
     'app.info': appInfo,
+    'app.update.state': () => ui.updater.state(),
+    'app.update.check': () => ui.updater.check(),
+    'app.update.download': () => ui.updater.download(),
+    'app.update.install': () => ui.updater.install(),
     'app.settings.get': () => c.settings.getAll(),
     'app.settings.set': async (patch) => {
       const before = c.settings.getAll();
@@ -353,6 +360,19 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
 
     // ------------------------------------------------------------------ bios
     'bios.status': () => c.bios.status(),
+    'bios.scan': (roots) => {
+      for (const r of roots ?? []) requirePath(r);
+      return c.bios.scan(roots ?? c.library.listPaths().filter((p) => p.available).map((p) => p.path));
+    },
+    'bios.importFound': async (paths) => {
+      for (const p of paths) requirePath(p);
+      const r = await c.bios.importFound(paths);
+      if (r.imported.length) {
+        c.bus.emit('emulators.changed', { id: null });
+        void c.runHealthCheck('quick');
+      }
+      return r;
+    },
     'bios.import': (sys, file) => {
       requirePath(file);
       return c.bios.import(sys, file);

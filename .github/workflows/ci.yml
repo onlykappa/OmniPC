@@ -41,8 +41,13 @@ jobs:
       - run: npm run dist
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Check the self-update feed was generated
+        shell: bash
+        run: test -f release/latest.yml && cat release/latest.yml
       - uses: actions/upload-artifact@v4
         with:
           name: OmniPC-Setup
-          path: release/*.exe
+          path: |
+            release/*.exe
+            release/latest.yml
           if-no-files-found: error

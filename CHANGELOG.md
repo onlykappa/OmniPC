@@ -9,6 +9,17 @@ All notable changes to OmniPC. Versions follow [Semantic Versioning](https://sem
   newer releases in one go. An update that fails its health test is rolled back automatically.
 - **Install emulator updates automatically** (Settings → Updates, off by default): runs at
   startup and every 6 hours, postponed while a game is running.
+- **OmniPC updates itself**: Settings → Updates shows the installed version, checks GitHub
+  Releases, downloads the new installer (verified against the published SHA-512) and installs it
+  with **Restart to update**. OmniPC checks at startup and notifies you; nothing installs without
+  your click, and never during a game.
+- **Update everything**: one button that updates OmniPC and every installed emulator.
+- **Scan for BIOS & keys** (Emulators → BIOS & Firmware): like the game-folder scan, it finds
+  BIOS, firmware and key files in your game folders or any folder you choose, recognises which
+  system each belongs to (PS1, PS2, PS3 firmware, PS4 modules, GameCube IPL, DS, GBA, FDS,
+  Wii U keys, Xbox MCPX/BIOS/HDD), checks them, and copies the ones you tick into the right
+  BIOS folder. Originals are never moved or changed; nothing is ever downloaded.
+- This is the last version you need to download by hand: from 1.0.1 on, updates are one click.
 
 ## [1.0.0] - 2026-10-10
 

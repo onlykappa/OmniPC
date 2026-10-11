@@ -278,7 +278,7 @@ export class EmulatorManager {
           summary.skipped.length ? `Postponed: ${summary.skipped.join(', ')}.` : '',
           summary.failed.length ? `Problems: ${summary.failed.join('; ')}.` : '',
         ].filter(Boolean);
-        this.d.notifications.add(summary.failed.length || summary.rolledBack.length ? 'warning' : 'success', pending.length ? 'Emulator updates finished' : 'Emulators are up to date', parts.join(' ') || `All ${summary.checked} installed emulator(s) are on the latest version.`, { link: '/emulators' });
+        this.d.notifications.add(summary.failed.length || summary.rolledBack.length ? 'warning' : 'success', pending.length ? 'Emulator updates finished' : 'Emulators are up to date', parts.join(' ') || (summary.checked ? `All ${summary.checked} installed emulator(s) are on the latest version.` : 'No OmniPC-managed emulators are installed yet.'), { link: '/emulators' });
       }
       return summary;
     }, { lockKey: 'emu:batch' });

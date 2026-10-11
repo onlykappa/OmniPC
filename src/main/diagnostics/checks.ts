@@ -219,7 +219,7 @@ export const CHECKS: HealthCheck[] = [
           detail: `${getSystem(s.systemId)?.name} games cannot start without it. ${s.note || 'OmniPC cannot download BIOS files; you must supply one dumped from your own console.'}`,
           subject,
           evidence: [`Expected in ${s.expectedLocation}`],
-          manualSteps: ['Open Settings > BIOS & Firmware and import your BIOS file.'],
+          manualSteps: ['Open Emulators > BIOS & Firmware and click "Scan my game folders" or "Scan a folder…" to find and copy your BIOS/firmware/key files, or use "Import file…".'],
         }, s.systemId));
       }
       return out;

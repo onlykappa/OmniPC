@@ -37,3 +37,10 @@ nsis:
   shortcutName: OmniPC
   # User data (games, saves, BIOS, emulators under %USERPROFILE%\OmniPC) is never removed on uninstall.
   deleteAppDataOnUninstall: false
+# Self-update feed: electron-updater reads latest.yml from the newest GitHub release.
+# Publishing itself is done by .github/workflows/release.yml (builds use --publish never).
+publish:
+  - provider: github
+    owner: onlykappa
+    repo: OmniPC
+    releaseType: release

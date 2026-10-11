@@ -7,6 +7,8 @@ import type {
   ActiveSession,
   AiContextPreview,
   AppInfo,
+  AppUpdateState,
+  BiosScanFound,
   AppNotification,
   AppSettings,
   BiosStatus,
@@ -94,6 +96,11 @@ export interface DevAdapterReport {
 export interface OmniApi {
   // App
   'app.info': () => AppInfo;
+  /** OmniPC self-update: state, check GitHub Releases, download, restart to install. */
+  'app.update.state': () => AppUpdateState;
+  'app.update.check': () => AppUpdateState;
+  'app.update.download': () => AppUpdateState;
+  'app.update.install': () => { ok: boolean; reason: string | null };
   'app.settings.get': () => AppSettings;
   'app.settings.set': (patch: Partial<AppSettings>) => AppSettings;
   'app.settings.catalog': () => SettingDescriptor[];
@@ -201,6 +208,10 @@ export interface OmniApi {
   'bios.status': () => BiosStatus[];
   'bios.import': (systemId: SystemId, filePath: string) => BiosStatus;
   'bios.openFolder': (systemId: SystemId) => void;
+  /** Scans folders (default: the library's game folders) for BIOS, firmware and key files. */
+  'bios.scan': (roots: string[] | null) => BiosScanFound;
+  /** Copies the chosen found files into BIOS/<system> (originals untouched). */
+  'bios.importFound': (paths: string[]) => { imported: string[]; skipped: string[] };
 
   // Saves
   'saves.locations': () => SaveLocation[];
@@ -251,6 +262,7 @@ export interface OmniEvents {
   'doctor.report': HealthReport;
   'drives.changed': { available: string[]; unavailable: string[] };
   'app.consoleMode': { enabled: boolean };
+  'app.update': AppUpdateState;
 }
 
 export type OmniEventName = keyof OmniEvents;
