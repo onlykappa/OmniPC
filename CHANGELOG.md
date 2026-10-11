@@ -9,6 +9,12 @@ All notable changes to OmniPC. Versions follow [Semantic Versioning](https://sem
   newer releases in one go. An update that fails its health test is rolled back automatically.
 - **Install emulator updates automatically** (Settings → Updates, off by default): runs at
   startup and every 6 hours, postponed while a game is running.
+- **OmniPC updates itself**: Settings → Updates shows the installed version, checks GitHub
+  Releases, downloads the new installer (verified against the published SHA-512) and installs it
+  with **Restart to update**. OmniPC checks at startup and notifies you; nothing installs without
+  your click, and never during a game.
+- **Update everything**: one button that updates OmniPC and every installed emulator.
+- This is the last version you need to download by hand: from 1.0.1 on, updates are one click.
 
 ## [1.0.0] - 2026-10-10
 

@@ -17,6 +17,7 @@ import { readLogTail, excerpt } from '../diagnostics/logs';
 import { RULE_FILES } from '../diagnostics/rules';
 
 import { sourceForManifest } from '../downloads/sources';
+import type { AppUpdateService } from '../services/appUpdater';
 
 export interface UiHost {
   appInfo(): Omit<AppInfo, 'dataRoot' | 'databasePath' | 'logPath' | 'dbRecoveredFromBackup' | 'safeMode'>;
@@ -27,6 +28,8 @@ export interface UiHost {
   relaunch(safeMode: boolean): void;
   setConsoleMode(enabled: boolean): void;
   setStartWithWindows(enabled: boolean): void;
+  /** OmniPC self-update (electron-updater in the packaged app, "unsupported" otherwise). */
+  updater: AppUpdateService;
 }
 
 type Impl = { [K in keyof OmniApi]: (...args: Parameters<OmniApi[K]>) => ReturnType<OmniApi[K]> | Promise<ReturnType<OmniApi[K]>> };
@@ -103,6 +106,10 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
   return {
     // ---------------------------------------------------------------- app
     'app.info': appInfo,
+    'app.update.state': () => ui.updater.state(),
+    'app.update.check': () => ui.updater.check(),
+    'app.update.download': () => ui.updater.download(),
+    'app.update.install': () => ui.updater.install(),
     'app.settings.get': () => c.settings.getAll(),
     'app.settings.set': async (patch) => {
       const before = c.settings.getAll();

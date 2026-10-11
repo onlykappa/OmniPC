@@ -31,6 +31,11 @@
   version, and runs a health test; if the test fails, the previous version is restored
   automatically. To do this without clicking, turn on **Settings → Updates → Install emulator
   updates automatically** (runs at startup and every 6 hours, never while a game is running).
+- **Updating OmniPC**: **Settings → Updates** shows your version. **Check for OmniPC updates**
+  finds a new release on GitHub, **Download** fetches it, and **Restart to update** installs it
+  (your library, settings, emulators and saves are kept). **Update everything** does OmniPC and
+  all emulators in one click. Versions before 1.0.1 must be updated once by downloading the
+  installer from the GitHub release page.
 - **Console Mode**: fullscreen and controller-only. D-pad/stick move, A select, B back,
   LB/RB switch sections, Y search, Start home.
 

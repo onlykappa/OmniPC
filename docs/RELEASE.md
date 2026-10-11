@@ -10,6 +10,8 @@
    The **Release** workflow re-runs the tests, checks the tag matches `package.json`, builds
    `OmniPC-Setup-X.Y.Z.exe`, writes `SHA256SUMS.txt`, attaches both to the release and sets the
    release notes from the changelog section (about 10 minutes).
+   The release must include `latest.yml` and the `.blockmap`: installed copies of OmniPC (1.0.1+)
+   read `latest.yml` from the newest release to offer the update in Settings → Updates.
 5. Optional: code-sign the installer by adding `CSC_LINK`/`CSC_KEY_PASSWORD` secrets and removing
    `CSC_IDENTITY_AUTO_DISCOVERY: 'false'` from the workflow.
 

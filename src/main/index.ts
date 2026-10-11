@@ -9,6 +9,8 @@ import { homedir } from 'node:os';
 import type { DisplayInfo } from '@shared/models';
 import type { IpcErrorPayload } from '@shared/ipc';
 import { AppContainer } from './services/container';
+import { AppUpdateService } from './services/appUpdater';
+import { autoUpdater } from 'electron-updater';
 import { createApi } from './ipc/handlers';
 import { OmniFailure } from './core/errors';
 import { logger } from './core/logger';
@@ -137,7 +139,20 @@ app.whenReady().then(async () => {
   win = createWindow(consoleMode, safe);
   win.on('closed', () => (win = null));
 
+  // OmniPC self-update from the official GitHub Releases (installed Windows build only).
+  const updater = new AppUpdateService({
+    currentVersion: app.getVersion(),
+    updater: app.isPackaged && process.platform === 'win32' && !process.env.PORTABLE_EXECUTABLE_DIR ? autoUpdater : null,
+    unsupportedReason: !app.isPackaged ? 'Self-update is disabled in development builds.' : process.platform !== 'win32' ? 'Self-update is only available on Windows.' : 'Self-update is not available for portable copies.',
+    emit: (state) => c.bus.emit('app.update', state),
+    notify: (title, body) => void c.notifications.add('info', title, body, { link: '/settings#updates', dedupeMs: 6 * 3600 * 1000 }),
+    isBusy: () => !!c.launcher.activeSession(),
+    beforeInstall: () => c.shutdown(),
+  });
+  if (!safe && c.settings.get('checkAppUpdatesOnStart')) setTimeout(() => void updater.check({ quiet: true }), 30000);
+
   const api = createApi(c, {
+    updater,
     appInfo: () => ({ version: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node, platform: `${process.platform} ${process.arch}`, isPackaged: app.isPackaged }),
     openPath: (p) => void shell.openPath(p),
     openExternal: (url) => void shell.openExternal(url),

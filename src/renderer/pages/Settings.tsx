@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import type { AppSettings, SetupImportCandidate } from '@shared/models';
-import { api } from '../lib/api';
+import type { AppSettings, AppUpdateState, SetupImportCandidate } from '@shared/models';
+import { api, onEvent } from '../lib/api';
 import { useLoad } from '../lib/hooks';
 import { navigate } from '../lib/router';
 import { useStore } from '../lib/store';
-import { Button, Chip, Modal, Panel, Segmented, Toggle } from '../components/ui';
+import { Button, Chip, Modal, Panel, ProgressBar, Segmented, Toggle } from '../components/ui';
 
 export function SettingsPage() {
   const settings = useStore((s) => s.settings);
@@ -60,10 +60,11 @@ export function SettingsPage() {
           <div className="row"><Button onClick={() => void api('metadata.refreshAll')}>Refresh all metadata</Button><Button onClick={() => navigate('/storage')}>Storage</Button></div>
         </Panel>
         <Panel id="updates" title="Updates">
+          <AppUpdateSection autoCheck={settings.checkAppUpdatesOnStart} onAutoCheck={(v) => void set({ checkAppUpdatesOnStart: v })} />
           <div className="col"><span>Emulator update channel</span><Segmented value={settings.updateChannel} onChange={(v) => set({ updateChannel: v })} options={[{ value: 'stable', label: 'Stable' }, { value: 'nightly', label: 'Nightly / development' }]} /></div>
-          <Toggle label="Check for updates at startup" value={settings.checkUpdatesOnStart} onChange={(v) => set({ checkUpdatesOnStart: v })} />
+          <Toggle label="Check for emulator updates at startup" value={settings.checkUpdatesOnStart} onChange={(v) => set({ checkUpdatesOnStart: v })} />
           <Toggle label="Install emulator updates automatically" description="At startup and every 6 hours, never while a game is running. Each update backs up the configuration and is health-tested; if the test fails, the previous version is restored automatically." value={settings.autoUpdateEmulators} onChange={(v) => set({ autoUpdateEmulators: v })} />
-          <p className="small faint">OmniPC app updates: this version uses manual updates (download the new installer). Emulators never update without a configuration backup and a health test.</p>
+          <p className="small faint">OmniPC updates itself from its official GitHub releases (the download is checked against the published SHA-512). Emulators never update without a configuration backup and a health test. Your library, settings, emulators and saves live outside the program folder and are kept.</p>
         </Panel>
         <ImportPanel />
         <ResetPanel />
@@ -128,5 +129,61 @@ function ResetPanel() {
       )}
       <Chip>Games and saves are always preserved</Chip>
     </Panel>
+  );
+}
+
+/** OmniPC self-update plus a one-click "Update everything" (app + all emulators). */
+function AppUpdateSection(props: { autoCheck: boolean; onAutoCheck: (v: boolean) => void }) {
+  const [st, setSt] = useState<AppUpdateState | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const toast = useStore((s) => s.toast);
+  useEffect(() => {
+    void api('app.update.state').then(setSt);
+    return onEvent('app.update', setSt);
+  }, []);
+  if (!st) return null;
+  const supported = st.status !== 'unsupported';
+  const run = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    setMsg(null);
+    try { await fn(); } finally { setBusy(false); }
+  };
+  const updateEverything = () => run(async () => {
+    await api('emulators.checkAndUpdateAll');
+    toast('info', 'Updating emulators', 'Anything newer is installed; progress is under Downloads.');
+    if (!supported) return;
+    let s = await api('app.update.check');
+    if (s.status === 'available') s = await api('app.update.download');
+    if (s.status === 'ready') setMsg(`OmniPC ${s.latestVersion} is downloaded. Click "Restart to update" when you're ready.`);
+  });
+  const restart = async () => {
+    const r = await api('app.update.install');
+    if (!r.ok) setMsg(r.reason);
+  };
+  const line =
+    st.status === 'unsupported' ? st.unsupportedReason
+    : st.status === 'checking' ? 'Checking GitHub for a newer OmniPC…'
+    : st.status === 'up-to-date' ? `You have the latest version (${st.currentVersion}).`
+    : st.status === 'available' ? `OmniPC ${st.latestVersion} is available (you have ${st.currentVersion}).`
+    : st.status === 'downloading' ? `Downloading OmniPC ${st.latestVersion}… ${st.percent ?? 0}%`
+    : st.status === 'ready' ? `OmniPC ${st.latestVersion} is ready. Restart to finish updating.`
+    : st.status === 'error' ? `Update check failed: ${st.error}`
+    : `OmniPC ${st.currentVersion}`;
+  return (
+    <div className="col">
+      <div className="row"><span><b>OmniPC {st.currentVersion}</b></span>{st.status === 'available' && <Chip tone="info">Update available</Chip>}{st.status === 'ready' && <Chip tone="ok">Ready to install</Chip>}</div>
+      <p className="small muted">{line}</p>
+      {st.status === 'downloading' && <ProgressBar value={st.percent !== null ? st.percent / 100 : null} />}
+      {st.status === 'available' && st.notes && <details className="small"><summary>What's new in {st.latestVersion}</summary><pre className="small" style={{ whiteSpace: 'pre-wrap' }}>{st.notes}</pre></details>}
+      <div className="row">
+        <Button variant="primary" busy={busy} onClick={() => void updateEverything()} title="Checks OmniPC and every installed emulator, and installs anything newer">Update everything</Button>
+        {supported && (st.status === 'idle' || st.status === 'up-to-date' || st.status === 'error') && <Button busy={busy} onClick={() => void run(() => api('app.update.check'))}>Check for OmniPC updates</Button>}
+        {st.status === 'available' && <Button onClick={() => void run(() => api('app.update.download'))}>Download {st.latestVersion}</Button>}
+        {st.status === 'ready' && <Button variant="primary" onClick={() => void restart()}>Restart to update</Button>}
+      </div>
+      {msg && <p className="small">{msg}</p>}
+      {supported && <Toggle label="Check for OmniPC updates at startup" description="Only checks and notifies; downloading and installing stay one click. Your library, settings, emulators and saves are kept." value={props.autoCheck} onChange={props.onAutoCheck} />}
+    </div>
   );
 }

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const watch = process.argv.includes('--watch');
-const external = ['electron', 'better-sqlite3', '7zip-bin', 'yauzl', 'yazl', '@anthropic-ai/sdk'];
+const external = ['electron', 'electron-updater', 'better-sqlite3', '7zip-bin', 'yauzl', 'yazl', '@anthropic-ai/sdk'];
 
 await rm(resolve(root, 'dist/main'), { recursive: true, force: true });
 

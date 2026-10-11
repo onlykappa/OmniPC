@@ -7,6 +7,7 @@ import type {
   ActiveSession,
   AiContextPreview,
   AppInfo,
+  AppUpdateState,
   AppNotification,
   AppSettings,
   BiosStatus,
@@ -94,6 +95,11 @@ export interface DevAdapterReport {
 export interface OmniApi {
   // App
   'app.info': () => AppInfo;
+  /** OmniPC self-update: state, check GitHub Releases, download, restart to install. */
+  'app.update.state': () => AppUpdateState;
+  'app.update.check': () => AppUpdateState;
+  'app.update.download': () => AppUpdateState;
+  'app.update.install': () => { ok: boolean; reason: string | null };
   'app.settings.get': () => AppSettings;
   'app.settings.set': (patch: Partial<AppSettings>) => AppSettings;
   'app.settings.catalog': () => SettingDescriptor[];
@@ -251,6 +257,7 @@ export interface OmniEvents {
   'doctor.report': HealthReport;
   'drives.changed': { available: string[]; unavailable: string[] };
   'app.consoleMode': { enabled: boolean };
+  'app.update': AppUpdateState;
 }
 
 export type OmniEventName = keyof OmniEvents;

@@ -48,6 +48,11 @@ jobs:
       - run: npm run dist
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Check the self-update feed was generated
+        shell: bash
+        run: |
+          test -f release/latest.yml || { echo "release/latest.yml missing: in-app updates would not find this release"; exit 1; }
+          cat release/latest.yml
       - name: Checksums
         shell: bash
         run: cd release && sha256sum OmniPC-Setup-*.exe > SHA256SUMS.txt && cat SHA256SUMS.txt
@@ -60,9 +65,9 @@ jobs:
           [ -n "$notes" ] || notes="See CHANGELOG.md"
           if gh release view "$TAG" >/dev/null 2>&1; then
             # Release already exists (published from the GitHub UI): attach the build and the changelog notes.
-            gh release upload "$TAG" release/OmniPC-Setup-*.exe release/SHA256SUMS.txt --clobber
+            gh release upload "$TAG" release/OmniPC-Setup-*.exe release/OmniPC-Setup-*.exe.blockmap release/latest.yml release/SHA256SUMS.txt --clobber
             gh release edit "$TAG" --title "OmniPC $TAG" --notes "$notes"
           else
-            gh release create "$TAG" release/OmniPC-Setup-*.exe release/SHA256SUMS.txt \
+            gh release create "$TAG" release/OmniPC-Setup-*.exe release/OmniPC-Setup-*.exe.blockmap release/latest.yml release/SHA256SUMS.txt \
               --target "$GITHUB_SHA" --title "OmniPC $TAG" --notes "$notes"
           fi

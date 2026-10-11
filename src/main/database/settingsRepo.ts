@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   updateChannel: 'stable',
   checkUpdatesOnStart: true,
   autoUpdateEmulators: false,
+  checkAppUpdatesOnStart: true,
   defaultPreset: 'balanced',
   launchTimeoutSeconds: 20,
   crashLoopThreshold: 3,
