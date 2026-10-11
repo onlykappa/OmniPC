@@ -104,7 +104,8 @@ describe('save backup rules (pure)', () => {
   });
 
   it('suggests existing cloud folders', () => {
-    const dirs = new Set(['/home/u/OneDrive', '/home/u/Dropbox', '/data/Dropbox (Work)', '/home/u/Google Drive']);
+    // Paths OmniPC builds itself use the platform separator; paths read from env/info.json are kept as given.
+    const dirs = new Set(['/home/u/OneDrive', join('/home/u', 'Dropbox'), '/data/Dropbox (Work)', join('/home/u', 'Google Drive')]);
     const s = cloudFolderSuggestions({
       env: { OneDrive: '/home/u/OneDrive', LOCALAPPDATA: '/home/u/AppData/Local' },
       home: '/home/u',
