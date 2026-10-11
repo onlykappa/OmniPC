@@ -2,6 +2,35 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+- **Add to Steam**: Settings > Steam adds your games (all, chosen systems, or one game from its
+  page) to Steam as non-Steam games, with the cover as the library capsule and the background as
+  the hero image. Steam starts `OmniPC.exe --launch-game=<id>`; when OmniPC was started just for
+  that game it closes when the game exits. Steam must be closed while shortcuts change (OmniPC
+  can close it); shortcuts.vdf is backed up first, and only OmniPC's own shortcuts and artwork
+  are ever changed or removed.
+- **Automatic save backups**: daily or weekly (checked hourly, never while a game is running),
+  after playing a game, and before an emulator is updated or rolled back. Unchanged saves are not
+  backed up again. OmniPC keeps the newest automatic backups per emulator (10 by default); manual
+  backups and the backups made before a restore are never removed. Older backups keep working.
+- **Save backups in a cloud folder**: choose a OneDrive, Google Drive or Dropbox folder (found
+  automatically) or any other folder. Each PC writes to its own subfolder of
+  `OmniPC Save Backups`, ZIPs are written completely before they appear, and backups made on your
+  other PCs are listed and can be restored here.
+- Save backups on the Storage page are grouped by emulator with date, kind and PC, plus
+  "Restore an emulator from a date". Restores always back up the current saves first.
+- OmniDoctor warns when saves have not been backed up for 14 days (one-click backup) and when the
+  backup folder is missing or not writable.
+- **RetroAchievements**: sign in once under Settings > RetroAchievements and OmniPC signs
+  RetroArch, DuckStation, PCSX2, PPSSPP and Dolphin in for you, including emulators installed
+  later (the sign-in is re-applied after updates, repairs and resets). Your password is sent
+  only to retroachievements.org and never stored; OmniPC keeps the login token, encrypted by
+  Windows. Hardcore mode is one switch for every emulator, "Sign out" removes the login from
+  all of them, and OmniDoctor warns (and can fix) when an emulator lost the sign-in.
+  RetroAchievements tokens are blanked in diagnostic packages and backup comparisons.
+
 ## [1.1.1] - 2026-10-11
 
 ### Added

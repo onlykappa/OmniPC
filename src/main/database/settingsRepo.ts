@@ -23,6 +23,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   aiProvider: 'none',
   aiApiKey: '',
   aiModel: 'claude-opus-5-5',
+  retroAchievements: { enabled: false, username: null, hardcore: false },
   hotkeys: {
     modifier: 'Select',
     bindings: {
@@ -38,6 +39,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     },
   },
   devMode: false,
+  saveBackup: { schedule: 'daily', afterPlay: true, beforeEmulatorUpdate: true, destination: null, keepPerEmulator: 10 },
 };
 
 export class SettingsRepo {

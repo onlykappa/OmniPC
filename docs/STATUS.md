@@ -22,8 +22,10 @@ implemented is labelled *planned* or disabled, never a button that silently does
 | **KytyPS5** (PS5, experimental upstream): install from daily releases, CLI launch of game folders, saves under OmniPC, Vulkan check | ✅ (not yet run on Windows) |
 | Folder-format games: PS3 `PS3_GAME/USRDIR/EBOOT.BIN`, PS4/PS5 `eboot.bin` + `sce_sys` | ✅ |
 | Launch router, process monitoring, play history, crash-loop protection, failure recovery screen | ✅ |
-| OmniDoctor: 16 checks, real health score, rule knowledge base, log analysis, change correlation, confidence/evidence, repairs with safety levels, repair history + undo, repair-all-safe, automatic safe repairs | ✅ |
+| OmniDoctor: 17 checks, real health score, rule knowledge base, log analysis, change correlation, confidence/evidence, repairs with safety levels, repair history + undo, repair-all-safe, automatic safe repairs | ✅ |
 | Config backups (compare/restore/delete), save backups/restore, storage relocation | ✅ |
+| Automatic save backups (daily/weekly, after playing, before emulator updates; unchanged saves skipped; retention for automatic backups only), backup folder in OneDrive/Google Drive/Dropbox with per-PC subfolders, restore from other PCs | ✅ (cloud folders not yet tested on Windows) |
+| RetroAchievements: one sign-in in Settings (password never stored, token encrypted with safeStorage/DPAPI), written into RetroArch, DuckStation, PCSX2, PPSSPP and Dolphin (kept across updates/repairs), hardcore toggle, sign-out clears every emulator, OmniDoctor check + safe repair | ✅ (not yet run on Windows) |
 | BIOS & firmware manager (validation for PS2 BIOS, GameCube IPL; file listing for other systems) | ✅ |
 | Download manager (progress, speed, pause/resume via Range, retry, cancel, verification) | ✅ |
 | Import existing setups: PCSX2 (Documents), Dolphin (AppData/Documents), standalone installs, EmuDeck for Windows (ROM paths, BIOS, saves) | ✅ |
@@ -31,6 +33,7 @@ implemented is labelled *planned* or disabled, never a button that silently does
 | Optional AI troubleshooter (Anthropic API, off by default, context preview) | ✅ |
 | Safe Mode (manual or automatic after repeated unclean exits), factory reset options | ✅ |
 | Developer page (manifest, paths, version source, raw checks, launch command, latest log, rules) | ✅ |
+| Add to Steam: non-Steam shortcuts (binary shortcuts.vdf, OmniPC entries only, backup + atomic write), grid artwork, `--launch-game=<id>` command line, close Steam via `-shutdown` | ✅ (not yet run against a real Steam client) |
 | Windows installer (NSIS via electron-builder), CI (Ubuntu + Windows tests, installer artifact) | ✅ |
 
 ## Verified where
@@ -59,5 +62,6 @@ on Windows is the next milestone.
 - Battery level and USB/Bluetooth connection type for controllers (the Gamepad API does not
   expose them; the UI says "not reported").
 - OmniPC self-update channels (stable/beta/dev). Version 1 updates manually via installer.
-- Cloud save sync (save backups are local ZIPs).
+- Live two-way save sync. Save backups can go to a cloud folder shared by several PCs and be
+  restored on any of them, but saves are not merged or synced automatically.
 - Achievements.

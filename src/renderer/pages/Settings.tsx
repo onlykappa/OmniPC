@@ -5,6 +5,8 @@ import { useLoad } from '../lib/hooks';
 import { navigate } from '../lib/router';
 import { useStore } from '../lib/store';
 import { Button, Chip, Modal, Panel, ProgressBar, Segmented, Toggle } from '../components/ui';
+import { SaveBackupSettingsForm } from '../components/SaveBackups';
+import { RetroAchievementsPanel } from '../components/RetroAchievementsPanel';
 
 export function SettingsPage() {
   const settings = useStore((s) => s.settings);
@@ -45,6 +47,7 @@ export function SettingsPage() {
           <label className="field">Launch timeout warning: {settings.launchTimeoutSeconds} s<input type="range" min={5} max={120} value={settings.launchTimeoutSeconds} onChange={(e) => set({ launchTimeoutSeconds: Number(e.target.value) })} /></label>
           <div className="row"><Button onClick={() => navigate('/doctor/history')}>Repair history</Button><Button onClick={() => navigate('/bios')}>BIOS & Firmware</Button></div>
         </Panel>
+        <RetroAchievementsPanel />
         <Panel id="ai" title="AI troubleshooter (optional)">
           <p className="small muted">Off by default. When enabled, "Ask OmniDoctor" sends a redacted diagnostic summary (you can preview it) to the Anthropic API. ROMs, BIOS, saves and keys are never sent. All local diagnostics and repairs work without it.</p>
           <Toggle label="Enable AI troubleshooter" value={settings.aiEnabled} onChange={(v) => set({ aiEnabled: v, aiProvider: v ? 'anthropic' : 'none' })} />
@@ -67,12 +70,20 @@ export function SettingsPage() {
           <Toggle label="Install emulator updates automatically" description="At startup and every 6 hours, never while a game is running. Each update backs up the configuration and is health-tested; if the test fails, the previous version is restored automatically." value={settings.autoUpdateEmulators} onChange={(v) => set({ autoUpdateEmulators: v })} />
           <p className="small faint">OmniPC updates itself from its official GitHub releases (the download is checked against the published SHA-512). Emulators never update without a configuration backup and a health test. Your library, settings, emulators and saves live outside the program folder and are kept.</p>
         </Panel>
+        <Panel id="steam" title="Steam">
+          <p className="small muted">Add your games to Steam as non-Steam games with box art, to start them from Steam, Big Picture or Steam Link.</p>
+          <div className="row"><Button onClick={() => navigate('/steam')}>Steam shortcuts…</Button></div>
+        </Panel>
+        <Panel id="saves" title="Save backups">
+          <SaveBackupSettingsForm />
+          <div className="row"><Button onClick={() => navigate('/storage')}>See and restore backups</Button></div>
+        </Panel>
         <ImportPanel />
         <ResetPanel />
         <Panel id="advanced" title="Advanced">
           <Toggle label="Developer mode" description="Adds the Developer page (adapter status, raw checks, launch commands, logs)." value={settings.devMode} onChange={(v) => set({ devMode: v })} />
           <div className="row"><Button onClick={() => void api('app.relaunch', { safeMode: true })}>Restart in Safe Mode</Button><Button onClick={() => void api('app.relaunch', { safeMode: false })}>Restart normally</Button></div>
-          <p className="small faint">Optional integrations — Steam shortcuts and EmulationStation-DE — are not implemented in this version.</p>
+          <p className="small faint">EmulationStation-DE integration is not implemented in this version.</p>
         </Panel>
       </div>
     </div>

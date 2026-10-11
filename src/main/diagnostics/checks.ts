@@ -19,6 +19,8 @@ import type { AppPaths } from '../core/paths';
 import { freeSpace } from '../platform/drives';
 import { newestBackupAgeHours } from '../database/db';
 import type { BiosService } from '../services/biosService';
+import type { SaveService } from '../services/saveService';
+import { inspectAchievementsConfig } from '../achievements/emulatorConfig';
 
 export interface CheckDeps {
   registry: AdapterRegistry;
@@ -33,6 +35,9 @@ export interface CheckDeps {
   bios: BiosService;
   hardware: () => HardwareProfile | null;
   controllers: () => { pads: DetectedController[]; reportedAt: number | null };
+  saves?: SaveService;
+  /** RetroAchievements: whether a usable sign-in is stored (false when the token cannot be decrypted on this PC). */
+  raCanApply?: () => boolean;
 }
 
 export interface HealthCheck {
@@ -371,6 +376,38 @@ export const CHECKS: HealthCheck[] = [
     },
   },
   {
+    id: 'saves.backups',
+    category: 'saves',
+    label: 'Save backups',
+    quick: true,
+    async run(d) {
+      if (!d.saves) return [];
+      const out: Finding[] = [];
+      const dest = await d.saves.destinationStatus();
+      if (dest.destination && dest.problem) {
+        out.push(f('saves.backupFolder', this.category, { severity: 'warning', title: 'Save backup folder is unavailable', detail: dest.problem, evidence: [dest.destination], manualSteps: ['Reconnect the drive or start your cloud app (OneDrive, Google Drive, Dropbox), or choose another folder under Settings > Save backups.'] }));
+      } else if (dest.destination) {
+        out.push(f('saves.backupFolder', this.category, { severity: 'pass', title: 'Save backup folder is available' }));
+      }
+      const status = await d.saves.protectionStatus();
+      if (!status.length) return out;
+      const cutoff = Date.now() - 14 * 24 * 3600 * 1000;
+      const stale = status.filter((s) => !s.upToDate && (!s.lastBackupAt || Date.parse(s.lastBackupAt) < cutoff));
+      if (stale.length) {
+        out.push(f(this.id, this.category, {
+          severity: 'warning',
+          title: `No save backup in the last 14 days (${stale.map((s) => s.name).join(', ')})`,
+          detail: 'These emulators have saves that changed since their last backup, and that backup is more than 14 days old (or there is none).',
+          evidence: stale.map((s) => `${s.name}: last backup ${s.lastBackupAt ?? 'never'}`),
+          repair: repair('saves.backupAll', 'Back up saves now', 'safe', {}, 'Creates a ZIP backup of every emulator\'s saves. Nothing is overwritten or deleted.'),
+        }));
+      } else {
+        out.push(f(this.id, this.category, { severity: 'pass', title: 'Saves are backed up' }));
+      }
+      return out;
+    },
+  },
+  {
     id: 'database.integrity',
     category: 'database',
     label: 'OmniPC database',
@@ -422,6 +459,41 @@ export const CHECKS: HealthCheck[] = [
       const ups = d.emulators.list().filter((s) => s.updateAvailable);
       if (!ups.length) return [f(this.id, this.category, { severity: 'pass', title: 'Installed emulators are up to date (as of the last check)' })];
       return ups.map((u) => f(this.id, this.category, { severity: 'info', title: `${u.name} ${u.latestVersion} is available (installed ${u.version})`, subject: { kind: 'emulator', id: u.id, label: u.name }, repair: repair('emulator.update', `Update ${u.name}`, 'low', { emulatorId: u.id }, 'Backs up configuration, updates, runs a health test, and keeps the old version for rollback.') }, u.id));
+    },
+  },
+  {
+    id: 'achievements.config',
+    category: 'emulators',
+    label: 'RetroAchievements sign-in',
+    quick: true,
+    async run(d) {
+      const ra = d.settings.get('retroAchievements');
+      if (!ra.enabled || !ra.username) return [];
+      // The stored sign-in cannot be used on this PC (e.g. copied from another Windows account):
+      // applying would fail every time, so ask the user to sign in again instead.
+      if (d.raCanApply && !d.raCanApply()) {
+        return [f(this.id, this.category, { severity: 'warning', title: 'Sign in to RetroAchievements again', detail: `OmniPC remembers ${ra.username} but cannot read the saved sign-in on this PC, so emulators cannot be signed in automatically.`, manualSteps: ['Open Settings > RetroAchievements and sign in again.'] })];
+      }
+      const out: Finding[] = [];
+      const ok: string[] = [];
+      for (const a of d.registry.implemented()) {
+        if (!a.achievements || !d.emulators.isInstalled(a.manifest.id)) continue;
+        const issues = await inspectAchievementsConfig(a.achievements(), { username: ra.username, enabled: ra.enabled, hardcore: ra.hardcore }).catch((e: Error) => [e.message]);
+        if (!issues.length) {
+          ok.push(a.manifest.name);
+          continue;
+        }
+        out.push(f(this.id, this.category, {
+          severity: 'warning',
+          title: `${a.manifest.name} is not signed in to RetroAchievements`,
+          detail: `OmniPC is signed in as ${ra.username}, but ${a.manifest.name}'s configuration does not match, so achievements will not unlock there.`,
+          subject: { kind: 'emulator', id: a.manifest.id, label: a.manifest.name },
+          evidence: issues,
+          repair: repair('ra.apply', 'Sign emulators in', 'safe', {}, 'Writes the RetroAchievements sign-in into every installed emulator that supports it (configuration is backed up first).'),
+        }, a.manifest.id));
+      }
+      if (!out.length && ok.length) out.push(f(this.id, this.category, { severity: 'pass', title: `RetroAchievements signed in for ${ok.join(', ')}` }));
+      return out;
     },
   },
 ];

@@ -23,6 +23,7 @@ import { hotkeyChords, physicalFor } from '../../controllers/translate';
 import { findExeIn, preferredRenderer, resolutionScaleFor } from '../common';
 import { fileVersion, isWindows } from '../../platform/powershell';
 import { splitArgs } from '../pcsx2/adapter';
+import { writeAchievementsConfig, type RaFiles } from '../../achievements/emulatorConfig';
 
 export const PPSSPP_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
@@ -327,7 +328,12 @@ export class PpssppAdapter implements EmulatorAdapter {
       if (input.controller.deviceIndex > 3) notes.push('PPSSPP supports XInput pads 0-3 only; bindings were written for pad 3.');
       if (!input.controller.rumble) notes.push('PPSSPP has no rumble switch; vibration only happens in games that use it.');
     }
+    if (input.achievements && (scope === 'all' || scope === 'paths')) changed.push(...(await writeAchievementsConfig(this.achievements(), input.achievements)));
     return { changed, notes };
+  }
+
+  achievements(): RaFiles {
+    return { kind: 'ppsspp', ini: this.iniPath() };
   }
 
   async inspectConfig(): Promise<ConfigInspection> {

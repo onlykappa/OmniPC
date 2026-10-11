@@ -20,6 +20,7 @@ import type { AppPaths } from '../core/paths';
 import type { LibraryScanner } from '../library/scanner';
 import type { MetadataService } from '../metadata/service';
 import type { EventBus } from '../core/events';
+import type { SaveService } from '../services/saveService';
 import { OmniFailure, errorMessage } from '../core/errors';
 import { logger } from '../core/logger';
 import { IniDocument } from '../config/ini';
@@ -27,6 +28,7 @@ import { atomicWrite } from '../config/iniFile';
 import { backupDatabase } from '../database/db';
 import { DEFAULT_SETTINGS } from '../database/settingsRepo';
 import { installVcRedist } from '../platform/vcredist';
+import type { RetroAchievementsService } from '../achievements/service';
 import { applyCueRepair, applyM3uRebuild, extractGameArchive, planCueRepair, planM3uRebuild, restoreFiles, revalidateGame } from '../library/gameFix';
 
 const log = logger.scope('repairs');
@@ -45,6 +47,9 @@ export interface RepairDeps {
   bus: EventBus;
   scanLibrary: () => Promise<unknown>;
   rescanHardware: () => Promise<unknown>;
+  saves?: SaveService;
+  /** RetroAchievements (ra.apply). */
+  achievements?: Pick<RetroAchievementsService, 'apply'>;
 }
 
 export interface RepairOutcome {
@@ -370,6 +375,17 @@ export const ACTIONS: RepairAction[] = [
     },
   },
   {
+    id: 'saves.backupAll',
+    label: 'Back up all saves',
+    safety: 'safe',
+    async run(_p, d) {
+      if (!d.saves) throw new OmniFailure({ code: 'REPAIR_UNAVAILABLE', whatHappened: 'Save backups are not available right now.' });
+      // Unchanged saves whose backup still exists are skipped; anything else is backed up now.
+      const made = await d.saves.backup(null, 'auto');
+      return { message: made.length ? `Backed up saves of ${made.length} emulator(s)` : 'Saves were already backed up', details: made.map((b) => b.path), backupIds: [], undo: null };
+    },
+  },
+  {
     id: 'database.reindex',
     label: 'Rebuild database indexes',
     safety: 'safe',
@@ -407,6 +423,22 @@ export const ACTIONS: RepairAction[] = [
     async run(_p, d) {
       await d.rescanHardware();
       return { message: 'Hardware scan complete', details: [], backupIds: [], undo: null };
+    },
+  },
+  {
+    id: 'ra.apply',
+    label: 'Sign emulators in to RetroAchievements',
+    safety: 'safe',
+    async run(_p, d) {
+      if (!d.achievements) throw new OmniFailure({ code: 'REPAIR_UNAVAILABLE', whatHappened: 'RetroAchievements is not available in this session.' });
+      const r = await d.achievements.apply();
+      const failed = r.failed.map((f) => `${f.emulatorId}: ${f.error}`);
+      return {
+        message: r.changed.length ? `RetroAchievements sign-in written to ${new Set(r.changed.map((c) => c.split(':')[0])).size} emulator(s)` : 'RetroAchievements settings were already up to date',
+        details: [...r.changed, ...failed],
+        backupIds: r.backupIds,
+        undo: r.backupIds.length ? { kind: 'restore-backups', backupIds: r.backupIds } : null,
+      };
     },
   },
   {

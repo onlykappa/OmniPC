@@ -24,6 +24,7 @@ import { OmniFailure, errorMessage } from '../core/errors';
 import { logger } from '../core/logger';
 import { freeSpace } from '../platform/drives';
 import { isNewer } from '../emulators/versions';
+import type { RaCredentials } from '../achievements/emulatorConfig';
 
 const log = logger.scope('emulators');
 
@@ -48,6 +49,8 @@ export interface EmulatorManagerDeps {
   notifications: NotificationService;
   hardware: () => HardwareProfile | null;
   controllerProfile: () => UniversalControllerProfile;
+  /** RetroAchievements sign-in written into supporting emulators' configs (null = leave them alone). */
+  achievements?: () => RaCredentials | null;
   fetchImpl?: typeof fetch;
 }
 
@@ -75,8 +78,29 @@ async function dirSize(dir: string): Promise<number> {
   return total;
 }
 
+/** Runs before an emulator build is replaced (e.g. to back up its saves). Must not throw; returns a short note. */
+export type BeforeEmulatorChangeHook = (emulatorId: string, what: 'update' | 'rollback' | 'reinstall') => Promise<string>;
+
 export class EmulatorManager {
+  private beforeChange: BeforeEmulatorChangeHook | null = null;
+
   constructor(private readonly d: EmulatorManagerDeps) {}
+
+  setBeforeChangeHook(hook: BeforeEmulatorChangeHook | null): void {
+    this.beforeChange = hook;
+  }
+
+  /** Runs the before-change hook as its own job step; problems are logged, never fatal. */
+  private async runBeforeChange(id: string, what: 'update' | 'rollback' | 'reinstall', ctx: JobContext): Promise<void> {
+    if (!this.beforeChange) return;
+    ctx.step('Backing up saves');
+    try {
+      ctx.stepDone(await this.beforeChange(id, what));
+    } catch (err) {
+      log.warn('before-change hook failed', { id, what, error: errorMessage(err) });
+      ctx.stepDone(`Skipped: ${errorMessage(err)}`);
+    }
+  }
 
   // ------------------------------------------------------------------ status
 
@@ -335,6 +359,8 @@ export class EmulatorManager {
       }
       ctx.stepDone();
 
+      if (reason !== 'install' && this.isInstalled(id)) await this.runBeforeChange(id, reason, ctx);
+
       ctx.step('Backing up current configuration');
       const targets = a.configTargets().filter((t) => existsSync(t.path));
       if (targets.length) await this.d.backups.create(id, reason === 'update' ? `Before update to ${rel.version}` : `Before ${reason}`, `pre-${reason}`, a.configTargets());
@@ -417,7 +443,7 @@ export class EmulatorManager {
   }
 
   configInput(id: string) {
-    return { settings: this.settingsFor(id), controller: this.d.controllerProfile(), hotkeys: this.hotkeys(), hardware: this.d.hardware() };
+    return { settings: this.settingsFor(id), controller: this.d.controllerProfile(), hotkeys: this.hotkeys(), hardware: this.d.hardware(), achievements: this.d.achievements?.() ?? null };
   }
 
   /** Smoke test + record health. */
@@ -455,6 +481,7 @@ export class EmulatorManager {
       if (!cand?.path || !existsSync(cand.path)) throw new OmniFailure({ code: 'NO_ROLLBACK', whatHappened: `No previous ${a.manifest.name} version is available to restore.` });
       const p = a.paths();
       const row = this.d.emuRepo.get(id);
+      await this.runBeforeChange(id, 'rollback', ctx);
       ctx.step('Backing up current configuration');
       await this.d.backups.create(id, `Before rollback to ${cand.version}`, 'pre-rollback', a.configTargets());
       ctx.step(`Restoring ${a.manifest.name} ${cand.version}`);

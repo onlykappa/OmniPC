@@ -1,7 +1,7 @@
 // Electron main process entry: window, IPC bridge, artwork protocol, safe
 // mode, console mode and lifecycle. Business logic lives in AppContainer.
 
-import { app, BrowserWindow, dialog, ipcMain, nativeImage, net, protocol, screen, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, net, protocol, safeStorage, screen, shell } from 'electron';
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -14,6 +14,8 @@ import { autoUpdater } from 'electron-updater';
 import { createApi } from './ipc/handlers';
 import { OmniFailure } from './core/errors';
 import { logger } from './core/logger';
+import { parseLaunchGameArg } from './steam/launchArg';
+import { launchFromCommandLine, type ExternalLaunchHost } from './steam/launchFromArgs';
 
 const log = logger.scope('main');
 const IMAGE_EXT = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']);
@@ -35,6 +37,17 @@ if (!app.requestSingleInstanceLock()) {
 
 let win: BrowserWindow | null = null;
 let container: AppContainer | null = null;
+/** `--launch-game=<id>` (Steam shortcuts): start that game once ready; see steam/launchFromArgs.ts. */
+const startupLaunchGame = parseLaunchGameArg(process.argv);
+const externalLaunchHost: ExternalLaunchHost = {
+  showWindow: () => {
+    if (!win) return;
+    if (win.isMinimized()) win.restore();
+    win.show();
+    win.focus();
+  },
+  quit: () => app.quit(),
+};
 
 /** Crash detection: a marker that survives an unclean exit. Two in a row -> safe mode. */
 function decideSafeMode(): { safe: boolean; reason: string | null } {
@@ -117,6 +130,13 @@ app.whenReady().then(async () => {
     host: {
       thumbnailer,
       displays,
+      appVersion: app.getVersion(),
+      // RetroAchievements token at rest: DPAPI on Windows.
+      secretCipher: {
+        available: () => safeStorage.isEncryptionAvailable(),
+        encrypt: (plain) => safeStorage.encryptString(plain),
+        decrypt: (data) => safeStorage.decryptString(data),
+      },
       onSessionStart: () => win?.minimize(),
       onSessionEnd: () => {
         if (!win) return;
@@ -124,6 +144,8 @@ app.whenReady().then(async () => {
         win.show();
         win.focus();
       },
+      // Development: Steam must run electron.exe with the app folder.
+      selfLauncher: app.isPackaged ? undefined : () => ({ exe: process.execPath, startDir: app.getAppPath(), args: [app.getAppPath()] }),
     },
   });
   log.info('OmniPC starting', { version: app.getVersion(), safeMode: safe, reason });
@@ -138,6 +160,8 @@ app.whenReady().then(async () => {
   const consoleMode = !safe && c.settings.get('consoleModeOnStart');
   win = createWindow(consoleMode, safe);
   win.on('closed', () => (win = null));
+  // Started by Steam for one game: stay in the background.
+  if (startupLaunchGame !== null) win.once('ready-to-show', () => win?.minimize());
 
   // OmniPC self-update from the official GitHub Releases (installed Windows build only).
   const updater = new AppUpdateService({
@@ -193,9 +217,15 @@ app.whenReady().then(async () => {
 
   if (safe && reason) c.notifications.add('warning', 'Started in Safe Mode', `${reason}. Background scanners, automatic repairs and auto-updates are disabled. Use Settings > Advanced to repair OmniPC, then restart normally.`);
   await c.startup().catch((e) => log.error('startup failed', e));
+  if (startupLaunchGame !== null) await launchFromCommandLine(c, startupLaunchGame, { coldStart: true }, externalLaunchHost).catch((e) => log.error('command-line launch failed', e));
 });
 
-app.on('second-instance', () => {
+app.on('second-instance', (_e, argv) => {
+  const gameId = parseLaunchGameArg(argv);
+  if (gameId !== null && container) {
+    void launchFromCommandLine(container, gameId, { coldStart: false }, externalLaunchHost).catch((e) => log.error('command-line launch failed', e));
+    return;
+  }
   if (!win) return;
   if (win.isMinimized()) win.restore();
   win.focus();

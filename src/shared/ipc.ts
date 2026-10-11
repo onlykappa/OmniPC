@@ -38,6 +38,8 @@ import type {
   RepairRecord,
   RendererOption,
   SaveBackup,
+  SaveBackupFolderSuggestion,
+  SaveBackupSettings,
   SaveLocation,
   SearchResult,
   SetupImportCandidate,
@@ -49,6 +51,7 @@ import type {
   DuplicateGroup,
 } from './models';
 import type { SystemId } from './systems';
+import type { SteamStatus, SteamSyncOptions, SteamSyncResult } from './steam';
 
 export interface SystemSummary {
   id: SystemId;
@@ -206,6 +209,14 @@ export interface OmniApi {
   'controllers.saveProfile': (p: Omit<UniversalControllerProfile, 'id' | 'updatedAt'>) => UniversalControllerProfile;
   'controllers.apply': () => { applied: string[]; skipped: { emulatorId: string; reason: string }[] };
 
+  // RetroAchievements (sign in once; OmniPC configures every supporting emulator)
+  'ra.status': () => import('./achievements').RaStatus;
+  /** The password is sent to retroachievements.org once and never stored. */
+  'ra.login': (username: string, password: string) => import('./achievements').RaStatus;
+  'ra.logout': () => import('./achievements').RaStatus;
+  'ra.setHardcore': (on: boolean) => import('./achievements').RaStatus;
+  'ra.apply': () => import('./achievements').RaStatus;
+
   // BIOS
   'bios.status': () => BiosStatus[];
   'bios.import': (systemId: SystemId, filePath: string) => BiosStatus;
@@ -220,6 +231,14 @@ export interface OmniApi {
   'saves.backup': (emulatorId: string | null) => SaveBackup[];
   'saves.backups': () => SaveBackup[];
   'saves.restore': (backupId: string) => { restoredTo: string; safetyBackup: string };
+  /** Existing OneDrive / Google Drive / Dropbox folders to offer as the backup folder. */
+  'saves.settingsSuggestions': () => SaveBackupFolderSuggestion[];
+  /** Validates (exists, writable, not a save or program folder) and stores the backup folder; null = OmniPC's own folder. */
+  'saves.setDestination': (folder: string | null) => SaveBackupSettings;
+  /** Backup folder state: problem is set when the chosen folder is missing or unwritable. */
+  'saves.destinationStatus': () => { destination: string | null; problem: string | null; activeFolder: string; computer: string };
+  /** Opens a backup's folder, or the folder new backups go to (null). */
+  'saves.openFolder': (backupId: string | null) => void;
 
   // Storage
   'storage.locations': () => StorageLocation[];
@@ -243,6 +262,15 @@ export interface OmniApi {
   'onboarding.run': (plan: OnboardingInstallPlan) => { jobId: string };
   'import.detect': () => SetupImportCandidate[];
   'import.apply': (candidateId: string, what: { settings: boolean; saves: boolean; bios: boolean; romPaths: boolean; useInstallation: boolean }) => { summary: string[] };
+
+  // Steam (non-Steam game shortcuts; see src/main/steam)
+  'steam.status': (userId?: string | null) => SteamStatus;
+  /** Adds/updates OmniPC shortcuts and artwork as a job. Steam must be closed. */
+  'steam.sync': (opts: SteamSyncOptions) => { jobId: string };
+  /** Removes only OmniPC's shortcuts (and the artwork OmniPC wrote). */
+  'steam.removeAll': (opts: { userId?: string }) => SteamSyncResult;
+  /** Asks Steam to exit (steam.exe -shutdown) and waits for it. */
+  'steam.closeSteam': () => { closed: boolean };
 
   // Developer
   'dev.adapterReport': (emulatorId: string) => DevAdapterReport;

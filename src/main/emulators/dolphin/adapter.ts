@@ -24,6 +24,7 @@ import { findExeIn, preferredRenderer, resolutionScaleFor } from '../common';
 import { runProcess } from '../../platform/exec';
 import { fileVersion, isWindows } from '../../platform/powershell';
 import { splitArgs } from '../pcsx2/adapter';
+import { writeAchievementsConfig, type RaFiles } from '../../achievements/emulatorConfig';
 
 export const DOLPHIN_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
@@ -250,7 +251,12 @@ export class DolphinAdapter implements EmulatorAdapter {
       }
     }
     for (const [name, d] of docs) await saveIni(this.configPath(name), d);
+    if (input.achievements && (scope === 'all' || scope === 'paths')) changed.push(...(await writeAchievementsConfig(this.achievements(), input.achievements)));
     return { changed, notes };
+  }
+
+  achievements(): RaFiles {
+    return { kind: 'dolphin', configDir: join(this.userDir(), 'Config') };
   }
 
   async inspectConfig(): Promise<ConfigInspection> {

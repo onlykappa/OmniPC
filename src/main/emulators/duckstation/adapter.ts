@@ -27,6 +27,7 @@ import { findExeIn, preferredRenderer, resolutionScaleFor } from '../common';
 import { runProcess } from '../../platform/exec';
 import { fileVersion, isWindows } from '../../platform/powershell';
 import { splitArgs } from '../pcsx2/adapter';
+import { writeAchievementsConfig, type RaFiles } from '../../achievements/emulatorConfig';
 
 export const DUCKSTATION_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
@@ -277,7 +278,12 @@ export class DuckStationAdapter implements EmulatorAdapter {
       await this.writePortableMarker(this.paths().app);
       notes.push('Enabled DuckStation portable mode (portable.txt).');
     }
+    if (input.achievements && (scope === 'all' || scope === 'paths')) changed.push(...(await writeAchievementsConfig(this.achievements(), input.achievements)));
     return { changed, notes };
+  }
+
+  achievements(): RaFiles {
+    return { kind: 'duckstation', ini: this.iniPath() };
   }
 
   /** Resolves a folder value the way EmuFolders::LoadPathFromSettings does (relative to DataRoot). */
