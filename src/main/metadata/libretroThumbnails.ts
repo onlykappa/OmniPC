@@ -71,7 +71,9 @@ export function pickThumbnail(names: string[], fileStem: string, title: string, 
   const exact = names.find((n) => n.slice(0, -extname(n).length).toLowerCase() === fileStem.toLowerCase());
   if (exact) return exact;
   const keys = [titleKey(fileStem), titleKey(title)].filter(Boolean);
-  const hits = names.filter((n) => keys.includes(titleKey(n)));
+  let hits = names.filter((n) => keys.includes(titleKey(n)));
+  // "Halo" (the name inside the disc) vs "Halo - Combat Evolved (USA)": match the main title before a subtitle.
+  if (!hits.length) hits = names.filter((n) => / - /.test(n) && keys.includes(titleKey(n.slice(0, n.indexOf(' - ')))));
   if (!hits.length) return null;
   return hits
     .map((n) => ({ n, score: (UNWANTED.test(n) ? -10 : 0) + regionScore(n, region) - n.length / 1000 }))

@@ -175,7 +175,9 @@ export interface EmulatorManifest {
   implemented: boolean;
   plannedNote?: string;
   download: {
-    kind: 'github-release' | 'dolphin-update' | 'versioned-url' | 'forgejo-release' | 'none';
+    kind: 'github-release' | 'dolphin-update' | 'versioned-url' | 'forgejo-release' | 'ryubing-update' | 'none';
+    /** ryubing-update: the update server ryujinx.app uses (e.g. https://update.ryujinx.app); repo/apiBase are the fallback. */
+    updateServer?: string;
     repo?: string;
     /** forgejo-release: API root of the Forgejo/Gitea server, e.g. https://git.ryujinx.app/api/v1 */
     apiBase?: string;

@@ -168,6 +168,39 @@ export class ForgejoReleaseSource extends GitHubReleaseSource {
   }
 }
 
+/**
+ * Ryujinx (Ryubing) through the update server behind ryujinx.app's own
+ * download button: update.ryujinx.app/latest/query answers with the current
+ * tag and the Windows x64 build on git.ryujinx.app. When that server cannot be
+ * reached, the release list on git.ryujinx.app is used directly.
+ */
+export class RyubingUpdateSource implements TrustedSource {
+  readonly label = 'ryujinx.app (official Ryubing update server)';
+  constructor(private readonly server: string, private readonly allowedHosts: string[], private readonly fallback: TrustedSource | null) {
+    if (!/^https:\/\/[\w.-]+$/.test(server)) throw new Error(`invalid update server ${server}`);
+  }
+
+  async resolveLatest(ctx: SourceContext): Promise<ReleaseInfo> {
+    const f = ctx.fetchImpl ?? fetch;
+    const rc = ctx.channel === 'nightly' ? 'canary' : 'stable';
+    try {
+      const r = await f(`${this.server}/latest/query?os=win&arch=x64&rc=${rc}`, { headers: { Accept: 'application/json', 'User-Agent': 'OmniPC' } });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const j = (await r.json()) as { tag?: string; download_url?: string; web_url_format?: string };
+      const url = j.download_url ?? '';
+      const fileName = decodeURIComponent(url.split(/[?#]/)[0].split('/').pop() ?? '');
+      if (!j.tag || !/^\d+(\.\d+)+$/.test(j.tag)) throw new Error(`unexpected version "${j.tag}"`);
+      if (!hostAllowed(url, this.allowedHosts)) throw new Error(`download is not on a trusted host: ${url}`);
+      if (!/\.(zip|7z)$/i.test(fileName) || !/win_x64/i.test(fileName)) throw new Error(`unexpected file ${fileName}`);
+      const notes = j.web_url_format?.includes('{0}') ? j.web_url_format.replace('{0}', j.tag) : null;
+      return { version: j.tag, url, fileName, sizeBytes: null, sha256: null, publishedAt: null, sourceLabel: this.label, notesUrl: notes && /^https:/.test(notes) ? notes : null };
+    } catch (err) {
+      if (this.fallback) return this.fallback.resolveLatest(ctx);
+      throw new OmniFailure({ code: 'SOURCE_UNREACHABLE', whatHappened: `Could not check ${this.label} for the latest release.`, detected: [(err as Error).message], userAction: ['Check your internet connection and try again in a few minutes.'] });
+    }
+  }
+}
+
 interface DolphinLatest { shortrev?: string; hash?: string; artifacts?: { system?: string; url?: string }[]; changelog?: unknown }
 
 /** Dolphin's official update endpoint: https://dolphin-emu.org/update/latest/<track>/ */
@@ -243,6 +276,10 @@ export function sourceForManifest(m: EmulatorManifest): TrustedSource | null {
   const d = m.download;
   if (d.kind === 'versioned-url' && d.repo && d.urlTemplate) return new VersionedUrlSource(d.repo, d.urlTemplate, d.allowedHosts);
   if (d.kind === 'github-release' && d.repo) return new GitHubReleaseSource(d.repo, d.assetPatterns ?? [], d.assetExclude ?? [], d.allowedHosts, d.versionFrom, d.versionPattern);
+  if (d.kind === 'ryubing-update' && d.updateServer) {
+    const fallback = d.repo && d.apiBase ? new ForgejoReleaseSource(d.apiBase, d.repo, d.nightlyRepo, d.assetPatterns ?? [], d.assetExclude ?? [], d.allowedHosts, d.versionPattern) : null;
+    return new RyubingUpdateSource(d.updateServer, d.allowedHosts, fallback);
+  }
   if (d.kind === 'forgejo-release' && d.repo && d.apiBase) return new ForgejoReleaseSource(d.apiBase, d.repo, d.nightlyRepo, d.assetPatterns ?? [], d.assetExclude ?? [], d.allowedHosts, d.versionPattern);
   if (d.kind === 'dolphin-update') return new DolphinUpdateSource(d.track ?? 'beta', d.allowedHosts);
   return null;

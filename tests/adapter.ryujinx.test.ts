@@ -32,8 +32,10 @@ describe('Ryujinx adapter', () => {
     expect(a.manifest.implemented).toBe(true);
     expect(a.manifest.executable).toBe('Ryujinx.exe');
     expect(a.manifest.systems).toEqual(['switch']);
-    expect(String(a.manifest.download.kind)).toBe('forgejo-release');
-    expect(a.manifest.download.allowedHosts).toEqual(['git.ryujinx.app']);
+    // Same source as ryujinx.app's download button, with the release list as fallback.
+    expect(a.manifest.download.kind).toBe('ryubing-update');
+    expect(a.manifest.download.updateServer).toBe('https://update.ryujinx.app');
+    expect(a.manifest.download.allowedHosts).toEqual(['update.ryujinx.app', 'git.ryujinx.app', '*.ryujinx.app']);
     const names = ['ryujinx-1.3.3-win_x64.7z', 'ryujinx-1.3.3-win_arm64.zip', 'ryujinx-1.3.3-linux_x64.tar.gz', 'ryujinx-1.3.3-x64.AppImage', 'ryujinx-canary-1.3.3-macos_universal.app.tar.gz', 'ryujinx-1.3.3-win_x64.zip']
       .map((name) => ({ name, browser_download_url: `https://git.ryujinx.app/projects/Ryubing/releases/download/1.3.3/${name}`, size: 1 }));
     const hit = pickAsset(names, a.manifest.download.assetPatterns!, a.manifest.download.assetExclude!, []);

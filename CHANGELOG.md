@@ -2,6 +2,23 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+- **Switch game info and pictures**: icons, banners, screenshots, descriptions, publisher and
+  release year from the eShop listings indexed by titledb. Games are matched by the title ID in
+  the file name (`[0100…]`) or inside the NSP, or by name.
+- **Xbox and Xbox 360 game info**: OmniPC reads the title ID and real game name from the disc
+  (`default.xbe` / `default.xex`), so Xbox discs are told apart from Xbox 360 discs without a
+  folder hint and messy file names still find their box art. Xbox 360 covers come from the Xbox
+  Marketplace image service.
+- Existing Xbox and Switch games are re-identified once after updating and get their artwork.
+
+### Changed
+- Ryujinx is installed and updated through ryujinx.app's own update server
+  (update.ryujinx.app, the source of the Download button on ryujinx.app), with the Ryubing
+  release list as a fallback.
+
 ## [1.1.0] - 2026-10-11
 
 ### Added

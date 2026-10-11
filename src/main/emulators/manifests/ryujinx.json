@@ -1,6 +1,6 @@
 {
   "id": "ryujinx",
-  "name": "Ryujinx (Ryubing)",
+  "name": "Ryujinx",
   "systems": [
     "switch"
   ],
@@ -9,7 +9,8 @@
   "license": "MIT",
   "implemented": true,
   "download": {
-    "kind": "forgejo-release",
+    "kind": "ryubing-update",
+    "updateServer": "https://update.ryujinx.app",
     "apiBase": "https://git.ryujinx.app/api/v1",
     "repo": "projects/Ryubing",
     "nightlyRepo": "Ryubing/Canary",
@@ -27,7 +28,9 @@
     ],
     "versionPattern": "^ryujinx-(?:canary-)?(\\d+\\.\\d+\\.\\d+)-win_x64\\.zip$",
     "allowedHosts": [
-      "git.ryujinx.app"
+      "update.ryujinx.app",
+      "git.ryujinx.app",
+      "*.ryujinx.app"
     ]
   },
   "executable": "Ryujinx.exe",
