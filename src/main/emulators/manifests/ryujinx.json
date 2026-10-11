@@ -1,0 +1,112 @@
+{
+  "id": "ryujinx",
+  "name": "Ryujinx (Ryubing)",
+  "systems": [
+    "switch"
+  ],
+  "website": "https://ryujinx.app/",
+  "repository": "https://git.ryujinx.app/projects/Ryubing",
+  "license": "MIT",
+  "implemented": true,
+  "download": {
+    "kind": "forgejo-release",
+    "apiBase": "https://git.ryujinx.app/api/v1",
+    "repo": "projects/Ryubing",
+    "nightlyRepo": "Ryubing/Canary",
+    "assetPatterns": [
+      "^ryujinx-\\d+\\.\\d+\\.\\d+-win_x64\\.zip$",
+      "^ryujinx-canary-\\d+\\.\\d+\\.\\d+-win_x64\\.zip$"
+    ],
+    "assetExclude": [
+      "arm64",
+      "linux",
+      "macos",
+      "AppImage",
+      "\\.7z$",
+      "\\.tar\\."
+    ],
+    "versionPattern": "^ryujinx-(?:canary-)?(\\d+\\.\\d+\\.\\d+)-win_x64\\.zip$",
+    "allowedHosts": [
+      "git.ryujinx.app"
+    ]
+  },
+  "executable": "Ryujinx.exe",
+  "supportedExtensions": [
+    ".nsp",
+    ".xci",
+    ".nca",
+    ".nro",
+    ".nso"
+  ],
+  "dependencies": [],
+  "configFiles": [
+    {
+      "label": "Ryujinx settings (Config.json)",
+      "path": "{data}/Config.json",
+      "format": "json"
+    }
+  ],
+  "logFiles": [],
+  "saveDirs": [
+    {
+      "label": "Switch game saves (bis/user/save)",
+      "path": "{data}/bis/user/save"
+    },
+    {
+      "label": "Switch system saves and user profiles (bis/system/save)",
+      "path": "{data}/bis/system/save"
+    }
+  ],
+  "biosRequirements": [
+    {
+      "systemId": "switch",
+      "label": "Switch keys (prod.keys, optional title.keys)",
+      "required": true,
+      "directory": "{bios}/switch",
+      "filenames": [
+        "prod.keys",
+        "title.keys"
+      ],
+      "validator": "any-file",
+      "note": "Dumped from your own Switch. OmniPC copies them into Ryujinx's data/system folder before each launch and never downloads keys."
+    },
+    {
+      "systemId": "switch",
+      "label": "Switch firmware",
+      "required": true,
+      "directory": "{bios}/switch/firmware",
+      "validator": "none",
+      "note": "Dumped from your own Switch and installed once in Ryujinx (Tools > Install Firmware). Ryujinx has no silent install; OmniPC can open its confirmation dialog for a dump kept in this folder. OmniPC never downloads firmware."
+    }
+  ],
+  "notes": [
+    "Ryujinx was discontinued in October 2024. OmniPC installs Ryubing, the community-maintained continuation (MIT licence), from its official Forgejo releases at git.ryujinx.app.",
+    "Requires prod.keys and the system firmware from your own Switch. Put prod.keys (and optional title.keys) in BIOS\\switch; install the firmware once from Ryujinx (Tools > Install Firmware).",
+    "OmniPC starts Ryujinx with its own data folder (-r <OmniPC>\\Emulators\\ryujinx\\data): settings, keys, firmware, saves and caches never touch %APPDATA%\\Ryujinx.",
+    "Saves live in the emulated NAND (data\\bis\\user\\save, one hex-named folder per save). Ryujinx cannot move the NAND, so they are not in the OmniPC Saves folder; OmniPC lists and backs up the real location.",
+    "Games start fullscreen with the game path on the command line. Escape leaves fullscreen, a second Escape stops the game and shows the Ryujinx game list; closing the window (Alt+F4) exits Ryujinx.",
+    "Controller: Ryujinx identifies pads by SDL GUID. Choose your controller for Player 1 once in Ryujinx (Options > Settings > Input); OmniPC then applies the universal button mapping, deadzone and rumble to it. Hotkeys are keyboard-only in Ryujinx (F1 vsync, F2 mute, F4 hide UI, F5 pause, F8 screenshot, F11 fullscreen; Escape leaves fullscreen, then stops the game).",
+    "Per-game profiles are applied to Config.json for the session and restored when Ryujinx exits (Ryujinx's own per-game configurations still take priority).",
+    "Ryujinx refuses to run from OneDrive or Program Files folders, as administrator, and on Windows 10 builds older than 2004."
+  ],
+  "assumptions": [
+    "Choice (2026-10): Ryubing is the maintained Ryujinx continuation: active master (last mirrored commit 793ca017 on 2026-08-05 by GreemDev; config format v73 since 2026-05-20), an update server (github.com/Ryubing/UpdateServer, updated 2026-09) and monthly-ish stable releases. Eden's GitHub release mirror returns HTTP 451 (DMCA); Citron forks are on self-hosted hosts. Verified source: GitHub mirror github.com/Leuconoe/Ryubing master 793ca017 (upstream commits only; the mirror's own MCP-bridge commits live on separate branches/tags). git.ryujinx.app itself was not reachable from the verification sandbox.",
+    "Download: stable releases are created by .forgejo/workflows/release.yml in repository 'projects/Ryubing' on git.ryujinx.app with tag = version (e.g. 1.3.2) and assets ryujinx-<version>-win_x64.zip and .7z (7z a of the publish folder, so the zip has a top-level 'publish' folder with Ryujinx.exe), plus win_arm64/linux/macOS builds. Canary: repository 'Ryubing/Canary', assets ryujinx-canary-<version>-win_x64.zip (.forgejo/workflows/canary.yml). Forgejo API: GET https://git.ryujinx.app/api/v1/repos/projects/Ryubing/releases/latest (Gitea-compatible JSON: tag_name, prerelease, published_at, html_url, assets[name,size,browser_download_url]); used the same way by github.com/ewigl/ryubing-canary-mirror (.github/workflows/mirror.yml) and the UpdateServer (appsettings.json Forgejo.Endpoint https://git.ryujinx.app/, Stable project projects/Ryubing, Canary Ryubing/Canary). OmniPC's download sources do not support Forgejo yet (download.kind 'forgejo-release' is a requested shared change). Whether browser_download_url redirects to another host was not verified.",
+    "Build: dotnet publish -c Release -r win-x64 --self-contained with PublishSingleFile + trimming (src/Ryujinx/Ryujinx.csproj, .NET 10 per global.json), so no .NET runtime or VC++ redistributable is needed. Executable name Ryujinx.exe. -p:Version=<version> gives FileVersion <version>.0 (assumed to be embedded in the single-file apphost; fallback: version in the log file name).",
+    "Data folder (src/Ryujinx.Common/Configuration/AppDataManager.cs Initialize): '-r'/'--root-data-dir <dir>' -> LaunchMode.Custom when the directory exists (otherwise falls back to portable/%APPDATA%\\Ryujinx with an error log). Sub-folders: games, profiles, system (keys) are created at start; bis (NAND), sdcard, mods on demand. In Custom mode on Windows logs go to <exe dir>\\Logs (SetUpLogsDir), files Ryujinx_<version>_<yyyy-MM-dd_HH-mm-ss>.log, 3 kept (FileLogTarget.PrepareLogFile). The 'portable' folder next to the exe is an alternative OmniPC does not use.",
+    "Config (src/Ryujinx/Program.cs ReloadConfig): <exe dir>\\Config.json wins over <data>\\Config.json; a missing file is created from LoadDefault. Invalid JSON, version 0 or a version newer than the build's CurrentVersion is renamed to Config.json.<date>.invalid and defaults are used. Format: ConfigurationFileFormat.cs (CurrentVersion 73), snake_case names (JsonHelper SnakeCaseNamingPolicy), string enums except hide_cursor/vsync_mode/dram_size/multiplayer_mode (numbers). ConfigurationState.Load (ConfigurationState.Migration.cs) dereferences game_dirs, hotkeys etc. without null checks, so OmniPC writes a complete file (LoadDefault values) and later merges single keys; older files are migrated by Ryujinx itself.",
+    "Startup/launch dialogs suppressed: update_checker_type 'Off' (UpdaterType Off/PromptAtStartup/CheckInBackground; MainWindow.CheckLaunchState would run Updater.BeginUpdateAsync with a prompt) plus the --hide-updates flag; legacy check_updates_on_start false; show_confirm_exit false (AppHost.ShowExitPrompt and MainWindow.OnClosing confirmation); logging_enable_trace false and graphics_shaders_dump_path '' (MainWindowViewModel.PerformanceCheck confirmation dialogs in release builds); show_console false (separate console window); skip_user_profiles true (profile selection applet) and ignore_applet true (controller applet dialog); prod.keys copied before launch (MainWindow.CheckLaunchState shows UserError.NoKeys otherwise); firmware required (AppHost.LoadGuestApplication -> SetupValidator: NoFirmware error dialog, or an install-from-game confirmation when the XCI carries firmware). enable_discord_integration false only in a newly created file.",
+    "Non-configurable exits: Program.Main shows a message box and exits when the working directory is inside OneDrive or Program Files, when run as administrator, or on Windows < 10.0.19041. OmniPC uses cwd = data folder and reports a blocked data location in validateEnvironment.",
+    "CLI (src/Ryujinx/Utilities/CommandLineState.cs): -r/--root-data-dir <dir>, -f/--fullscreen, -g/--graphics-backend <vulkan|opengl>, --backend-threading, --pptc, -m/--memory-manager-mode, --system-region, --system-language, -i/--application-id <id>, --docked-mode, --handheld-mode, --hide-cursor, --hide-updates, --software-gui, -la/--local-only-amiibo, -p/--profile, --install-firmware <path>; any other argument becomes the launch path (last wins). '--no-gui' switches to the headless SDL frontend (src/Ryujinx/Headless/Options.cs, CommandLineParser); not used because its --use-main-config inherits values before Config.json is loaded (HeadlessRyujinx.Load calls InheritMainConfig before ReloadConfig) and it has no keyboard hotkeys or exit key. There is no --version/--help that exits.",
+    "Launch: Ryujinx.exe -r <data> --hide-updates [-f] <game>: MainWindow.DeferLoadApplication loads the first application in the file (or -i <id> for multi-title files) and SwitchToGameControl(startFullscreen) toggles fullscreen. When the game stops (Escape outside fullscreen / guest exit) MainWindowViewModel.AppHost_AppExit returns to the game list; closing the main window stops the game and exits the process (MainWindow.OnClosing). start_fullscreen in Config.json only affects the GUI 'start games in fullscreen' option.",
+    "Graphics keys: graphics_backend 'Vulkan'|'OpenGl'; res_scale 1-4 (=1x-4x) or -1 with res_scale_custom float (SettingsViewModel, MainWindow.UpdateGraphicsConfig); vsync_mode 0 Switch (60 Hz + vsync) / 1 Unbounded / 2 Custom (custom_vsync_interval); aspect_ratio Fixed4x3/Fixed16x9/Fixed16x10/Fixed21x9/Fixed32x9/Stretched; docked_mode bool (default true); anti_aliasing, scaling_filter, max_anisotropy etc. via settings.advanced snake_case keys.",
+    "Per-game: Ryujinx has native per-game files <data>/games/<title id>/Config.json (complete copies, MainWindowViewModel.InitializeUserConfig) but keys them by base title ID, which OmniPC cannot read from .nsp/.xci without keys, so OmniPC overrides keys of the global Config.json for the session and restores only those keys afterwards (journal Config.json.omnideck-session.json).",
+    "Keys (src/Ryujinx.HLE/FileSystem/VirtualFileSystem.cs ReloadKeySet): prod.keys, title.keys, console.keys, dev.keys from <data>/system (AppDataManager.KeysDirPath); %USERPROFILE%\\.switch only in UserProfile mode. OmniPC copies prod/title/console.keys from BIOS/switch and validates prod.keys by header_key (64 hex).",
+    "Firmware (src/Ryujinx.HLE/FileSystem/ContentManager.cs): installed NCAs live in <data>/bis/system/Contents/registered/<id>.nca/00 (SaveNca, LoadEntries). InstallFirmware accepts a directory of .nca files, a .zip or an .xci (update partition). The only CLI entry, --install-firmware <dir|zip|xci> (MainWindow.OnApplyTemplate -> HandleFirmwareInstallation), still shows a confirmation dialog, so OmniPC offers it as a guided action (buildFirmwareInstallLaunch) instead of a silent install.",
+    "Saves: emulated NAND <data>/bis/user/save/<16-hex save id> (VirtualFileSystem UserNandPath 'bis/user'); AppDataManager.CustomNandPath is an unimplemented TODO, so saves cannot be redirected to OmniPC Saves.",
+    "Caches: <data>/games/<title id>/cache/cpu (PPTC, Ptc.cs) and cache/shader (ShaderCache.cs); the same games/<id> folder holds updates.json, dlc.json and mods.json, so only cache/ is offered for clearing.",
+    "Input (src/Ryujinx.Common/Configuration/Hid, src/Ryujinx.Input/HLE/NpadManager.cs): input_config entries with backend WindowKeyboard or GamepadSDL3 (GamepadSDL2 accepted), id '<n>-<SDL joystick GUID with first 4 hex digits zeroed>' (Ryujinx.Input.SDL3/SDL3GamepadDriver.GenerateGamepadId), left_joycon/right_joycon button maps with GamepadInputId names (A/B/X/Y by SDL button label, LeftShoulder, LeftTrigger, LeftStick, Minus=Back, Plus=Start, Dpad*), left/right_joycon_stick {joystick Left|Right, stick_button, invert_stick_x/y, rotate90_cw}, deadzone_left/right, range_left/right, trigger_threshold, motion, rumble {strong_rumble, weak_rumble, enable_rumble, use_hdrumble}, led. A controller entry whose device is absent falls back to the default keyboard (NpadManager.TryGetKeyboardFallback). player_input_assignments only matter for dynamic input swap. Ryujinx's own default for non-Nintendo pads is positional (InputConfigDefaults isNintendoStyle).",
+    "Hotkeys (KeyboardHotkeys, AppHost.GetHotkeyState): keyboard keys only (toggle_vsync_mode F1, toggle_mute F2, show_ui F4, pause F5, screenshot F8, res scale/volume/turbo unbound); F11 toggles fullscreen and Escape (MainWindow.axaml KeyBinding -> MainWindowViewModel.ExitCurrentState) leaves fullscreen first, then stops the game. No gamepad hotkeys, so OmniPC's controller hotkeys are not supported.",
+    "Requirements (README.md): 8 GiB RAM, Windows 10 20H1+, OpenGL 4.6 or Vulkan; ARMeilleure detects SSE4.1/AVX at runtime (no hard AVX2 requirement). The .NET 10 x64 SSE4.2 baseline is assumed, not verified."
+  ]
+}

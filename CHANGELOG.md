@@ -2,6 +2,22 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+- **Nintendo Switch** via Ryujinx (Ryubing, the maintained Ryujinx continuation), installed from
+  its official release server. Keys (`prod.keys`, `title.keys`) are recognised by Scan for BIOS &
+  keys and copied in before each launch; firmware is installed once from Ryujinx's Tools menu.
+- **Box art, title screens and screenshots for every system** from the libretro-thumbnails
+  collection (no account needed). Existing libraries get artwork automatically after updating.
+- **OmniDoctor → Fix games**: lists games with file problems and fixes them: repairs CUE sheets
+  pointing at renamed tracks, rebuilds multi-disc playlists, extracts zipped disc games (the
+  archive is kept), clears crash-loop pauses. CUE/M3U changes are backed up and undoable.
+
+### Fixed
+- N64 `.z64` ROMs were wrongly flagged as broken ("Split ZIP ... missing its final .zip part").
+  Flagged games are re-checked automatically after updating.
+
 ## [1.0.1] - 2026-10-11
 
 ### Added
