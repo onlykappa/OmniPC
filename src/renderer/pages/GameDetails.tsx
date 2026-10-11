@@ -75,7 +75,7 @@ function Overview({ game }: { game: GameDetails }) {
       <Panel title="Files">
         {game.files.map((f) => (
           <div key={f.path} className="col" style={{ gap: 2 }}>
-            <div className="row"><span className="mono small grow">{f.path}</span>{f.discNumber && <Chip>Disc {f.discNumber}</Chip>}<Chip tone={f.validation === 'ok' ? 'ok' : f.validation === 'invalid' ? 'bad' : f.validation === 'warning' ? 'warn' : undefined}>{f.validation}</Chip></div>
+            <div className="row"><span className="mono small grow">{f.path}</span>{f.discNumber && <Chip>Disc {f.discNumber}</Chip>}{f.contentKind && <Chip tone="info">{f.contentKind === 'dlc' ? 'DLC' : 'Update'}</Chip>}<Chip tone={f.validation === 'ok' ? 'ok' : f.validation === 'invalid' ? 'bad' : f.validation === 'warning' ? 'warn' : undefined}>{f.validation}</Chip></div>
             <div className="tiny faint">{bytes(f.sizeBytes)}{f.validationNote ? ` · ${f.validationNote}` : ''}</div>
           </div>
         ))}

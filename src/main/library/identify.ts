@@ -22,6 +22,8 @@ export interface Identification {
   evidence: string[];
   /** Title found inside the image header (GameCube/Wii/PSP). */
   internalTitle: string | null;
+  /** Switch: whether the file is an update or DLC of the game in `serial`. */
+  contentKind?: 'update' | 'dlc' | null;
 }
 
 async function readHead(fh: FileHandle, pos: number, len: number): Promise<Buffer> {
@@ -181,6 +183,19 @@ async function sniffXbox(fh: FileHandle): Promise<Sniff | null> {
   return null;
 }
 
+/** Title ID from an XEX2 header (execution info, optional header 0x00040006). */
+export function xexTitleId(h: Buffer): string | null {
+  if (h.length < 0x18 || h.toString('latin1', 0, 4) !== 'XEX2') return null;
+  const count = Math.min(h.readUInt32BE(0x14), 64);
+  for (let i = 0; i < count && 0x20 + i * 8 <= h.length; i++) {
+    if (h.readUInt32BE(0x18 + i * 8) !== 0x00040006) continue;
+    const info = h.readUInt32BE(0x1c + i * 8);
+    if (info + 16 > h.length) return null;
+    return h.readUInt32BE(info + 12).toString(16).toUpperCase().padStart(8, '0');
+  }
+  return null;
+}
+
 /**
  * Finds default.xbe (Xbox) or default.xex (Xbox 360) in an XDVDFS root
  * directory and reads the title ID (and, for XBE, the title name). The
@@ -215,16 +230,8 @@ async function xdvdfsBootInfo(fh: FileHandle, base: number, rootSector: number, 
       return { system: 'xbox', titleId, title };
     }
     if (name === 'default.xex') {
-      const h = await readHead(fh, at, Math.min(size, 0x1000));
-      if (h.toString('latin1', 0, 4) !== 'XEX2') return null;
-      const count = Math.min(h.readUInt32BE(0x14), 64);
-      for (let i = 0; i < count; i++) {
-        if (h.readUInt32BE(0x18 + i * 8) !== 0x00040006) continue;
-        const info = h.readUInt32BE(0x1c + i * 8);
-        const b = info + 16 <= h.length ? h.subarray(info) : await readHead(fh, at + info, 16);
-        return { system: 'x360', titleId: b.readUInt32BE(12).toString(16).toUpperCase().padStart(8, '0'), title: null };
-      }
-      return null;
+      const titleId = xexTitleId(await readHead(fh, at, Math.min(size, 0x4000)));
+      return titleId ? { system: 'x360', titleId, title: null } : null;
     }
   }
   return null;
@@ -240,14 +247,21 @@ export function switchBaseTitleId(id: string): string | null {
   return n.toString(16).toUpperCase().padStart(16, '0');
 }
 
+/** Whether a Switch title ID is the base game, an update (…800) or DLC. */
+export function switchContentKind(id: string): 'update' | 'dlc' | null {
+  const low = BigInt(`0x${id}`) & 0xfffn;
+  return low === 0n ? null : low === 0x800n ? 'update' : 'dlc';
+}
+
 /**
- * Switch title ID: from "[0100...]" in the file name, or for NSPs from the
- * ticket file name inside the (unencrypted) PFS0 header. XCI contents are
- * encrypted, so XCI files rely on the file name.
+ * Switch title ID (as found, not reduced to the base game): from "[0100...]"
+ * in the file name, or for NSPs from the ticket file name inside the
+ * (unencrypted) PFS0 header. XCI contents are encrypted, so XCI files rely on
+ * the file name.
  */
 export async function switchTitleId(path: string, fh?: FileHandle): Promise<string | null> {
   const fromName = /[[(]\s*(0100[0-9a-f]{12})\s*[\])]/i.exec(basename(path))?.[1];
-  if (fromName) return switchBaseTitleId(fromName);
+  if (fromName) return fromName.toUpperCase();
   if (!fh || !/\.nsp$/i.test(path)) return null;
   const h = await readHead(fh, 0, 16);
   if (h.toString('latin1', 0, 4) !== 'PFS0') return null;
@@ -257,7 +271,7 @@ export async function switchTitleId(path: string, fh?: FileHandle): Promise<stri
   const table = await readHead(fh, 16 + count * 24, strSize);
   for (const name of table.toString('latin1').split('\0')) {
     const m = /^(0100[0-9a-f]{12})[0-9a-f]{16}\.(tik|cert)$/i.exec(name);
-    if (m) return switchBaseTitleId(m[1]);
+    if (m) return m[1].toUpperCase();
   }
   return null;
 }
@@ -303,6 +317,14 @@ export async function parseM3u(path: string): Promise<string[]> {
  *        <TITLEID>/USRDIR/EBOOT.BIN + <TITLEID>/PARAM.SFO (installed/PSN)
  */
 export async function identifyFolderGame(path: string): Promise<Identification | null> {
+  if (basename(path).toLowerCase() === 'default.xex') {
+    // Extracted Xbox 360 game folder: the folder is named after the game.
+    const head = await withFile(path, (fh) => readHead(fh, 0, 0x4000)).catch(() => Buffer.alloc(0));
+    const titleId = xexTitleId(head);
+    if (!titleId) return null;
+    const parsed = parseGameFileName(basename(dirname(path)));
+    return { systemId: 'x360', title: parsed.title, baseTitle: parsed.baseTitle, region: parsed.region, serial: titleId, discNumber: null, confidence: 'high', evidence: [`Xbox 360 game folder (default.xex, title ID ${titleId})`], internalTitle: null };
+  }
   if (basename(path).toLowerCase() !== 'eboot.bin') return null;
   const dir = dirname(path);
   const folderTitle = basename(dir);
@@ -399,9 +421,11 @@ export async function identifyFile(path: string, folderChain: string[]): Promise
         }
       } else if (['.nsp', '.xci', '.nsz', '.xcz'].includes(ext)) {
         const id = await switchTitleId(path, fh).catch(() => null);
-        if (id) {
-          result.serial = id;
-          evidence.push(`Switch title ID ${id}`);
+        const base = id ? switchBaseTitleId(id) : null;
+        if (id && base) {
+          result.serial = base;
+          result.contentKind = switchContentKind(id);
+          evidence.push(result.contentKind ? `Switch ${result.contentKind === 'dlc' ? 'DLC' : 'update'} ${id} for ${base}` : `Switch title ID ${id}`);
         }
       } else if (ext === '.chd') {
         const c = await sniffChd(fh);

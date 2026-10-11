@@ -110,7 +110,9 @@ export class LaunchService {
 
     // Preflight: problems we can see before starting anything.
     const preflight: Finding[] = [];
-    const files = this.d.library.filesForGame(gameId);
+    const allFiles = this.d.library.filesForGame(gameId);
+    const files = allFiles.filter((f) => !f.content_kind);
+    const extraContent = allFiles.filter((f) => f.content_kind && existsSync(f.path)).map((f) => ({ path: f.path, kind: f.content_kind! }));
     const file = files[Math.min(opts.discIndex ?? 0, files.length - 1)];
     if (!file || !existsSync(file.path)) {
       return { ok: false, launchId: null, error: omniError('GAME_FILE_MISSING', "We couldn't find this game's file.", { detected: [file ? `${file.path} does not exist.` : 'No file recorded.'], probableCause: 'The file was moved or deleted, or its drive is disconnected.', omniCanFix: { actionId: 'library.rescan', label: 'Rescan library', safety: 'safe', params: {}, description: 'Rescans your game folders.' } }) };
@@ -132,7 +134,7 @@ export class LaunchService {
     const version = this.d.emuRepo.get(emuId).version;
     let cmd: LaunchCommand;
     try {
-      cmd = await adapter.buildLaunch({ gameId, path: file.path, systemId: game.system_id, serial: game.serial, title: game.title }, exe, settings, profile, version);
+      cmd = await adapter.buildLaunch({ gameId, path: file.path, systemId: game.system_id, serial: game.serial, title: game.title, extraContent }, exe, settings, profile, version);
     } catch (err) {
       const f = OmniFailure.wrap(err, 'LAUNCH_BUILD_FAILED', 'OmniPC could not prepare the launch command.');
       return { ok: false, launchId: null, error: f.detail };

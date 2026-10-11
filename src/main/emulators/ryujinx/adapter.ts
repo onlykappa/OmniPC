@@ -18,6 +18,7 @@
 //                                    dlc.json, mods.json, optional per-game Config.json
 //   BIOS/switch                      user-supplied prod.keys / title.keys (+ optional firmware dump)
 
+import { registerContent } from './content';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { copyFile, mkdir, readdir, readFile, rm, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
@@ -392,6 +393,8 @@ export class RyujinxAdapter implements EmulatorAdapter {
       prepare: async () => {
         await this.ensureDirs();
         await this.syncKeys().catch(() => null);
+        // Updates and DLC found next to the game are registered so the game starts up to date.
+        for (const n of await registerContent(this.paths().data, target.serial, target.extraContent).catch(() => [])) notes.push(n);
         if (hasOverrides) await this.applySessionOverrides(overrides);
       },
       cleanup: hasOverrides ? async () => void (await this.restoreJournal()) : undefined,

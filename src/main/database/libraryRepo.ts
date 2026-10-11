@@ -36,6 +36,7 @@ export interface GameFileRow {
   validation: ValidationState;
   validation_note: string | null;
   last_seen_scan: string | null;
+  content_kind: 'update' | 'dlc' | null;
 }
 
 export interface MetadataRow {
@@ -144,7 +145,7 @@ export class LibraryRepo {
   }
 
   filesForGame(gameId: number): GameFileRow[] {
-    return this.db.prepare('SELECT * FROM game_files WHERE game_id = ? ORDER BY COALESCE(disc_number, 0), path').all(gameId) as GameFileRow[];
+    return this.db.prepare('SELECT * FROM game_files WHERE game_id = ? ORDER BY content_kind IS NOT NULL, COALESCE(disc_number, 0), path').all(gameId) as GameFileRow[];
   }
 
   touchFiles(ids: number[], scanId: string): void {
@@ -170,6 +171,7 @@ export class LibraryRepo {
     validation: ValidationState;
     validationNote: string | null;
     scanId: string;
+    contentKind?: 'update' | 'dlc' | null;
   }): { gameId: number; created: boolean; fileCreated: boolean } {
     return this.db.transaction(() => {
       const t = now();
@@ -186,12 +188,12 @@ export class LibraryRepo {
       const existing = this.fileByPath(input.path);
       let fileCreated = false;
       if (existing) {
-        this.db.prepare('UPDATE game_files SET game_id = ?, size_bytes = ?, mtime_ms = ?, disc_number = ?, serial = ?, validation = ?, validation_note = ?, last_seen_scan = ? WHERE id = ?').run(
-          game.id, input.sizeBytes, input.mtimeMs, input.discNumber, input.serial, input.validation, input.validationNote, input.scanId, existing.id);
+        this.db.prepare('UPDATE game_files SET game_id = ?, size_bytes = ?, mtime_ms = ?, disc_number = ?, serial = ?, validation = ?, validation_note = ?, last_seen_scan = ?, content_kind = ? WHERE id = ?').run(
+          game.id, input.sizeBytes, input.mtimeMs, input.discNumber, input.serial, input.validation, input.validationNote, input.scanId, input.contentKind ?? null, existing.id);
         if (existing.game_id !== game.id) this.deleteGameIfEmpty(existing.game_id);
       } else {
-        this.db.prepare('INSERT INTO game_files(game_id, path, size_bytes, mtime_ms, disc_number, serial, validation, validation_note, last_seen_scan) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-          game.id, input.path, input.sizeBytes, input.mtimeMs, input.discNumber, input.serial, input.validation, input.validationNote, input.scanId);
+        this.db.prepare('INSERT INTO game_files(game_id, path, size_bytes, mtime_ms, disc_number, serial, validation, validation_note, last_seen_scan, content_kind) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+          game.id, input.path, input.sizeBytes, input.mtimeMs, input.discNumber, input.serial, input.validation, input.validationNote, input.scanId, input.contentKind ?? null);
         fileCreated = true;
       }
       this.recomputeGameValidation(game.id);
@@ -257,7 +259,7 @@ export class LibraryRepo {
     const total = (this.db.prepare(`SELECT COUNT(*) AS c FROM games g ${whereSql}`).get(...params) as { c: number }).c;
     const limit = Math.min(Math.max(q.limit ?? 200, 1), 2000);
     const offset = Math.max(q.offset ?? 0, 0);
-    const rows = this.db.prepare(`SELECT g.*, (SELECT COUNT(*) FROM game_files f WHERE f.game_id = g.id) AS disc_count FROM games g ${whereSql} ORDER BY ${order} LIMIT ? OFFSET ?`).all(...params, limit, offset) as (GameRow & { disc_count: number })[];
+    const rows = this.db.prepare(`SELECT g.*, (SELECT COUNT(*) FROM game_files f WHERE f.game_id = g.id AND f.content_kind IS NULL) AS disc_count FROM games g ${whereSql} ORDER BY ${order} LIMIT ? OFFSET ?`).all(...params, limit, offset) as (GameRow & { disc_count: number })[];
     return { total, items: rows.map(toSummary) };
   }
 
@@ -266,7 +268,7 @@ export class LibraryRepo {
   }
 
   summary(id: number): GameSummary | undefined {
-    const r = this.db.prepare('SELECT g.*, (SELECT COUNT(*) FROM game_files f WHERE f.game_id = g.id) AS disc_count FROM games g WHERE g.id = ?').get(id) as (GameRow & { disc_count: number }) | undefined;
+    const r = this.db.prepare('SELECT g.*, (SELECT COUNT(*) FROM game_files f WHERE f.game_id = g.id AND f.content_kind IS NULL) AS disc_count FROM games g WHERE g.id = ?').get(id) as (GameRow & { disc_count: number }) | undefined;
     return r ? toSummary(r) : undefined;
   }
 
@@ -427,5 +429,5 @@ export function toSummary(r: GameRow & { disc_count?: number }): GameSummary {
 }
 
 export function fileRowToDto(f: GameFileRow): GameFile {
-  return { path: f.path, sizeBytes: f.size_bytes, discNumber: f.disc_number, validation: f.validation, validationNote: f.validation_note };
+  return { path: f.path, sizeBytes: f.size_bytes, discNumber: f.disc_number, contentKind: f.content_kind ?? null, validation: f.validation, validationNote: f.validation_note };
 }

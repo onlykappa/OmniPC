@@ -36,6 +36,8 @@ export interface LaunchTarget {
   systemId: SystemId;
   serial: string | null;
   title: string;
+  /** Updates and DLC kept with the game (Switch). */
+  extraContent?: { path: string; kind: 'update' | 'dlc' }[];
 }
 
 export interface LaunchCommand {
