@@ -2,6 +2,16 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+- **Add to Steam**: Settings > Steam adds your games (all, chosen systems, or one game from its
+  page) to Steam as non-Steam games, with the cover as the library capsule and the background as
+  the hero image. Steam starts `OmniPC.exe --launch-game=<id>`; when OmniPC was started just for
+  that game it closes when the game exits. Steam must be closed while shortcuts change (OmniPC
+  can close it); shortcuts.vdf is backed up first, and only OmniPC's own shortcuts and artwork
+  are ever changed or removed.
+
 ## [1.1.1] - 2026-10-11
 
 ### Added

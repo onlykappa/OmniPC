@@ -6,6 +6,7 @@ import { useLoad } from '../lib/hooks';
 import { navigate, useRoute } from '../lib/router';
 import { useStore } from '../lib/store';
 import { PlayButton } from '../components/PlayButton';
+import { AddToSteamButton } from './Steam';
 import { SettingsEditor } from '../components/SettingsEditor';
 import { Button, Chip, Empty, Panel, Spinner } from '../components/ui';
 import { bytes, duration, when } from '../lib/format';
@@ -40,6 +41,7 @@ export function GameDetailsPage(props: { id: number }) {
             <div className="row">
               <PlayButton gameId={game.id} disabled={game.availability !== 'available'} autoFocus />
               <Button onClick={async () => { await api('library.setFavorite', game.id, !game.favorite); reload(); }}>{game.favorite ? '★ Favorite' : '☆ Add to favorites'}</Button>
+              <AddToSteamButton gameId={game.id} />
               {game.availability === 'drive_unavailable' && <Chip tone="warn">Game drive unavailable</Chip>}
               {game.crashLoopPaused && <Chip tone="bad">Paused after repeated crashes</Chip>}
             </div>
