@@ -659,6 +659,8 @@ export interface AppSettings {
   theGamesDbApiKey: string;
   updateChannel: 'stable' | 'nightly';
   checkUpdatesOnStart: boolean;
+  /** Install emulator updates automatically (at startup and every few hours, never during a game). */
+  autoUpdateEmulators: boolean;
   defaultPreset: PerformancePreset;
   launchTimeoutSeconds: number;
   crashLoopThreshold: number;

@@ -263,6 +263,7 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
     'emulators.update': (id) => ({ jobId: c.emulators.update(id).jobId }),
     'emulators.updateAll': () => ({ jobId: c.emulators.updateAll().jobId }),
     'emulators.checkUpdates': () => c.emulators.checkUpdates(),
+    'emulators.checkAndUpdateAll': () => ({ jobId: c.emulators.checkAndUpdateAll({ automatic: false, isBusy: () => !!c.launcher.activeSession() }).jobId }),
     'emulators.rollback': (id) => ({ jobId: c.emulators.rollback(id).jobId }),
     'emulators.repair': (id) => ({ jobId: c.emulators.repair(id).jobId }),
     'emulators.resetConfig': (id) => ({ jobId: c.emulators.resetConfig(id).jobId }),

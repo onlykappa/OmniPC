@@ -72,7 +72,7 @@ processRunner.run = (cmd, args, opts) => (/(pcsx2-qt|Dolphin)\.exe$/i.test(cmd) 
 afterAll(() => { processRunner.run = realRun; });
 
 beforeAll(async () => {
-  for (const v of ['2.8.2', '2.8.3']) {
+  for (const v of ['2.8.2', '2.8.3', '2.8.4']) {
     const src = join(t.dir, `pkg-pcsx2-${v}`);
     write(join(src, 'pcsx2-qt.exe'), fakeEmulatorScript());
     write(join(src, 'resources', 'GameIndex.yaml'), 'SCUS-97472:\n  name: "Shadow of the Colossus"\n  region: "NTSC-U"\n  compat: 5\n');
@@ -271,6 +271,41 @@ describe('first end-to-end test: PCSX2', () => {
     expect(c.emulators.status('pcsx2').version).toBe('2.8.2');
     process.env.FAKE_EMU_MODE = 'ok';
     c.library.setFailureState(g.id, 0, false);
+  }, 60000);
+
+  it('"Check & update all" installs every newer release in one go', async () => {
+    pcsx2Version = '2.8.3';
+    const busy = await c.emulators.checkAndUpdateAll({ automatic: false, isBusy: () => true }).done;
+    expect(busy.skipped).toEqual(['PCSX2 2.8.3 (a game is running)']);
+    expect(c.emulators.status('pcsx2').version).toBe('2.8.2');
+
+    const s = await c.emulators.checkAndUpdateAll({ automatic: false }).done;
+    expect(s.updated).toEqual(['PCSX2 2.8.3']);
+    expect(s.failed).toEqual([]);
+    expect(c.emulators.status('pcsx2').version).toBe('2.8.3');
+    expect(c.emulators.status('pcsx2').updateAvailable).toBe(false);
+
+    const again = await c.emulators.checkAndUpdateAll({ automatic: true }).done;
+    expect(again).toMatchObject({ checked: 1, updated: [], rolledBack: [], failed: [] });
+  }, 60000);
+
+  it('automatically rolls back an update that fails its health test', async () => {
+    pcsx2Version = '2.8.4';
+    const adapter = c.registry.require('pcsx2');
+    const realSmoke = adapter.smokeTest.bind(adapter);
+    adapter.smokeTest = async () => ({ ran: true, ok: false, checks: [{ label: 'Executable starts', ok: false, detail: 'Exit code -1073741795' }] });
+    try {
+      const s = await c.emulators.checkAndUpdateAll({ automatic: true }).done;
+      expect(s.rolledBack).toEqual(['PCSX2 2.8.4 (kept 2.8.3)']);
+      expect(s.updated).toEqual([]);
+    } finally {
+      adapter.smokeTest = realSmoke;
+    }
+    expect(c.emulators.status('pcsx2').version).toBe('2.8.3');
+    expect(existsSync(c.emulators.executableFor('pcsx2')!)).toBe(true);
+    expect(c.ops.notifications().some((n) => /update rolled back/.test(n.title))).toBe(true);
+    pcsx2Version = '2.8.3';
+    await c.emulators.checkUpdates();
   }, 60000);
 });
 

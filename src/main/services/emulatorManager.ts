@@ -27,6 +27,14 @@ import { isNewer } from '../emulators/versions';
 
 const log = logger.scope('emulators');
 
+export interface UpdateRunSummary {
+  checked: number;
+  updated: string[];
+  rolledBack: string[];
+  failed: string[];
+  skipped: string[];
+}
+
 export interface EmulatorManagerDeps {
   registry: AdapterRegistry;
   emuRepo: EmulatorRepo;
@@ -220,6 +228,63 @@ export class EmulatorManager {
     return { jobId: j.id, done: j.done };
   }
 
+  /**
+   * One-click "check and update everything": checks every OmniPC-managed
+   * emulator, installs newer releases one by one (config backup, previous build
+   * kept, health test) and automatically rolls back any update that fails its
+   * health test. `isBusy` stops before each update while a game is running.
+   */
+  checkAndUpdateAll(opts: { automatic: boolean; isBusy?: () => boolean }): { jobId: string; done: Promise<UpdateRunSummary> } {
+    const j = this.d.jobs.start('emulator.autoUpdate', opts.automatic ? 'Automatic emulator updates' : 'Check for and install emulator updates', async (ctx): Promise<UpdateRunSummary> => {
+      const summary: UpdateRunSummary = { checked: 0, updated: [], rolledBack: [], failed: [], skipped: [] };
+      const managed = this.d.registry.implemented().filter((a) => this.d.emuRepo.get(a.manifest.id).install_state === 'installed');
+      ctx.step(`Checking ${managed.length} emulator(s) for updates`);
+      const pending: { a: EmulatorAdapter; from: string | null; to: string }[] = [];
+      for (const a of managed) {
+        ctx.throwIfCancelled();
+        const row = this.d.emuRepo.get(a.manifest.id);
+        try {
+          const rel = await this.resolveLatest(a.manifest.id);
+          this.d.emuRepo.setLatest(a.manifest.id, rel.version);
+          summary.checked++;
+          if (isNewer(rel.version, row.version)) pending.push({ a, from: row.version, to: rel.version });
+        } catch (err) {
+          summary.failed.push(`${a.manifest.name}: could not check (${errorMessage(err)})`);
+        }
+      }
+      this.d.bus.emit('emulators.changed', { id: null });
+      ctx.stepDone(pending.length ? `${pending.length} update(s): ${pending.map((p) => `${p.a.manifest.name} ${p.from ?? '?'} → ${p.to}`).join(', ')}` : 'Everything is up to date');
+      for (const { a, to } of pending) {
+        ctx.throwIfCancelled();
+        if (opts.isBusy?.()) {
+          summary.skipped.push(`${a.manifest.name} ${to} (a game is running)`);
+          ctx.stepSkipped(`Update ${a.manifest.name}`, 'A game is running; this update will be installed later');
+          continue;
+        }
+        try {
+          const r = await this.performInstall(a, ctx, 'update', { autoRollback: true });
+          if (r.rolledBack) summary.rolledBack.push(`${a.manifest.name} ${to} (kept ${r.rolledBack})`);
+          else summary.updated.push(`${a.manifest.name} ${to}`);
+        } catch (err) {
+          ctx.stepFailed(errorMessage(err));
+          summary.failed.push(`${a.manifest.name}: ${errorMessage(err)}`);
+        }
+      }
+      const changed = summary.updated.length + summary.rolledBack.length + summary.failed.length;
+      if (!opts.automatic || changed) {
+        const parts = [
+          summary.updated.length ? `Updated: ${summary.updated.join(', ')}.` : '',
+          summary.rolledBack.length ? `Rolled back after a failed health test: ${summary.rolledBack.join(', ')}.` : '',
+          summary.skipped.length ? `Postponed: ${summary.skipped.join(', ')}.` : '',
+          summary.failed.length ? `Problems: ${summary.failed.join('; ')}.` : '',
+        ].filter(Boolean);
+        this.d.notifications.add(summary.failed.length || summary.rolledBack.length ? 'warning' : 'success', pending.length ? 'Emulator updates finished' : 'Emulators are up to date', parts.join(' ') || `All ${summary.checked} installed emulator(s) are on the latest version.`, { link: '/emulators' });
+      }
+      return summary;
+    }, { lockKey: 'emu:batch' });
+    return { jobId: j.id, done: j.done as Promise<UpdateRunSummary> };
+  }
+
   updateAll(): { jobId: string; done: Promise<unknown> } {
     const ids = this.list().filter((s) => s.updateAvailable).map((s) => s.id);
     return this.installMany(ids, ids.length ? `Update ${ids.length} emulator(s)` : 'Update emulators');
@@ -230,7 +295,7 @@ export class EmulatorManager {
    * resolve → space check → download+verify → extract → swap (keeping the
    * previous build for rollback) → folders → backup+config → controller → test.
    */
-  private async performInstall(a: EmulatorAdapter, ctx: JobContext, reason: 'install' | 'update' | 'reinstall'): Promise<SmokeTestResult> {
+  private async performInstall(a: EmulatorAdapter, ctx: JobContext, reason: 'install' | 'update' | 'reinstall', opts: { autoRollback?: boolean } = {}): Promise<SmokeTestResult & { rolledBack?: string }> {
     const id = a.manifest.id;
     const p = a.paths();
     const row = this.d.emuRepo.get(id);
@@ -325,7 +390,16 @@ export class EmulatorManager {
     }
 
     const result = await this.healthTest(id, ctx);
-    if (!result.ok && reason === 'update' && this.status(id).rollbackVersion) {
+    const previous = this.status(id).rollbackVersion;
+    if (!result.ok && reason === 'update' && previous && opts.autoRollback) {
+      // Unattended update that broke the emulator: put the working version back.
+      ctx.step(`Health test failed after updating to ${rel.version}; restoring ${previous}`);
+      const restored = await this.performRollback(a, ctx);
+      this.d.notifications.add('warning', `${a.manifest.name} update rolled back`, `${a.manifest.name} ${rel.version} failed its health test, so OmniPC restored ${previous}${restored.ok ? '' : ' (which also reports problems; open OmniDoctor)'}. It will be offered again with the next release.`, { link: `/emulators/${id}` });
+      this.d.bus.emit('emulators.changed', { id });
+      return { ...result, rolledBack: previous };
+    }
+    if (!result.ok && reason === 'update' && previous) {
       this.d.notifications.add('warning', `${a.manifest.name} update needs attention`, `The health test failed after updating to ${rel.version}. You can roll back to ${this.status(id).rollbackVersion} from the Emulators page.`, { link: `/emulators/${id}` });
     } else {
       this.d.notifications.add('success', `${a.manifest.name} ${reason === 'update' ? 'updated' : 'installed'}`, `${a.manifest.name} ${rel.version} is ${result.ok ? 'ready' : 'installed but the health test reported problems'}.`, { link: `/emulators/${id}` });
@@ -369,7 +443,14 @@ export class EmulatorManager {
 
   rollback(id: string): { jobId: string; done: Promise<unknown> } {
     const a = this.requireImplemented(id);
-    const j = this.d.jobs.start('emulator.rollback', `Roll back ${a.manifest.name}`, async (ctx) => {
+    const j = this.d.jobs.start('emulator.rollback', `Roll back ${a.manifest.name}`, (ctx) => this.performRollback(a, ctx), { lockKey: `emu:${id}` });
+    return { jobId: j.id, done: j.done };
+  }
+
+  /** Restores the previous build (kept at update time) and the config snapshot taken before the update. */
+  private async performRollback(a: EmulatorAdapter, ctx: JobContext): Promise<SmokeTestResult> {
+    const id = a.manifest.id;
+    {
       const cand = this.d.emuRepo.rollbackCandidate(id);
       if (!cand?.path || !existsSync(cand.path)) throw new OmniFailure({ code: 'NO_ROLLBACK', whatHappened: `No previous ${a.manifest.name} version is available to restore.` });
       const p = a.paths();
@@ -396,8 +477,7 @@ export class EmulatorManager {
       }
       this.d.ops.addChange('emulator.rollback', id, `${a.manifest.name} rolled back ${row.version ?? '?'} → ${cand.version}`);
       return this.healthTest(id, ctx);
-    }, { lockKey: `emu:${id}` });
-    return { jobId: j.id, done: j.done };
+    }
   }
 
   repair(id: string): { jobId: string; done: Promise<unknown> } {

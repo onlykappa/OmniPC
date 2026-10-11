@@ -296,9 +296,19 @@ export class AppContainer {
     if (settings.onboardingComplete) {
       if (this.library.listPaths().length) this.scanLibrary(false);
       if (settings.backgroundHealthChecks) setTimeout(() => this.runHealthCheck('quick'), 8000);
-      if (settings.checkUpdatesOnStart) setTimeout(() => void this.emulators.checkUpdates().catch(() => undefined), 15000);
+      if (settings.autoUpdateEmulators) setTimeout(() => this.autoUpdateEmulators(), 20000);
+      else if (settings.checkUpdatesOnStart) setTimeout(() => void this.emulators.checkUpdates().catch(() => undefined), 15000);
     }
+    // Automatic emulator updates every 6 hours while OmniPC is open (setting read at each tick).
+    this.timers.push(setInterval(() => this.autoUpdateEmulators(), 6 * 3600 * 1000));
     this.timers.push(setInterval(() => void backupDatabase(this.db, this.paths.databaseBackups).catch(() => undefined), 24 * 3600 * 1000));
+  }
+
+  /** Runs the unattended check-and-update when enabled; never while a game is running. */
+  autoUpdateEmulators(): void {
+    const s = this.settings.getAll();
+    if (this.safeMode || !s.onboardingComplete || !s.autoUpdateEmulators || this.launcher.activeSession()) return;
+    this.emulators.checkAndUpdateAll({ automatic: true, isBusy: () => !!this.launcher.activeSession() }).done.catch((err) => logger.scope('updates').warn('automatic emulator update failed', { error: String(err) }));
   }
 
   shutdown(): void {

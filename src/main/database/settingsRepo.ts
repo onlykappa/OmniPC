@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theGamesDbApiKey: '',
   updateChannel: 'stable',
   checkUpdatesOnStart: true,
+  autoUpdateEmulators: false,
   defaultPreset: 'balanced',
   launchTimeoutSeconds: 20,
   crashLoopThreshold: 3,

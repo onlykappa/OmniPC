@@ -26,6 +26,11 @@
 - **Search**: `Ctrl+K` (or Y on a controller) finds games, systems, emulators and settings.
 - **Game page**: Play, favourites, per-game settings (renderer, resolution, aspect, custom
   arguments), metadata correction, save folders, diagnostics.
+- **Emulator updates**: **Emulators → Check & update all** checks every installed emulator and
+  installs anything newer. Each update backs up the emulator's configuration, keeps the previous
+  version, and runs a health test; if the test fails, the previous version is restored
+  automatically. To do this without clicking, turn on **Settings → Updates → Install emulator
+  updates automatically** (runs at startup and every 6 hours, never while a game is running).
 - **Console Mode**: fullscreen and controller-only. D-pad/stick move, A select, B back,
   LB/RB switch sections, Y search, Start home.
 

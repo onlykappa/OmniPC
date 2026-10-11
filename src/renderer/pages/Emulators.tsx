@@ -12,18 +12,20 @@ export function EmulatorsPage() {
   const [install] = useAction((id: string) => api('emulators.install', id), { success: 'Installation started — see Downloads for progress' });
   const [update] = useAction((id: string) => api('emulators.update', id), { success: 'Update started' });
   const [updateAll] = useAction(() => api('emulators.updateAll'), { success: 'Updating all emulators' });
+  const [checkAndUpdate, checkingAndUpdating] = useAction(() => api('emulators.checkAndUpdateAll'), { success: 'Checking for updates — anything newer is installed automatically (see Downloads for progress)' });
+  const anyInstalled = (data ?? []).some((e) => e.installState === 'installed');
   if (!data) return <div className="page"><Spinner /></div>;
   const updates = data.filter((e) => e.updateAvailable);
   return (
     <div className="page">
       <div className="page-head">
         <div><h1>Emulators</h1><p>Installed, configured and kept healthy by OmniPC. You rarely need to open them directly.</p></div>
-        <div className="row"><Button onClick={() => navigate('/bios')}>BIOS & Firmware</Button><Button busy={checking} onClick={() => void check()}>Check for updates</Button></div>
+        <div className="row"><Button onClick={() => navigate('/bios')}>BIOS & Firmware</Button><Button busy={checking} onClick={() => void check()}>Check only</Button><Button variant="primary" busy={checkingAndUpdating} disabled={!anyInstalled} title={anyInstalled ? 'Checks every installed emulator and installs newer versions. Failed updates are rolled back automatically.' : 'Install an emulator first'} onClick={() => void checkAndUpdate()}>Check & update all</Button></div>
       </div>
       {updates.length > 0 && (
         <Panel title={`Updates available: ${updates.length}`} actions={<Button variant="primary" onClick={() => void updateAll()}>Update all</Button>}>
           <div className="row">{updates.map((u) => <Chip key={u.id} tone="info">{u.name} {u.version} → {u.latestVersion}</Chip>)}</div>
-          <p className="small faint">Configuration is backed up before each update, a health test runs afterwards, and the previous version is kept for rollback.</p>
+          <p className="small faint">Configuration is backed up before each update and a health test runs afterwards. With "Check & update all", an update that fails its health test is rolled back automatically.</p>
         </Panel>
       )}
       <div className="grid cols-auto" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
