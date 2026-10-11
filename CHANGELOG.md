@@ -2,7 +2,7 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
-## [Unreleased]
+## [1.0.1] - 2026-10-11
 
 ### Added
 - **Check & update all** on the Emulators page: checks every installed emulator and installs
