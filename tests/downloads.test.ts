@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { EventBus } from '../src/main/core/events';
 import { DownloadManager } from '../src/main/downloads/downloadManager';
-import { DolphinUpdateSource, ForgejoReleaseSource, GitHubReleaseSource, VersionedUrlSource, hostAllowed, pickAsset, releaseVersion } from '../src/main/downloads/sources';
+import { DolphinUpdateSource, ForgejoReleaseSource, RyubingUpdateSource, GitHubReleaseSource, VersionedUrlSource, hostAllowed, pickAsset, releaseVersion } from '../src/main/downloads/sources';
 import { tempDir } from './helpers';
 import { compareVersions } from '../src/main/emulators/versions';
 
@@ -62,6 +62,22 @@ describe('trusted sources', () => {
     expect(src.label).toBe('git.ryujinx.app/projects/Ryubing');
     expect((await src.resolveLatest({ channel: 'nightly', cpuFeatures: [], fetchImpl })).version).toBe('1.3.249');
     expect(() => new ForgejoReleaseSource('http://evil', 'a/b', undefined, [], [], [])).toThrow();
+  });
+
+  it('resolves Ryujinx through the ryujinx.app update server, falling back to the release list', async () => {
+    const hosts = ['update.ryujinx.app', 'git.ryujinx.app', '*.ryujinx.app'];
+    const q = 'https://update.ryujinx.app/latest/query?os=win&arch=x64&rc=';
+    const fetchImpl = fakeFetch({
+      [`${q}stable`]: () => Response.json({ tag: '1.3.3', download_url: 'https://git.ryujinx.app/projects/Ryubing/releases/download/1.3.3/ryujinx-1.3.3-win_x64.zip', max_concurrency: 4, web_url_format: 'https://git.ryujinx.app/projects/Ryubing/releases/tag/{0}' }),
+      [`${q}canary`]: () => Response.json({ tag: '1.3.250', download_url: 'https://evil.example/ryujinx-canary-1.3.250-win_x64.zip' }),
+    });
+    const fallback = { label: 'fallback', resolveLatest: async () => ({ version: '1.3.2', url: 'https://git.ryujinx.app/x.zip', fileName: 'x.zip', sizeBytes: null, sha256: null, publishedAt: null, sourceLabel: 'fallback', notesUrl: null }) };
+    const src = new RyubingUpdateSource('https://update.ryujinx.app', hosts, fallback);
+    const stable = await src.resolveLatest({ channel: 'stable', cpuFeatures: [], fetchImpl });
+    expect([stable.version, stable.fileName, stable.notesUrl]).toEqual(['1.3.3', 'ryujinx-1.3.3-win_x64.zip', 'https://git.ryujinx.app/projects/Ryubing/releases/tag/1.3.3']);
+    // An untrusted download host is never used; the release list is asked instead.
+    expect((await src.resolveLatest({ channel: 'nightly', cpuFeatures: [], fetchImpl })).version).toBe('1.3.2');
+    await expect(new RyubingUpdateSource('https://update.ryujinx.app', hosts, null).resolveLatest({ channel: 'nightly', cpuFeatures: [], fetchImpl })).rejects.toThrow(/Could not check/);
   });
 
   it('turns rolling tags into comparable versions', () => {

@@ -172,8 +172,92 @@ async function sniffXbox(fh: FileHandle): Promise<Sniff | null> {
     { base: 0, system: 'x360', label: 'XISO (extracted; Xbox or Xbox 360)' },
   ];
   for (const p of probes) {
-    const h = await readHead(fh, p.base + 0x10000, 20);
-    if (h.toString('latin1') === XDVDFS_MAGIC) return { systemId: p.system, evidence: `XDVDFS signature found (${p.label})`, confidence: p.base === 0 ? 'medium' : 'high' };
+    const h = await readHead(fh, p.base + 0x10000, 32);
+    if (h.toString('latin1', 0, 20) !== XDVDFS_MAGIC) continue;
+    const boot = await xdvdfsBootInfo(fh, p.base, h.readUInt32LE(20), h.readUInt32LE(24)).catch(() => null);
+    if (boot) return { systemId: boot.system, serial: boot.titleId, internalTitle: boot.title, evidence: `XDVDFS image boots ${boot.system === 'xbox' ? 'default.xbe' : 'default.xex'} (title ID ${boot.titleId})`, confidence: 'high' };
+    return { systemId: p.system, evidence: `XDVDFS signature found (${p.label})`, confidence: p.base === 0 ? 'medium' : 'high' };
+  }
+  return null;
+}
+
+/**
+ * Finds default.xbe (Xbox) or default.xex (Xbox 360) in an XDVDFS root
+ * directory and reads the title ID (and, for XBE, the title name). The
+ * directory is a binary tree of entries: left/right offsets in dwords, start
+ * sector, size, attributes, name length, name.
+ */
+async function xdvdfsBootInfo(fh: FileHandle, base: number, rootSector: number, rootSize: number): Promise<{ system: SystemId; titleId: string; title: string | null } | null> {
+  if (!rootSector || !rootSize || rootSize > 1 << 20) return null;
+  const dir = await readHead(fh, base + rootSector * 2048, rootSize);
+  const seen = new Set<number>();
+  const stack = [0];
+  while (stack.length) {
+    const off = stack.pop()!;
+    if (seen.has(off) || off + 14 > dir.length) continue;
+    seen.add(off);
+    const left = dir.readUInt16LE(off) * 4;
+    const right = dir.readUInt16LE(off + 2) * 4;
+    if (left === 0xffff * 4) continue; // padding
+    const sector = dir.readUInt32LE(off + 4);
+    const size = dir.readUInt32LE(off + 8);
+    const name = dir.toString('latin1', off + 14, off + 14 + dir[off + 13]).toLowerCase();
+    if (left) stack.push(left);
+    if (right) stack.push(right);
+    const at = base + sector * 2048;
+    if (name === 'default.xbe') {
+      const h = await readHead(fh, at, Math.min(size, 0x1000));
+      if (h.toString('latin1', 0, 4) !== 'XBEH') return null;
+      const cert = h.readUInt32LE(0x118) - h.readUInt32LE(0x104);
+      const c = cert >= 0 && cert + 0x5c <= h.length ? h.subarray(cert) : await readHead(fh, at + cert, 0x5c);
+      const titleId = c.readUInt32LE(8).toString(16).toUpperCase().padStart(8, '0');
+      const title = c.toString('utf16le', 0x0c, 0x5c).replace(/\0[\s\S]*$/, '').trim() || null;
+      return { system: 'xbox', titleId, title };
+    }
+    if (name === 'default.xex') {
+      const h = await readHead(fh, at, Math.min(size, 0x1000));
+      if (h.toString('latin1', 0, 4) !== 'XEX2') return null;
+      const count = Math.min(h.readUInt32BE(0x14), 64);
+      for (let i = 0; i < count; i++) {
+        if (h.readUInt32BE(0x18 + i * 8) !== 0x00040006) continue;
+        const info = h.readUInt32BE(0x1c + i * 8);
+        const b = info + 16 <= h.length ? h.subarray(info) : await readHead(fh, at + info, 16);
+        return { system: 'x360', titleId: b.readUInt32BE(12).toString(16).toUpperCase().padStart(8, '0'), title: null };
+      }
+      return null;
+    }
+  }
+  return null;
+}
+
+/** Base-game title ID for a Switch title, update or DLC ID (16 hex digits, upper case). */
+export function switchBaseTitleId(id: string): string | null {
+  if (!/^0100[0-9a-f]{12}$/i.test(id)) return null;
+  let n = BigInt(`0x${id}`);
+  const low = n & 0xfffn;
+  if (low === 0x800n) n -= 0x800n; // update
+  else if (low !== 0n) n = (n & ~0xfffn) - 0x1000n; // DLC: base + 0x1000 + index
+  return n.toString(16).toUpperCase().padStart(16, '0');
+}
+
+/**
+ * Switch title ID: from "[0100...]" in the file name, or for NSPs from the
+ * ticket file name inside the (unencrypted) PFS0 header. XCI contents are
+ * encrypted, so XCI files rely on the file name.
+ */
+export async function switchTitleId(path: string, fh?: FileHandle): Promise<string | null> {
+  const fromName = /[[(]\s*(0100[0-9a-f]{12})\s*[\])]/i.exec(basename(path))?.[1];
+  if (fromName) return switchBaseTitleId(fromName);
+  if (!fh || !/\.nsp$/i.test(path)) return null;
+  const h = await readHead(fh, 0, 16);
+  if (h.toString('latin1', 0, 4) !== 'PFS0') return null;
+  const count = h.readUInt32LE(4);
+  const strSize = h.readUInt32LE(8);
+  if (count === 0 || count > 4096 || strSize > 1 << 20) return null;
+  const table = await readHead(fh, 16 + count * 24, strSize);
+  for (const name of table.toString('latin1').split('\0')) {
+    const m = /^(0100[0-9a-f]{12})[0-9a-f]{16}\.(tik|cert)$/i.exec(name);
+    if (m) return switchBaseTitleId(m[1]);
   }
   return null;
 }
@@ -312,6 +396,12 @@ export async function identifyFile(path: string, folderChain: string[]): Promise
             if (x.confidence === 'medium' && hinted.includes('xbox')) x.systemId = 'xbox';
             return apply(x);
           }
+        }
+      } else if (['.nsp', '.xci', '.nsz', '.xcz'].includes(ext)) {
+        const id = await switchTitleId(path, fh).catch(() => null);
+        if (id) {
+          result.serial = id;
+          evidence.push(`Switch title ID ${id}`);
         }
       } else if (ext === '.chd') {
         const c = await sniffChd(fh);

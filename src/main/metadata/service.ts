@@ -12,6 +12,8 @@ import type { SettingsRepo } from '../database/settingsRepo';
 import type { JobContext } from '../core/jobs';
 import { logger } from '../core/logger';
 import { hostAllowed } from '../downloads/sources';
+import { SwitchTitleDb, switchTitleDbProvider } from './switchTitleDb';
+import { xbox360MarketplaceProvider } from './xboxMarketplace';
 import { ALL_PROVIDERS, theGamesDbProvider, type ArtworkCandidate, type MetadataProvider, type MetadataSubject, type ProviderEnv } from './providers';
 import { libretroThumbnailsProvider, type LibretroThumbnails } from './libretroThumbnails';
 
@@ -20,9 +22,9 @@ import { libretroThumbnailsProvider, type LibretroThumbnails } from './libretroT
  * PS2 covers), then libretro-thumbnails for every system, then TheGamesDB.
  * The first provider that supplies a cover wins; later ones fill gaps.
  */
-export function defaultProviders(lt: LibretroThumbnails): MetadataProvider[] {
+export function defaultProviders(lt: LibretroThumbnails, switchDb: SwitchTitleDb): MetadataProvider[] {
   const base = ALL_PROVIDERS.filter((p) => p !== theGamesDbProvider);
-  return [...base, libretroThumbnailsProvider(lt), theGamesDbProvider];
+  return [...base, switchTitleDbProvider(switchDb), xbox360MarketplaceProvider, libretroThumbnailsProvider(lt), theGamesDbProvider];
 }
 
 const MAX_SCREENSHOTS = 4;

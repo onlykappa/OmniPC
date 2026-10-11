@@ -35,6 +35,7 @@ export function validateManifest(m: EmulatorManifest): string[] {
     if (!m.download.allowedHosts.length) errors.push('download.allowedHosts must list trusted hosts');
     for (const h of m.download.allowedHosts) if (/[/:]/.test(h)) errors.push(`allowedHosts entry "${h}" must be a bare host name`);
     if (m.download.kind === 'versioned-url' && (!/^[\w.-]+\/[\w.-]+$/.test(m.download.repo ?? '') || !/^https:\/\//.test(m.download.urlTemplate ?? ''))) errors.push('versioned-url needs repo and an https urlTemplate');
+    if (m.download.kind === 'ryubing-update' && !/^https:\/\//.test(m.download.updateServer ?? '')) errors.push('ryubing-update needs an https updateServer');
     if (m.download.kind === 'forgejo-release' && (!/^[\w.-]+\/[\w.-]+$/.test(m.download.repo ?? '') || !/^https:\/\//.test(m.download.apiBase ?? ''))) errors.push('forgejo-release needs repo "owner/name" and an https apiBase');
     if (m.download.kind === 'github-release' && !/^[\w.-]+\/[\w.-]+$/.test(m.download.repo ?? '')) errors.push('github-release needs repo "owner/name"');
     if (m.download.versionPattern) {

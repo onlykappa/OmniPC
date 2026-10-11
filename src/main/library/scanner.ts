@@ -107,7 +107,7 @@ export function groupKeyFor(root: string, path: string, baseTitle: string, regio
 }
 
 function chooseTitle(fileTitle: string, internal: string | null, serial: string | null): string {
-  const looksLikeId = /^[A-Z0-9]{6}$/.test(fileTitle) || (serial !== null && fileTitle.replace(/[^A-Z0-9]/gi, '').toUpperCase() === serial.replace(/[^A-Z0-9]/gi, '').toUpperCase()) || /^(game|disc|image|track ?\d*)$/i.test(fileTitle);
+  const looksLikeId = /^[A-Z0-9]{6}$/.test(fileTitle) || (serial !== null && fileTitle.replace(/[^A-Z0-9]/gi, '').toUpperCase() === serial.replace(/[^A-Z0-9]/gi, '').toUpperCase()) || /^(game|disc|image|default|track ?\d*)$/i.test(fileTitle) || (!/\s/.test(fileTitle) && /[_.]/.test(fileTitle));
   if (looksLikeId && internal) return internal;
   return fileTitle;
 }
@@ -173,7 +173,7 @@ export class LibraryScanner {
     return { available, unavailable, remapped };
   }
 
-  async scan(opts: { full: boolean; pathIds?: number[] }, ctx?: JobContext): Promise<ScanSummary> {
+  async scan(opts: { full: boolean; pathIds?: number[]; /** Re-read unchanged files of these systems (after identification improves). */ reidentify?: SystemId[] }, ctx?: JobContext): Promise<ScanSummary> {
     const started = Date.now();
     const scanId = randomUUID();
     const summary: ScanSummary = { rootPaths: [], filesSeen: 0, added: 0, updated: 0, removed: 0, unchanged: 0, markedUnavailable: 0, bySystem: {}, unrecognized: 0, duplicates: [], durationMs: 0 };
@@ -202,10 +202,11 @@ export class LibraryScanner {
         const st = await fileStat(f.path);
         if (!st) continue;
         const existing = this.repo.fileByPath(f.path);
-        if (existing && !opts.full && existing.size_bytes === st.size && existing.mtime_ms === st.mtimeMs) {
+        const prev = existing ? this.repo.getGame(existing.game_id) : undefined;
+        if (existing && !opts.full && existing.size_bytes === st.size && existing.mtime_ms === st.mtimeMs && !(prev && opts.reidentify?.includes(prev.system_id))) {
           touch.push(existing.id);
           summary.unchanged++;
-          const g = this.repo.getGame(existing.game_id);
+          const g = prev;
           if (g) summary.bySystem[g.system_id] = (summary.bySystem[g.system_id] ?? 0) + 1;
           continue;
         }

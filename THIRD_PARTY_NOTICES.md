@@ -37,7 +37,9 @@ its own license:
 | xemu | GPL-2.0 | GitHub Releases of `xemu-project/xemu` |
 | RetroArch | GPL-3.0 (each libretro core has its own license) | `buildbot.libretro.com` (stable build; cores from the nightly core directory), version from `libretro/RetroArch` tags |
 | shadPS4 | GPL-2.0-or-later | GitHub Releases of `shadps4-emu/shadPS4` (emulator core) |
-| Ryujinx (Ryubing) | MIT | Releases on `git.ryujinx.app/projects/Ryubing` (official Ryubing builds) |
+| Ryujinx (Ryubing) | MIT | Official builds via update.ryujinx.app (ryujinx.app), hosted on `git.ryujinx.app/projects/Ryubing` |
+| titledb | community index (blawar/titledb) | Switch eShop listing data downloaded on demand from GitHub; images are Nintendo's eShop pictures (img-eshop.cdn.nintendo.net); not bundled |
+| Xbox Marketplace images | Microsoft | Xbox 360 box art fetched on demand from download.xbox.com; not bundled |
 | libretro-thumbnails | community artwork collection | Box art and screenshots fetched on demand from `github.com/libretro-thumbnails`; not bundled |
 | KytyPS5 | GPL-2.0 | GitHub Releases of `KytyPS5/KytyPS5` |
 

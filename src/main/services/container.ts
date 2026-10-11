@@ -2,6 +2,7 @@
 // Electron imports so the whole backend can be exercised by integration tests;
 // Electron-specific capabilities arrive through the `Host` interface.
 
+import type { SystemId } from '@shared/systems';
 import { mkdir } from 'node:fs/promises';
 import type { spawn } from 'node:child_process';
 import type BetterSqlite3 from 'better-sqlite3';
@@ -27,6 +28,7 @@ import { SaveService } from './saveService';
 import { StorageService } from './storageService';
 import { LibraryScanner } from '../library/scanner';
 import { join } from 'node:path';
+import { SwitchTitleDb } from '../metadata/switchTitleDb';
 import { MetadataService, defaultProviders, type Thumbnailer } from '../metadata/service';
 import { LibretroThumbnails } from '../metadata/libretroThumbnails';
 import { OmniDoctor } from '../diagnostics/doctor';
@@ -131,7 +133,7 @@ export class AppContainer {
       this.paths.thumbnails,
       { emulatorAppDir: (id) => (this.emulators.isInstalled(id) ? this.registry.require(id).paths().app : null), fetchImpl: opts.host.fetchImpl ?? fetch },
       opts.host.thumbnailer,
-      defaultProviders(new LibretroThumbnails(join(this.paths.cache, 'metadata'), opts.host.fetchImpl ?? fetch)),
+      defaultProviders(new LibretroThumbnails(join(this.paths.cache, 'metadata'), opts.host.fetchImpl ?? fetch), new SwitchTitleDb(join(this.paths.cache, 'metadata'), opts.host.fetchImpl ?? fetch)),
     );
     const checkDeps = {
       registry: this.registry,
@@ -296,20 +298,26 @@ export class AppContainer {
         }
       }).catch(() => undefined);
     }, 15000));
-    // New artwork providers (v2: libretro-thumbnails): enable them for existing
-    // installs once and fetch art for games that have no cover yet.
+    // New artwork providers: enable them for existing installs once, then
+    // re-identify the affected games and fetch art for games without a cover.
+    //  v2: libretro-thumbnails (all systems)
+    //  v3: Switch eShop listings (titledb) and Xbox 360 Marketplace box art;
+    //      Xbox/360/Switch title IDs are now read from the game files.
     const providersVersion = this.settings.getInternal('metadataProvidersVersion', 1);
-    if (providersVersion < 2) {
+    if (providersVersion < 3) {
       const cur = this.settings.get('artworkProviders');
-      if (!cur.includes('libretro-thumbnails')) this.settings.set({ artworkProviders: [...cur, 'libretro-thumbnails'] });
-      this.settings.setInternal('metadataProvidersVersion', 2);
+      const add = ['libretro-thumbnails', 'switch-titledb', 'xbox-marketplace'].filter((p) => !cur.includes(p));
+      if (add.length) this.settings.set({ artworkProviders: [...cur, ...add] });
+      this.settings.setInternal('metadataProvidersVersion', 3);
       if (settings.onboardingComplete && settings.metadataOnline && !this.safeMode) {
+        const reidentify: SystemId[] = providersVersion < 3 ? ['xbox', 'x360', 'switch'] : [];
         setTimeout(() => {
           this.jobs.start('metadata.refresh', 'Downloading box art and screenshots', async (ctx) => {
+            if (reidentify.length && this.library.listPaths().length) await this.scanner.scan({ full: false, reidentify }, ctx);
             const r = await this.metadata.refreshAll(ctx, { onlyMissing: false, withoutCover: true });
             this.bus.emit('library.changed', { reason: 'metadata' });
             return r;
-          }, { lockKey: 'metadata' });
+          }, { lockKey: 'library' });
         }, 25000);
       }
     }
