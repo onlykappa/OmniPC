@@ -238,14 +238,9 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
       c.library.setEmulatorOverride(id, emu);
     },
     'library.revalidate': async (id) => {
-      const { validateGameFile, fileStat } = await import('../library/validate');
-      const g = c.library.getGame(id);
-      if (!g) return null;
-      for (const f of c.library.filesForGame(id)) {
-        const st = await fileStat(f.path);
-        const v = st ? await validateGameFile(f.path, g.system_id, st.size) : { state: 'invalid' as const, notes: ['File not found'] };
-        c.library.setFileValidation(f.id, v.state, v.notes.join(' ') || null);
-      }
+      const { revalidateGame } = await import('../library/gameFix');
+      if (!c.library.getGame(id)) return null;
+      await revalidateGame(c.library, id);
       return gameDetails(id);
     },
 
@@ -331,6 +326,7 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
       c.bus.emit('emulators.changed', { id: null });
       return rec;
     },
+    'doctor.games': async () => (await import('../library/gameFix')).diagnoseGames(c.db, { limit: 500 }),
     'doctor.repairAllSafe': async () => {
       const report = c.ops.latestReport();
       const sugg = (report?.findings ?? []).filter((f) => f.repair && f.severity !== 'pass').map((f) => ({ actionId: f.repair!.actionId, params: f.repair!.params }));

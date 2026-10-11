@@ -13,6 +13,9 @@ export interface ValidationResult {
   notes: string[];
 }
 
+/** Systems whose emulators need extracted disc images (cartridge systems run zipped ROMs via RetroArch). */
+export const DISC_SYSTEMS: SystemId[] = ['ps1', 'ps2', 'ps3', 'psp', 'gc', 'wii', 'wiiu', 'xbox', 'x360', 'switch'];
+
 export const INCOMPLETE_EXTENSIONS = ['.part', '.crdownload', '.!qb', '.download', '.partial', '.tmp', '.!ut', '.opdownload'];
 
 /** Known exact sizes of full, unmodified Nintendo disc images. */
@@ -61,10 +64,11 @@ export async function validateGameFile(path: string, systemId: SystemId | null, 
     if (systemId === 'wii' && sizeBytes !== WII_SL_SIZE && sizeBytes !== WII_DL_SIZE && sizeBytes > 1_000_000_000 && sizeBytes < WII_SL_SIZE) warn('Wii image is not a standard disc size. This is normal for scrubbed/NKit images but can indicate a truncated dump.');
   }
   if (ext === '.bin' && basename(path).toLowerCase() !== 'eboot.bin' && sizeBytes % 2352 !== 0 && sizeBytes % 2048 !== 0) warn('BIN size is not a multiple of a CD sector size; the dump may be incomplete.');
-  if (['.zip', '.7z', '.rar'].includes(ext) && systemId && !['arcade'].includes(systemId)) {
-    warn('Game is inside a compressed archive. Most disc-based emulators cannot run archived images directly.');
+  // Skipped once the game has been extracted next to the archive (OmniDoctor > Games does this).
+  if (['.zip', '.7z', '.rar'].includes(ext) && systemId && DISC_SYSTEMS.includes(systemId) && !existsSync(join(dirname(path), basename(path, extname(path))))) {
+    warn('Game is inside a compressed archive. Disc-based emulators cannot run archived images directly; extract it (OmniDoctor > Games can do this for you).');
   }
-  const split = splitArchiveIssue(path);
+  const split = ext === '.z64' && systemId === 'n64' ? null : splitArchiveIssue(path);
   if (split) bad(split);
   if (/\.nkit\./i.test(basename(path))) warn('NKit image: Dolphin can run it, but some features (NetPlay, verification) may not work.');
   return { state, notes };
@@ -83,8 +87,15 @@ export function splitArchiveIssue(path: string): string | null {
     const first = nums[0] ?? 1;
     for (let i = first; i <= nums[nums.length - 1]; i++) if (!nums.includes(i)) return `Split set "${base}" is missing part .${String(i).padStart(3, '0')}.`;
   }
+  // Split ZIP parts are .z01, .z02, ... next to a final .zip. A lone .z64 is a
+  // Nintendo 64 ROM, so only treat .zNN as a split part when other parts exist.
   const zParts = /^(.*)\.z(\d{2})$/i.exec(name);
-  if (zParts && !siblings.some((s) => s.toLowerCase() === `${zParts[1]}.zip`.toLowerCase())) return `Split ZIP "${zParts[1]}" is missing its final .zip part.`;
+  if (zParts) {
+    const base = zParts[1].toLowerCase();
+    const parts = siblings.filter((s) => s.toLowerCase().startsWith(`${base}.z`) && /\.z\d{2}$/i.test(s));
+    const isSplit = parts.some((s) => s.toLowerCase() !== name.toLowerCase()) || zParts[2] === '01';
+    if (isSplit && !siblings.some((s) => s.toLowerCase() === `${base}.zip`)) return `Split ZIP "${zParts[1]}" is missing its final .zip part.`;
+  }
   return null;
 }
 

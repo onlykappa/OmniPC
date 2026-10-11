@@ -28,6 +28,7 @@ export function DoctorPage() {
       <div className="page-head">
         <div><h1>OmniDoctor</h1><p>Continuously checks your emulation setup, explains problems with evidence, and repairs what it safely can.</p></div>
         <div className="row">
+          <Button onClick={() => navigate('/doctor/games')}>Fix games</Button>
           <Button onClick={() => navigate('/doctor/history')}>Repair history</Button>
           <Button onClick={() => navigate('/doctor/ask')}>Ask OmniDoctor</Button>
           <Button busy={exporting} onClick={() => setExporting(true)}>Export diagnostic package</Button>
@@ -87,6 +88,7 @@ function FindingRow({ f }: { f: Finding }) {
       </div>
       <div className="row">
         {f.repair && <RepairButton suggestion={f.repair} />}
+        {f.category === 'library' && f.checkId === 'library.files' && <Button size="sm" onClick={() => navigate('/doctor/games')}>Fix games</Button>}
         <Button size="sm" variant="ghost" onClick={() => navigate(`/doctor/finding/${encodeURIComponent(f.id)}`)}>Details</Button>
       </div>
     </div>

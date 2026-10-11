@@ -313,6 +313,24 @@ export class AppContainer {
         }, 25000);
       }
     }
+    // Validation rules changed (v2: N64 .z64 ROMs were mistaken for split ZIP
+    // parts): re-check files previously flagged so stale warnings clear.
+    if (this.settings.getInternal('validationVersion', 1) < 2) {
+      this.settings.setInternal('validationVersion', 2);
+      setTimeout(() => {
+        this.jobs.start('library.revalidate', 'Re-checking flagged game files', async (ctx) => {
+          const { revalidateGame } = await import('../library/gameFix');
+          const ids = (this.db.prepare("SELECT id FROM games WHERE validation IN ('invalid', 'warning') AND availability = 'available'").all() as { id: number }[]).map((r) => r.id);
+          for (const [i, id] of ids.entries()) {
+            ctx.throwIfCancelled();
+            ctx.progress(i / Math.max(ids.length, 1), `${i}/${ids.length}`);
+            await revalidateGame(this.library, id);
+          }
+          this.bus.emit('library.changed', { reason: 'validation' });
+          return { checked: ids.length };
+        }, { lockKey: 'library' });
+      }, 5000);
+    }
     if (settings.onboardingComplete) {
       if (this.library.listPaths().length) this.scanLibrary(false);
       if (settings.backgroundHealthChecks) setTimeout(() => this.runHealthCheck('quick'), 8000);

@@ -193,7 +193,8 @@ export const CHECKS: HealthCheck[] = [
         title: `${rows.length} game file(s) look damaged or incomplete`,
         detail: 'These files failed basic validation (empty, unreadable, unfinished downloads or missing tracks). This is a game file problem, not an emulator problem.',
         evidence: rows.slice(0, 10).map((r) => `${r.title}: ${r.validation_note ?? r.path}`),
-        manualSteps: ['Re-copy or re-dump the affected games. OmniPC never deletes game files.'],
+        repair: { actionId: 'game.revalidateAll', label: 'Check these games again', safety: 'safe', params: {}, description: 'Re-runs the file checks for every game with a problem.' },
+        manualSteps: ['Open OmniDoctor > Games to see each game and the fixes OmniPC can apply.', 'Re-copy or re-dump games OmniPC cannot fix. OmniPC never deletes game files.'],
       })];
     },
   },

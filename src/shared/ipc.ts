@@ -191,6 +191,8 @@ export interface OmniApi {
   'doctor.finding': (findingId: string) => { finding: import('./models').Finding; report: HealthReport } | null;
   'doctor.repair': (actionId: string, params: Record<string, unknown>, opts: { confirmed: boolean }) => RepairRecord;
   'doctor.repairAllSafe': () => RepairRecord[];
+  /** OmniDoctor > Games: games whose files (not emulator) need attention. */
+  'doctor.games': () => import('./models').GameProblem[];
   'doctor.history': (limit: number) => RepairRecord[];
   'doctor.undo': (repairId: number) => RepairRecord;
   'doctor.rules': () => { emulatorId: string; rules: { id: string; title: string; severity: string; fix: string | null }[] }[];

@@ -759,3 +759,22 @@ export interface AiContextPreview {
   redactions: string[];
   bytes: number;
 }
+
+/** One problem OmniDoctor > Games found with a game, with the fixes it can apply. */
+export interface GameIssue {
+  kind: 'missing-file' | 'unavailable' | 'cue-missing-track' | 'm3u-missing-disc' | 'archived' | 'split-archive' | 'incomplete' | 'unreadable' | 'suspicious-size' | 'crash-loop' | 'failures' | 'other';
+  severity: 'problem' | 'warning';
+  title: string;
+  detail: string;
+  /** Repairs OmniPC can run for this issue (empty when only manual steps apply). */
+  fixes: RepairSuggestion[];
+  manualSteps: string[];
+}
+
+export interface GameProblem {
+  gameId: number;
+  title: string;
+  systemId: string;
+  path: string;
+  issues: GameIssue[];
+}
