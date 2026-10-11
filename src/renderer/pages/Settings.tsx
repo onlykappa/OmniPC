@@ -62,7 +62,8 @@ export function SettingsPage() {
         <Panel id="updates" title="Updates">
           <div className="col"><span>Emulator update channel</span><Segmented value={settings.updateChannel} onChange={(v) => set({ updateChannel: v })} options={[{ value: 'stable', label: 'Stable' }, { value: 'nightly', label: 'Nightly / development' }]} /></div>
           <Toggle label="Check for updates at startup" value={settings.checkUpdatesOnStart} onChange={(v) => set({ checkUpdatesOnStart: v })} />
-          <p className="small faint">OmniPC app updates: this version uses manual updates (download the new installer). Emulators never auto-update without a backup and health test.</p>
+          <Toggle label="Install emulator updates automatically" description="At startup and every 6 hours, never while a game is running. Each update backs up the configuration and is health-tested; if the test fails, the previous version is restored automatically." value={settings.autoUpdateEmulators} onChange={(v) => set({ autoUpdateEmulators: v })} />
+          <p className="small faint">OmniPC app updates: this version uses manual updates (download the new installer). Emulators never update without a configuration backup and a health test.</p>
         </Panel>
         <ImportPanel />
         <ResetPanel />

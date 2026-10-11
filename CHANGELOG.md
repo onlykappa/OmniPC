@@ -2,6 +2,14 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+- **Check & update all** on the Emulators page: checks every installed emulator and installs
+  newer releases in one go. An update that fails its health test is rolled back automatically.
+- **Install emulator updates automatically** (Settings → Updates, off by default): runs at
+  startup and every 6 hours, postponed while a game is running.
+
 ## [1.0.0] - 2026-10-10
 
 First public release.

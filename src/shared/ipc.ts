@@ -145,6 +145,8 @@ export interface OmniApi {
   'emulators.update': (id: string) => { jobId: string };
   'emulators.updateAll': () => { jobId: string };
   'emulators.checkUpdates': () => EmulatorStatus[];
+  /** Checks every installed emulator and installs newer releases (failed updates roll back). */
+  'emulators.checkAndUpdateAll': () => { jobId: string };
   'emulators.rollback': (id: string) => { jobId: string };
   'emulators.repair': (id: string) => { jobId: string };
   'emulators.resetConfig': (id: string) => { jobId: string };
