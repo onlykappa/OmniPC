@@ -172,6 +172,10 @@ export interface OmniApi {
   'emulators.optimizePreview': (id: string) => import('./emulatorSettings').OptimizeSuggestion[];
   /** Applies the chosen proposals (fields from optimizePreview); configuration is backed up first. */
   'emulators.optimizeApply': (id: string, fields: string[]) => EmulatorDetailsDto;
+  /** "Optimize all for my PC": every installed emulator's proposals (nothing is applied). */
+  'emulators.optimizeAllPreview': () => { emulatorId: string; name: string; suggestions: import('./emulatorSettings').OptimizeSuggestion[] }[];
+  /** Applies every proposal for the given emulators; each emulator's configuration is backed up first. */
+  'emulators.optimizeAllApply': (emulatorIds: string[]) => { emulatorId: string; changed: number }[];
   'emulators.useExisting': (id: string, executable: string) => EmulatorStatus;
 
   // Backups
