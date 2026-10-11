@@ -2,7 +2,7 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
-## [Unreleased]
+## [1.2.0] - 2026-10-11
 
 ### Added
 - **Add to Steam**: Settings > Steam adds your games (all, chosen systems, or one game from its
