@@ -2,6 +2,17 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+- **RetroAchievements**: sign in once under Settings > RetroAchievements and OmniPC signs
+  RetroArch, DuckStation, PCSX2, PPSSPP and Dolphin in for you, including emulators installed
+  later (the sign-in is re-applied after updates, repairs and resets). Your password is sent
+  only to retroachievements.org and never stored; OmniPC keeps the login token, encrypted by
+  Windows. Hardcore mode is one switch for every emulator, "Sign out" removes the login from
+  all of them, and OmniDoctor warns (and can fix) when an emulator lost the sign-in.
+  RetroAchievements tokens are blanked in diagnostic packages and backup comparisons.
+
 ## [1.1.1] - 2026-10-11
 
 ### Added

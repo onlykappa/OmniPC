@@ -19,6 +19,7 @@ import type {
 import type { SystemId } from '@shared/systems';
 import type { BackupTarget } from '../config/backups';
 import type { AppPaths } from '../core/paths';
+import type { RaCredentials, RaFiles } from '../achievements/emulatorConfig';
 
 export interface AdapterPaths {
   /** Program files (replaced on update). */
@@ -81,6 +82,12 @@ export interface ConfigInput {
   controller: UniversalControllerProfile;
   hotkeys: HotkeyConfig;
   hardware: HardwareProfile | null;
+  /**
+   * RetroAchievements sign-in to write with scope 'all'/'paths' (adapters that
+   * implement `achievements()`). Undefined/null: leave the emulator's own
+   * RetroAchievements settings untouched.
+   */
+  achievements?: RaCredentials | null;
 }
 
 export interface AdapterCapabilities {
@@ -145,6 +152,8 @@ export interface EmulatorAdapter {
    * Every URL must be on the manifest's allowedHosts; nothing downloaded is executed.
    */
   installComponents?(installer: ComponentInstaller, input: ConfigInput): Promise<string[]>;
+  /** Optional: where this emulator keeps its RetroAchievements settings (supporting emulators only). */
+  achievements?(): RaFiles;
 }
 
 export interface ComponentInstaller {

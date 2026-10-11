@@ -354,6 +354,13 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
     },
     'controllers.apply': () => c.emulators.applyControllerProfile({ force: false }),
 
+    // ------------------------------------------------------- retroachievements
+    'ra.status': () => c.achievements.status(),
+    'ra.login': (username, password) => c.achievements.login(String(username ?? ''), String(password ?? '')),
+    'ra.logout': () => c.achievements.logout(),
+    'ra.setHardcore': (on) => c.achievements.setHardcore(!!on),
+    'ra.apply': async () => (await c.achievements.apply()).status,
+
     // ------------------------------------------------------------------ bios
     'bios.status': () => c.bios.status(),
     'bios.scan': (roots) => {

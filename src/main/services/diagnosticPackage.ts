@@ -11,6 +11,7 @@ import type { AppPaths } from '../core/paths';
 import type { OpsRepo } from '../database/opsRepo';
 import { redactPaths } from '../diagnostics/logs';
 import { expandManifestPath } from '../emulators/adapter';
+import { redactAchievementSecrets } from '../achievements/emulatorConfig';
 
 const EXCLUDED_EXT = /\.(iso|bin|chd|cso|rvz|wbfs|gcz|wia|nkit|img|zip|7z|rar|ps2|raw|gci|sav|srm|p2s|sstate|state|keys?|pup|dat|dmp)$/i;
 
@@ -19,7 +20,7 @@ export async function exportDiagnosticPackage(opts: { includeEmulatorLogs: boole
   const dest = join(d.paths.diagnosticsExports, `omnideck-diagnostics-${new Date().toISOString().replace(/[:.]/g, '-')}.zip`);
   const zip = new yazl.ZipFile();
   const files: string[] = [];
-  const excluded = ['Game files (ROMs/ISOs)', 'BIOS & firmware', 'Encryption keys', 'Save data, memory cards and save states', 'Personal documents'];
+  const excluded = ['Game files (ROMs/ISOs)', 'BIOS & firmware', 'Encryption keys', 'Save data, memory cards and save states', 'Personal documents', 'RetroAchievements login tokens'];
   const addText = (name: string, text: string) => {
     zip.addBuffer(Buffer.from(redactPaths(text).text), name);
     files.push(name);
@@ -38,7 +39,8 @@ export async function exportDiagnosticPackage(opts: { includeEmulatorLogs: boole
     }
     if (opts.includeConfigs) for (const c of a.manifest.configFiles) {
       const path = expandManifestPath(c.path, p, d.paths.bios);
-      if (existsSync(path) && !EXCLUDED_EXT.test(path)) addText(`${a.manifest.id}/config/${basename(path)}`, await readFile(path, 'utf8'));
+      // RetroAchievements login tokens are blanked; the OmniPC token itself is never in a file.
+      if (existsSync(path) && !EXCLUDED_EXT.test(path)) addText(`${a.manifest.id}/config/${basename(path)}`, redactAchievementSecrets(await readFile(path, 'utf8')));
     }
   }
   addText('README.txt', `OmniPC diagnostic package\nCreated ${new Date().toISOString()}\n\nIncluded: ${files.join(', ')}\n\nNever included: ${excluded.join(', ')}.\nUser folder paths and user name were redacted.\n`);

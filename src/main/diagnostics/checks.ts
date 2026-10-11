@@ -19,6 +19,7 @@ import type { AppPaths } from '../core/paths';
 import { freeSpace } from '../platform/drives';
 import { newestBackupAgeHours } from '../database/db';
 import type { BiosService } from '../services/biosService';
+import { inspectAchievementsConfig } from '../achievements/emulatorConfig';
 
 export interface CheckDeps {
   registry: AdapterRegistry;
@@ -422,6 +423,36 @@ export const CHECKS: HealthCheck[] = [
       const ups = d.emulators.list().filter((s) => s.updateAvailable);
       if (!ups.length) return [f(this.id, this.category, { severity: 'pass', title: 'Installed emulators are up to date (as of the last check)' })];
       return ups.map((u) => f(this.id, this.category, { severity: 'info', title: `${u.name} ${u.latestVersion} is available (installed ${u.version})`, subject: { kind: 'emulator', id: u.id, label: u.name }, repair: repair('emulator.update', `Update ${u.name}`, 'low', { emulatorId: u.id }, 'Backs up configuration, updates, runs a health test, and keeps the old version for rollback.') }, u.id));
+    },
+  },
+  {
+    id: 'achievements.config',
+    category: 'emulators',
+    label: 'RetroAchievements sign-in',
+    quick: true,
+    async run(d) {
+      const ra = d.settings.get('retroAchievements');
+      if (!ra.enabled || !ra.username) return [];
+      const out: Finding[] = [];
+      const ok: string[] = [];
+      for (const a of d.registry.implemented()) {
+        if (!a.achievements || !d.emulators.isInstalled(a.manifest.id)) continue;
+        const issues = await inspectAchievementsConfig(a.achievements(), { username: ra.username, enabled: ra.enabled, hardcore: ra.hardcore }).catch((e: Error) => [e.message]);
+        if (!issues.length) {
+          ok.push(a.manifest.name);
+          continue;
+        }
+        out.push(f(this.id, this.category, {
+          severity: 'warning',
+          title: `${a.manifest.name} is not signed in to RetroAchievements`,
+          detail: `OmniPC is signed in as ${ra.username}, but ${a.manifest.name}'s configuration does not match, so achievements will not unlock there.`,
+          subject: { kind: 'emulator', id: a.manifest.id, label: a.manifest.name },
+          evidence: issues,
+          repair: repair('ra.apply', 'Sign emulators in', 'safe', {}, 'Writes the RetroAchievements sign-in into every installed emulator that supports it (configuration is backed up first).'),
+        }, a.manifest.id));
+      }
+      if (!out.length && ok.length) out.push(f(this.id, this.category, { severity: 'pass', title: `RetroAchievements signed in for ${ok.join(', ')}` }));
+      return out;
     },
   },
 ];

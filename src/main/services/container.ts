@@ -38,6 +38,9 @@ import { ImportService } from '../importers/importService';
 import { defaultProfile } from '../controllers/translate';
 import { scanHardware } from '../platform/hardware';
 import { errorMessage } from '../core/errors';
+import { RetroAchievementsService } from '../achievements/service';
+import { TokenVault, type SecretCipher, type StoredRaToken } from '../achievements/tokenVault';
+import { raUserAgent } from '../achievements/raApi';
 
 const log = logger.scope('container');
 
@@ -49,6 +52,9 @@ export interface Host {
   fetchImpl?: typeof fetch;
   spawnImpl?: typeof spawn;
   extraAdapters?: (paths: AppPaths) => EmulatorAdapter[];
+  /** Encrypts secrets at rest (Electron safeStorage); without it the RetroAchievements token is stored unprotected. */
+  secretCipher?: SecretCipher;
+  appVersion?: string;
 }
 
 export interface ContainerOptions {
@@ -83,6 +89,7 @@ export class AppContainer {
   readonly repairs: RepairEngine;
   readonly launcher: LaunchService;
   readonly importer: ImportService;
+  readonly achievements: RetroAchievementsService;
   readonly safeMode: boolean;
   private hardwareProfile: HardwareProfile | null;
   private pads: { pads: DetectedController[]; reportedAt: number | null } = { pads: [], reportedAt: null };
@@ -120,7 +127,18 @@ export class AppContainer {
       notifications: this.notifications,
       hardware: () => this.hardwareProfile,
       controllerProfile: () => this.controllerProfile(),
+      achievements: () => this.achievements.credentials(),
       fetchImpl: opts.host.fetchImpl,
+    });
+    this.achievements = new RetroAchievementsService({
+      settings: this.settings,
+      registry: this.registry,
+      isInstalled: (id) => this.emulators.isInstalled(id),
+      backups: this.backups,
+      ops: this.ops,
+      vault: new TokenVault({ read: () => this.settings.getInternal<StoredRaToken | null>('retroAchievementsToken', null), write: (v) => this.settings.setInternal('retroAchievementsToken', v) }, opts.host.secretCipher ?? null),
+      fetchImpl: opts.host.fetchImpl ?? fetch,
+      userAgent: raUserAgent(opts.host.appVersion ?? '0.0.0'),
     });
     this.bios = new BiosService(this.registry, this.paths, this.ops);
     this.saves = new SaveService(this.registry, this.emulators, this.paths, this.ops);
@@ -165,6 +183,7 @@ export class AppContainer {
       bus: this.bus,
       scanLibrary: () => this.scanLibrary(false).done,
       rescanHardware: () => this.scanHardware(),
+      achievements: this.achievements,
     });
     this.launcher = new LaunchService({
       registry: this.registry,
