@@ -242,6 +242,14 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 2,
+    name: 'game file content kind (Switch updates and DLC)',
+    up(db) {
+      // NULL = the game itself; 'update' / 'dlc' files belong to a game but are not launched.
+      db.exec('ALTER TABLE game_files ADD COLUMN content_kind TEXT');
+    },
+  },
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

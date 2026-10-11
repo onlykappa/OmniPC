@@ -73,6 +73,12 @@ export async function collectCandidates(root: string, opts: { excludeDirs?: stri
       files.push({ path: join(dir, eboot.name), folderChain: chain });
       return;
     }
+    // Extracted Xbox 360 games: the folder boots default.xex.
+    const xex = entries.find((e) => e.isFile() && e.name.toLowerCase() === 'default.xex');
+    if (xex && depth > 0) {
+      files.push({ path: join(dir, xex.name), folderChain: chain });
+      return;
+    }
     const ps3Game = entries.find((e) => e.isDirectory() && e.name.toUpperCase() === 'PS3_GAME');
     const ps3Usr = ps3Game ? join(dir, ps3Game.name, 'USRDIR') : hasDir('usrdir') && entries.some((e) => e.isFile() && e.name.toUpperCase() === 'PARAM.SFO') ? join(dir, entries.find((e) => e.name.toLowerCase() === 'usrdir')!.name) : null;
     if (ps3Usr) {
@@ -222,7 +228,9 @@ export class LibraryScanner {
           title,
           region: id.region,
           serial: id.serial,
-          groupKey: groupKeyFor(lp.path, f.path, id.baseTitle, id.region, id.discNumber),
+          // Switch updates and DLC join their game by title ID.
+          groupKey: id.systemId === 'switch' && id.serial ? `switch:${id.serial}` : groupKeyFor(lp.path, f.path, id.baseTitle, id.region, id.discNumber),
+          contentKind: id.contentKind ?? null,
           libraryPathId: lp.id,
           path: f.path,
           sizeBytes: st.size,

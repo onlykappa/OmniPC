@@ -15,6 +15,8 @@ export interface GameFile {
   path: string;
   sizeBytes: number;
   discNumber: number | null;
+  /** null for the game itself; Switch updates and DLC are kept with their game. */
+  contentKind: 'update' | 'dlc' | null;
   validation: ValidationState;
   validationNote: string | null;
 }

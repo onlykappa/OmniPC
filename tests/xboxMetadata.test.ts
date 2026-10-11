@@ -71,3 +71,22 @@ describe('Xbox discs', () => {
     expect((await xbox360MarketplaceProvider.lookup({ gameId: 1, systemId: 'x360', title: 'Gears', serial: '4D5307E6', region: null, primaryPath: 'x' }, env))?.artwork?.[0].allowedHosts).toEqual(['download.xbox.com']);
   });
 });
+
+describe('Xbox 360 game folders', () => {
+  it('imports an extracted game folder through its default.xex', async () => {
+    const Database = (await import('better-sqlite3')).default;
+    const { migrate } = await import('../src/main/database/migrations');
+    const { LibraryRepo } = await import('../src/main/database/libraryRepo');
+    const { LibraryScanner } = await import('../src/main/library/scanner');
+    const root = join(t.dir, 'x360lib');
+    write(join(root, 'Gears of War (USA)', 'default.xex'), xex(0x4d5307e6));
+    write(join(root, 'Gears of War (USA)', 'media', 'intro.xex'), xex(0x4d5307e6));
+    const db = new Database(':memory:');
+    migrate(db);
+    const repo = new LibraryRepo(db);
+    repo.addPath(root, null, null);
+    await new LibraryScanner(repo, () => []).scan({ full: true });
+    const games = repo.query({ limit: 10, includeUnavailable: true }).items;
+    expect(games.map((g) => [g.title, g.systemId, g.serial])).toEqual([['Gears of War', 'x360', '4D5307E6']]);
+  });
+});

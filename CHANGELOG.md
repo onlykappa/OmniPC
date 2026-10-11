@@ -2,7 +2,7 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
-## [Unreleased]
+## [1.1.1] - 2026-10-11
 
 ### Added
 - **Switch game info and pictures**: icons, banners, screenshots, descriptions, publisher and
@@ -13,6 +13,11 @@ All notable changes to OmniPC. Versions follow [Semantic Versioning](https://sem
   folder hint and messy file names still find their box art. Xbox 360 covers come from the Xbox
   Marketplace image service.
 - Existing Xbox and Switch games are re-identified once after updating and get their artwork.
+- **Switch updates and DLC stay with their game**: update and DLC files no longer show up as
+  separate games. Before each launch OmniPC registers the newest update and your DLC with
+  Ryujinx, so games start up to date (updates or DLC you chose in Ryujinx are kept).
+- **Xbox 360 game folders**: extracted games (a folder with `default.xex`) are imported with their
+  title ID and get box art.
 
 ### Changed
 - Ryujinx is installed and updated through ryujinx.app's own update server
