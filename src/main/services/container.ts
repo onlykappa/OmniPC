@@ -25,9 +25,10 @@ import { EmulatorManager } from './emulatorManager';
 import { NotificationService } from './notifications';
 import { BiosService } from './biosService';
 import { SaveService } from './saveService';
+import { AutoSaveBackup } from '../saves/autoBackup';
 import { StorageService } from './storageService';
 import { LibraryScanner } from '../library/scanner';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { SwitchTitleDb } from '../metadata/switchTitleDb';
 import { MetadataService, defaultProviders, type Thumbnailer } from '../metadata/service';
 import { LibretroThumbnails } from '../metadata/libretroThumbnails';
@@ -79,6 +80,7 @@ export class AppContainer {
   readonly emulators: EmulatorManager;
   readonly bios: BiosService;
   readonly saves: SaveService;
+  readonly autoSaveBackup: AutoSaveBackup;
   readonly storage: StorageService;
   readonly scanner: LibraryScanner;
   readonly metadata: MetadataService;
@@ -127,7 +129,7 @@ export class AppContainer {
       fetchImpl: opts.host.fetchImpl,
     });
     this.bios = new BiosService(this.registry, this.paths, this.ops);
-    this.saves = new SaveService(this.registry, this.emulators, this.paths, this.ops);
+    this.saves = new SaveService(this.registry, this.emulators, this.paths, this.ops, this.settings, { homeDir: opts.homeDir, installDir: dirname(process.execPath) });
     this.storage = new StorageService(this.paths, this.emuRepo, this.emulators, this.registry, this.ops);
     this.scanner = new LibraryScanner(this.library, () => [this.paths.root, ...Object.values(this.paths.overrides)]);
     this.metadata = new MetadataService(
@@ -153,6 +155,7 @@ export class AppContainer {
       hardware: () => this.hardwareProfile,
       controllers: () => this.pads,
       bus: this.bus,
+      saves: this.saves,
     };
     this.doctor = new OmniDoctor(checkDeps);
     this.repairs = new RepairEngine({
@@ -169,6 +172,7 @@ export class AppContainer {
       bus: this.bus,
       scanLibrary: () => this.scanLibrary(false).done,
       rescanHardware: () => this.scanHardware(),
+      saves: this.saves,
     });
     this.launcher = new LaunchService({
       registry: this.registry,
@@ -185,6 +189,7 @@ export class AppContainer {
       onSessionStart: (s) => opts.host.onSessionStart?.(s.gameTitle),
       onSessionEnd: () => opts.host.onSessionEnd?.(),
     });
+    this.autoSaveBackup = new AutoSaveBackup({ saves: this.saves, settings: this.settings, launches: this.launches, jobs: this.jobs, bus: this.bus, emulators: this.emulators, activeEmulator: () => this.launcher.activeSession()?.emulatorId ?? null, backgroundEnabled: () => !this.safeMode });
     this.importer = new ImportService(this.registry, this.emulators, this.library, this.ops, this.bios, this.paths);
     this.steam = new SteamService({ library: this.library, paths: this.paths, launcher: opts.host.selfLauncher ?? defaultSelfLauncher });
     // When an emulator becomes available, its bundled title/compatibility
@@ -352,6 +357,8 @@ export class AppContainer {
     }
     // Automatic emulator updates every 6 hours while OmniPC is open (setting read at each tick).
     this.timers.push(setInterval(() => this.autoUpdateEmulators(), 6 * 3600 * 1000));
+    // Scheduled save backups: checked hourly, skipped while a game is running.
+    this.timers.push(...this.autoSaveBackup.start());
     this.timers.push(setInterval(() => void backupDatabase(this.db, this.paths.databaseBackups).catch(() => undefined), 24 * 3600 * 1000));
   }
 
@@ -364,6 +371,7 @@ export class AppContainer {
 
   shutdown(): void {
     for (const t of this.timers) clearInterval(t);
+    this.autoSaveBackup.stop();
     try {
       this.db.close();
     } catch {

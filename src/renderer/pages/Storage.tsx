@@ -4,12 +4,13 @@ import { api } from '../lib/api';
 import { useLoad } from '../lib/hooks';
 import { useStore } from '../lib/store';
 import { Button, Modal, Panel, Spinner } from '../components/ui';
-import { bytes, clock } from '../lib/format';
+import { bytes } from '../lib/format';
+import { SaveBackupList, SaveBackupSettingsForm } from '../components/SaveBackups';
 
 export function StoragePage() {
   const { data, reload } = useLoad(() => api('storage.locations'), []);
   const { data: saves, reload: reloadSaves } = useLoad(() => api('saves.locations'), []);
-  const { data: backups, reload: reloadBackups } = useLoad(() => api('saves.backups'), []);
+  const [backupsKey, setBackupsKey] = useState(0);
   const { data: paths } = useLoad(() => api('library.paths'), []);
   const [move, setMove] = useState<{ key: StorageKey; to: string } | null>(null);
   const toast = useStore((s) => s.toast);
@@ -33,20 +34,17 @@ export function StoragePage() {
         )}
       </Panel>
       <div className="grid cols-2">
-        <Panel title="Save data" actions={<Button onClick={async () => { const r = await api('saves.backup', null); toast('success', `Created ${r.length} save backup(s)`); reloadBackups(); }}>Back up all saves</Button>}>
+        <Panel title="Save data">
           {(saves ?? []).map((s) => <div key={s.path} className="list-item"><div className="grow"><div>{s.label}</div><div className="mono tiny faint">{s.path}</div></div><span className="small muted">{s.fileCount} files · {bytes(s.sizeBytes)}</span>{s.exists && <Button size="sm" onClick={() => void api('app.openPath', s.path)}>Open</Button>}</div>)}
           {saves && saves.length === 0 && <p className="muted">Install an emulator to see its save folders.</p>}
-          <p className="small faint">Cloud sync is not part of this version; backups are local ZIP files you can copy anywhere.</p>
         </Panel>
-        <Panel title="Save backups">
-          {(backups ?? []).length === 0 ? <p className="muted">No save backups yet.</p> : backups!.map((b) => (
-            <div key={b.id} className="list-item"><div className="grow"><div>{b.label}</div><div className="tiny faint">{clock(b.createdAt)} · {bytes(b.sizeBytes)}</div></div>
-              <Button size="sm" onClick={async () => { const r = await api('saves.restore', b.id); toast('success', 'Saves restored', `Previous saves were backed up first: ${r.safetyBackup}`); reloadSaves(); reloadBackups(); }}>Restore</Button>
-              <Button size="sm" variant="ghost" onClick={() => void api('app.openPath', b.path.replace(/[\\/][^\\/]+$/, ''))}>Show</Button>
-            </div>
-          ))}
+        <Panel id="save-backup-settings" title="Automatic save backups">
+          <SaveBackupSettingsForm onChanged={() => setBackupsKey((k) => k + 1)} />
         </Panel>
       </div>
+      <Panel id="save-backups" title="Save backups">
+        <SaveBackupList reloadKey={backupsKey} onRestored={reloadSaves} />
+      </Panel>
       {move && (
         <Modal onClose={() => setMove(null)}>
           <h2>Move {move.key}?</h2>

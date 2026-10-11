@@ -19,6 +19,7 @@ import type { AppPaths } from '../core/paths';
 import { freeSpace } from '../platform/drives';
 import { newestBackupAgeHours } from '../database/db';
 import type { BiosService } from '../services/biosService';
+import type { SaveService } from '../services/saveService';
 
 export interface CheckDeps {
   registry: AdapterRegistry;
@@ -33,6 +34,7 @@ export interface CheckDeps {
   bios: BiosService;
   hardware: () => HardwareProfile | null;
   controllers: () => { pads: DetectedController[]; reportedAt: number | null };
+  saves?: SaveService;
 }
 
 export interface HealthCheck {
@@ -366,6 +368,38 @@ export const CHECKS: HealthCheck[] = [
         const missing = a.saveLocations().filter((s) => !existsSync(s.path));
         if (missing.length) out.push(f(this.id, this.category, { severity: 'warning', title: `${a.manifest.name}: ${missing.length} save folder(s) missing`, evidence: missing.map((m) => m.path), subject: { kind: 'emulator', id: a.manifest.id, label: a.manifest.name }, repair: repair('folders.recreate', 'Recreate save folders', 'safe', { emulatorId: a.manifest.id }, 'Creates the missing empty folders. Existing saves are never touched.') }, a.manifest.id));
         else out.push(f(this.id, this.category, { severity: 'pass', title: `${a.manifest.name} save folders OK` }, a.manifest.id));
+      }
+      return out;
+    },
+  },
+  {
+    id: 'saves.backups',
+    category: 'saves',
+    label: 'Save backups',
+    quick: true,
+    async run(d) {
+      if (!d.saves) return [];
+      const out: Finding[] = [];
+      const dest = await d.saves.destinationStatus();
+      if (dest.destination && dest.problem) {
+        out.push(f('saves.backupFolder', this.category, { severity: 'warning', title: 'Save backup folder is unavailable', detail: dest.problem, evidence: [dest.destination], manualSteps: ['Reconnect the drive or start your cloud app (OneDrive, Google Drive, Dropbox), or choose another folder under Settings > Save backups.'] }));
+      } else if (dest.destination) {
+        out.push(f('saves.backupFolder', this.category, { severity: 'pass', title: 'Save backup folder is available' }));
+      }
+      const status = await d.saves.protectionStatus();
+      if (!status.length) return out;
+      const cutoff = Date.now() - 14 * 24 * 3600 * 1000;
+      const stale = status.filter((s) => !s.upToDate && (!s.lastBackupAt || Date.parse(s.lastBackupAt) < cutoff));
+      if (stale.length) {
+        out.push(f(this.id, this.category, {
+          severity: 'warning',
+          title: `No save backup in the last 14 days (${stale.map((s) => s.name).join(', ')})`,
+          detail: 'These emulators have saves that changed since their last backup, and that backup is more than 14 days old (or there is none).',
+          evidence: stale.map((s) => `${s.name}: last backup ${s.lastBackupAt ?? 'never'}`),
+          repair: repair('saves.backupAll', 'Back up saves now', 'safe', {}, 'Creates a ZIP backup of every emulator\'s saves. Nothing is overwritten or deleted.'),
+        }));
+      } else {
+        out.push(f(this.id, this.category, { severity: 'pass', title: 'Saves are backed up' }));
       }
       return out;
     },

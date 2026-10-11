@@ -5,6 +5,7 @@ import { useLoad } from '../lib/hooks';
 import { navigate } from '../lib/router';
 import { useStore } from '../lib/store';
 import { Button, Chip, Modal, Panel, ProgressBar, Segmented, Toggle } from '../components/ui';
+import { SaveBackupSettingsForm } from '../components/SaveBackups';
 
 export function SettingsPage() {
   const settings = useStore((s) => s.settings);
@@ -70,6 +71,10 @@ export function SettingsPage() {
         <Panel id="steam" title="Steam">
           <p className="small muted">Add your games to Steam as non-Steam games with box art, to start them from Steam, Big Picture or Steam Link.</p>
           <div className="row"><Button onClick={() => navigate('/steam')}>Steam shortcuts…</Button></div>
+        </Panel>
+        <Panel id="saves" title="Save backups">
+          <SaveBackupSettingsForm />
+          <div className="row"><Button onClick={() => navigate('/storage')}>See and restore backups</Button></div>
         </Panel>
         <ImportPanel />
         <ResetPanel />

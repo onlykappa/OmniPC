@@ -38,6 +38,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     },
   },
   devMode: false,
+  saveBackup: { schedule: 'daily', afterPlay: true, beforeEmulatorUpdate: true, destination: null, keepPerEmulator: 10 },
 };
 
 export class SettingsRepo {
