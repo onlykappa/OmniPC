@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { AppPaths } from '../src/main/core/paths';
 import { RyujinxAdapter, blockedDataLocation, countFirmwareNcas, parseKeyFile } from '../src/main/emulators/ryujinx/adapter';
@@ -247,14 +247,26 @@ describe('Ryujinx adapter', () => {
     expect(st[1].status).toBe('missing');
     expect(st[1].note).toMatch(/Install Firmware/);
     const reg = a.firmwareDir();
-    for (const id of ['0a1b', '2c3d']) {
+    // Placeholder files are not firmware.
+    mkdirSync(join(reg, 'f'.repeat(32) + '.nca'), { recursive: true });
+    writeFileSync(join(reg, 'f'.repeat(32) + '.nca', '00'), 'x');
+    st = await a.biosStatus();
+    expect(st[1].status).toBe('invalid');
+    rmSync(join(reg, 'f'.repeat(32) + '.nca'), { recursive: true });
+    for (let i = 0; i < 30; i++) {
+      const id = i.toString(16).padStart(32, '0');
       mkdirSync(join(reg, `${id}.nca`), { recursive: true });
-      writeFileSync(join(reg, `${id}.nca`, '00'), 'x');
+      writeFileSync(join(reg, `${id}.nca`, '00'), Buffer.alloc(0x1000, i));
     }
     mkdirSync(join(reg, 'empty.nca'), { recursive: true });
-    expect(countFirmwareNcas(reg)).toBe(2);
+    expect(countFirmwareNcas(reg)).toBe(30);
     st = await a.biosStatus();
+    // Loadable firmware plus one empty folder: usable, reported as inconclusive.
     expect(st[1].status).toBe('found');
+    expect(st[1].files[0].description).toMatch(/Present, validation inconclusive/);
+    rmSync(join(reg, 'empty.nca'), { recursive: true });
+    st = await a.biosStatus();
+    expect(st[1].files[0].description).toBe('Installed (30 system titles)');
     writeFileSync(join(a.paths().bios, 'prod.keys'), 'garbage');
     st = await a.biosStatus();
     // BIOS copy is invalid but the installed copy in data/system is still valid.

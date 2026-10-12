@@ -84,7 +84,9 @@ export type BeforeEmulatorChangeHook = (emulatorId: string, what: 'update' | 'ro
 export class EmulatorManager {
   private beforeChange: BeforeEmulatorChangeHook | null = null;
 
-  constructor(private readonly d: EmulatorManagerDeps) {}
+  constructor(private readonly d: EmulatorManagerDeps) {
+    for (const a of d.registry.implemented()) a.setActiveExecutable?.(this.executableFor(a.manifest.id));
+  }
 
   setBeforeChangeHook(hook: BeforeEmulatorChangeHook | null): void {
     this.beforeChange = hook;
@@ -106,8 +108,24 @@ export class EmulatorManager {
 
   executableFor(id: string): string | null {
     const row = this.d.emuRepo.get(id);
-    if (row.custom_executable) return row.custom_executable;
-    return row.executable;
+    const exe = row.custom_executable || row.executable;
+    this.d.registry.get(id)?.setActiveExecutable?.(exe);
+    return exe;
+  }
+
+  /**
+   * Re-runs the health test when its stored result no longer describes this PC: the
+   * executable or the files the adapter checks changed since (see healthFingerprint), or the
+   * result predates fingerprints. Returns true when it re-tested.
+   */
+  async refreshStaleHealth(id: string): Promise<boolean> {
+    const a = this.d.registry.get(id);
+    const exe = this.executableFor(id);
+    if (!a?.healthFingerprint || !exe || !existsSync(exe) || this.d.emuRepo.get(id).install_state === 'not_installed') return false;
+    const stored = this.d.settings.getInternal<string | null>(`healthFingerprint.${id}`, null);
+    if (stored === a.healthFingerprint(exe)) return false;
+    await this.healthTest(id);
+    return true;
   }
 
   isInstalled(id: string): boolean {
@@ -456,6 +474,7 @@ export class EmulatorManager {
       return { ran: false, ok: false, checks: [{ label: 'Installed', ok: false, detail: 'Not installed' }] };
     }
     const r = await a.smokeTest(exe);
+    if (a.healthFingerprint) this.d.settings.setInternal(`healthFingerprint.${id}`, a.healthFingerprint(exe));
     const failed = r.checks.filter((c) => !c.ok);
     this.d.emuRepo.setHealth(id, failed.length ? 'error' : r.ran ? 'ready' : 'ready', failed.length ? failed.map((c) => `${c.label}: ${c.detail}`).join('; ') : r.ran ? null : 'Launch test skipped (not running on Windows)');
     if (ctx) {
