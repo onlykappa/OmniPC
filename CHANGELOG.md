@@ -2,7 +2,7 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
-## [Unreleased]
+## [1.4.1] - 2026-10-12
 
 ### Fixed
 - Box art from Wikipedia (used for Xbox 360 and other games without a dedicated art source)
