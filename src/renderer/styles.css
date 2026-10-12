@@ -206,3 +206,13 @@ table.table td { padding: 10px; border-bottom: 1px solid var(--line); vertical-a
 .tabs button.on { color: var(--text); border-bottom-color: var(--accent); }
 .console .page { max-width: 1800px; }
 .console .card { font-size: 16px; }
+
+/* Share & Copy */
+.share-row { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px; cursor: pointer; }
+.share-row:hover { background: var(--panel-2); }
+.share-row .box { width: 20px; height: 20px; border-radius: 6px; border: 2px solid #3a4560; display: grid; place-items: center; flex-shrink: 0; font-size: 12px; }
+.share-row.on .box { background: var(--accent); border-color: var(--accent); color: #fff; }
+.share-thumb { width: 36px; height: 48px; border-radius: 6px; object-fit: cover; background: var(--panel-2); flex-shrink: 0; }
+.share-code { font-size: 44px; font-weight: 700; letter-spacing: .3em; font-variant-numeric: tabular-nums; }
+.share-code-input { font-size: 32px; letter-spacing: .4em; text-align: center; font-variant-numeric: tabular-nums; }
+.copy-footer { position: sticky; bottom: 0; z-index: 4; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 18px; border-radius: var(--radius); background: rgba(22,26,35,.94); backdrop-filter: blur(10px); border: 1px solid var(--line); box-shadow: 0 -8px 24px rgba(0,0,0,.25); }

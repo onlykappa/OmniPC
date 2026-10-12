@@ -12,6 +12,7 @@ const NAV: { path: string; label: string; icon: string; dev?: boolean }[] = [
   { path: '/emulators', label: 'Emulators', icon: '⚙' },
   { path: '/controllers', label: 'Controllers', icon: '🎮' },
   { path: '/downloads', label: 'Downloads', icon: '⇩' },
+  { path: '/share', label: 'Share & Copy', icon: '⇄' },
   { path: '/doctor', label: 'OmniDoctor', icon: '✚' },
   { path: '/settings', label: 'Settings', icon: '☰' },
   { path: '/dev', label: 'Developer', icon: '⌘', dev: true },

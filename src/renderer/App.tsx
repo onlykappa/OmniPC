@@ -21,6 +21,7 @@ import { SettingsPage } from './pages/Settings';
 import { AboutPage } from './pages/About';
 import { DevPage } from './pages/Dev';
 import { SteamPage } from './pages/Steam';
+import { SharePage } from './pages/Share';
 import { FailurePage } from './pages/Failure';
 import { Onboarding } from './pages/Onboarding';
 import { Spinner } from './components/ui';
@@ -46,6 +47,7 @@ function Router() {
     case 'storage': case 'saves': return <StoragePage />;
     case 'settings': return <SettingsPage />;
     case 'steam': return <SteamPage />;
+    case 'share': return <SharePage />;
     case 'about': return <AboutPage />;
     case 'dev': return <DevPage />;
     default: return <HomePage />;

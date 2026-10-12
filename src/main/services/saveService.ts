@@ -392,7 +392,7 @@ export class SaveService {
   }
 
   private async restoreUnlocked(file: string, opts: { fromText: string; expectedEmulatorId?: string }): Promise<{ restoredTo: string; safetyBackup: string; emulatorId: string }> {
-      const entries = await readZip(file).catch((e: unknown) => { throw OmniFailure.wrap(e, 'BAD_BACKUP', 'This file is not a readable save backup.'); });
+      const entries = await readZip(file);
       const manifestEntry = entries.get(MANIFEST_NAME);
       if (!manifestEntry) throw new OmniFailure({ code: 'BAD_BACKUP', whatHappened: 'This file is not an OmniPC save backup.' });
       let manifest: { emulatorId?: unknown; locations?: { index?: unknown; label?: unknown }[] };
