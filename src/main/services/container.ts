@@ -157,7 +157,7 @@ export class AppContainer {
       this.paths.thumbnails,
       { emulatorAppDir: (id) => (this.emulators.isInstalled(id) ? this.registry.require(id).paths().app : null), fetchImpl: opts.host.fetchImpl ?? fetch },
       opts.host.thumbnailer,
-      defaultProviders(new LibretroThumbnails(join(this.paths.cache, 'metadata'), opts.host.fetchImpl ?? fetch), new SwitchTitleDb(join(this.paths.cache, 'metadata'), opts.host.fetchImpl ?? fetch)),
+      defaultProviders(new LibretroThumbnails(join(this.paths.cache, 'metadata'), opts.host.fetchImpl ?? fetch), new SwitchTitleDb(join(this.paths.cache, 'metadata'), opts.host.fetchImpl ?? fetch), opts.host.fetchImpl ?? fetch),
     );
     const checkDeps = {
       registry: this.registry,
@@ -331,14 +331,17 @@ export class AppContainer {
     // New artwork providers: enable them for existing installs once, then
     // re-identify the affected games and fetch art for games without a cover.
     //  v2: libretro-thumbnails (all systems)
-    //  v3: Switch eShop listings (titledb) and Xbox 360 Marketplace box art;
-    //      Xbox/360/Switch title IDs are now read from the game files.
+    //  v3: Switch eShop listings (titledb); Xbox/360/Switch title IDs are now
+    //      read from the game files.
+    //  v4: Wikipedia fallback; the Xbox Marketplace image host no longer exists
+    //      (and its failure used to stop all online art), so it is removed and
+    //      games still without a cover are fetched again.
     const providersVersion = this.settings.getInternal('metadataProvidersVersion', 1);
-    if (providersVersion < 3) {
-      const cur = this.settings.get('artworkProviders');
-      const add = ['libretro-thumbnails', 'switch-titledb', 'xbox-marketplace'].filter((p) => !cur.includes(p));
-      if (add.length) this.settings.set({ artworkProviders: [...cur, ...add] });
-      this.settings.setInternal('metadataProvidersVersion', 3);
+    if (providersVersion < 4) {
+      const cur = this.settings.get('artworkProviders').filter((p) => p !== 'xbox-marketplace');
+      const add = ['libretro-thumbnails', 'switch-titledb', 'wikipedia'].filter((p) => !cur.includes(p));
+      this.settings.set({ artworkProviders: [...cur, ...add] });
+      this.settings.setInternal('metadataProvidersVersion', 4);
       if (settings.onboardingComplete && settings.metadataOnline && !this.safeMode) {
         const reidentify: SystemId[] = providersVersion < 3 ? ['xbox', 'x360', 'switch'] : [];
         setTimeout(() => {

@@ -2,6 +2,20 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Fixed
+- **Box art stopped downloading for many games** (most visible on Switch and Xbox 360): the Xbox
+  Marketplace image server no longer exists, and one unreachable server made OmniPC skip every
+  online art source for the rest of the refresh. A failing source is now skipped on its own, the
+  dead source is removed, and games still without a cover are fetched again after updating.
+
+### Added
+- **Wikipedia** as a fallback for box art and descriptions (for example Xbox 360 games), used
+  only when the article is clearly that video game.
+- **Emulator settings menus** (in progress): change an emulator's settings inside OmniPC, per
+  game too, and "Optimize for my PC" per emulator or for all of them.
+
 ## [1.2.0] - 2026-10-11
 
 ### Added
