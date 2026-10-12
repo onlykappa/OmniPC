@@ -17,8 +17,8 @@ export function SystemsPage() {
         {data.map((s) => (
           <div key={s.id} className="card system-card" style={{ cursor: 'default' }}>
             <span className="stripe" style={{ background: s.accent }} />
-            <div className="row"><SystemMark system={s} /><span className="right small muted">{s.gameCount} {s.gameCount === 1 ? "game" : "games"}</span></div>
-            <div><strong style={{ fontSize: 16 }}>{s.name}</strong> <span className="tiny faint">{s.manufacturer}</span></div>
+            <SystemMark system={s} />
+            <div className="row"><strong style={{ fontSize: 16 }}>{s.name}</strong><span className="right small muted">{s.gameCount} {s.gameCount === 1 ? "game" : "games"}</span></div>
             <div className="row">
               {s.emulatorName ? <Chip tone={s.emulatorInstalled ? 'ok' : s.emulatorImplemented ? undefined : 'planned'}>{s.emulatorName}{s.emulatorInstalled ? ' · installed' : s.emulatorImplemented ? '' : ' · planned'}</Chip> : <Chip>No emulator</Chip>}
               {s.bios === 'found' && <Chip tone="ok">BIOS found</Chip>}

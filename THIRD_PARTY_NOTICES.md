@@ -63,3 +63,12 @@ settings file to import paths and saves the user already owns.
 
 OmniPC never bundles, downloads or distributes games, BIOS images, system firmware,
 or encryption keys. Users supply content they legally own.
+
+## System logos
+
+The console logos in `src/renderer/assets/systems/` are trademarks of Sony Interactive
+Entertainment, Nintendo, Microsoft and Sega, used only to identify which system a game belongs
+to. They come from Wikimedia Commons (public domain / CC0 as marked there; see
+`src/renderer/assets/systems/SOURCES.md`) and are not covered by OmniPC's MIT licence. OmniPC is
+not affiliated with or endorsed by these companies.
+
