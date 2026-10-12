@@ -42,6 +42,21 @@ export class MetadataService {
    */
   private failedProviders = new Set<string>();
   private failedHosts = new Set<string>();
+  /** Network failures in a row per provider/host; one hiccup must not switch a source off for the whole run. */
+  private networkFailures = new Map<string, number>();
+  private static readonly MAX_NETWORK_FAILURES = 3;
+
+  private noteNetworkFailure(key: string, set: Set<string>): void {
+    const n = (this.networkFailures.get(key) ?? 0) + 1;
+    this.networkFailures.set(key, n);
+    if (n >= MetadataService.MAX_NETWORK_FAILURES) set.add(key);
+  }
+
+  private resetFailures(): void {
+    this.failedProviders.clear();
+    this.failedHosts.clear();
+    this.networkFailures.clear();
+  }
 
   constructor(
     private readonly repo: LibraryRepo,
@@ -75,6 +90,9 @@ export class MetadataService {
     if (!subj) return this.repo.getMetadata(gameId);
     const current = this.repo.getMetadata(gameId);
     if (current.locked && !opts.force) return current;
+    // A manual refresh always tries every source again.
+    if (opts.force) this.resetFailures();
+    const notes: string[] = [];
     const env: ProviderEnv = { ...this.env, theGamesDbApiKey: this.settings.get('theGamesDbApiKey') };
     const patch: Partial<GameMetadata> = {};
     const sources: string[] = [];
@@ -82,18 +100,26 @@ export class MetadataService {
     let background: string | null = null;
     const screenshots: string[] = [];
     for (const p of this.enabledProviders()) {
-      if (p.online && this.failedProviders.has(p.id)) continue;
+      if (p.online && this.failedProviders.has(p.id)) {
+        notes.push(`${p.label}: skipped (unreachable earlier in this refresh)`);
+        continue;
+      }
       // Wikipedia only fills gaps: skip it when a cover and a description were already found.
       if (p.id === 'wikipedia' && cover && patch.description) continue;
       let res;
       try {
         res = await p.lookup(subj, env);
       } catch (err) {
-        log.warn(`provider ${p.id} failed`, { gameId, error: (err as Error).message });
-        if (p.online && /fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|ECONNRESET|EAI_AGAIN/i.test(String((err as Error).message))) this.failedProviders.add(p.id);
+        log.warn(`provider ${p.id} failed`, { gameId, error: (err as Error).message, cause: String((err as { cause?: unknown }).cause ?? '') });
+        notes.push(`${p.label}: ${(err as Error).message}${(err as { cause?: { code?: string } }).cause?.code ? ` (${(err as { cause?: { code?: string } }).cause!.code})` : ''}`);
+        if (p.online && /fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|ECONNRESET|EAI_AGAIN/i.test(String((err as Error).message))) this.noteNetworkFailure(p.id, this.failedProviders);
         continue;
       }
-      if (!res) continue;
+      if (p.online) this.networkFailures.delete(p.id);
+      if (!res) {
+        if (p.online) notes.push(`${p.label}: no match`);
+        continue;
+      }
       let contributed = false;
       if (res.title && !current.locked && res.title !== subj.title) {
         this.repo.setTitle(gameId, res.title);
@@ -113,7 +139,7 @@ export class MetadataService {
       }
       if (res.title || res.compatibility) contributed = true;
       for (const a of res.artwork ?? []) {
-        if (a.kind === 'cover' && !cover && (cover = await this.fetchArtwork(gameId, a))) contributed = true;
+        if (a.kind === 'cover' && !cover && (cover = await this.fetchArtwork(gameId, a, undefined, (n) => notes.push(`${p.label}: cover ${n}`)))) contributed = true;
         if (a.kind === 'background' && !background && (background = await this.fetchArtwork(gameId, a))) contributed = true;
         if (a.kind === 'screenshot' && screenshots.length < MAX_SCREENSHOTS) {
           const shot = await this.fetchArtwork(gameId, a, screenshots.length);
@@ -134,13 +160,14 @@ export class MetadataService {
       fetchedAt: new Date().toISOString(),
     });
     await this.updateThumb(gameId, next.coverPath);
-    return this.repo.getMetadata(gameId);
+    if (!next.coverPath) log.info('no cover found', { gameId, system: subj.systemId, title: subj.title, notes });
+    return { ...this.repo.getMetadata(gameId), refreshNotes: notes };
   }
 
   async refreshAll(ctx?: JobContext, opts: { onlyMissing: boolean; withoutCover?: boolean } = { onlyMissing: true }): Promise<{ processed: number }> {
     const games = opts.withoutCover ? this.repo.gamesWithoutCover() : opts.onlyMissing ? this.repo.gamesNeedingMetadata(5000) : this.repo.allGames();
-    this.failedProviders.clear();
-    this.failedHosts.clear();
+    this.resetFailures();
+    log.info('metadata refresh', { games: games.length, withoutCover: !!opts.withoutCover, providers: this.enabledProviders().map((p) => p.id) });
     let i = 0;
     for (const g of games) {
       ctx?.throwIfCancelled();
@@ -151,29 +178,45 @@ export class MetadataService {
     return { processed: i };
   }
 
-  private async fetchArtwork(gameId: number, a: ArtworkCandidate, index?: number): Promise<string | null> {
+  private async fetchArtwork(gameId: number, a: ArtworkCandidate, index?: number, why: (reason: string) => void = () => undefined): Promise<string | null> {
     await mkdir(this.artDir, { recursive: true });
     if (!/^https:/i.test(a.location)) {
       if (!existsSync(a.location)) return null;
       // Local art is referenced in place (user-owned files stay where they are).
       return a.location;
     }
-    if (!a.allowedHosts || !hostAllowed(a.location, a.allowedHosts)) return null;
+    if (!a.allowedHosts || !hostAllowed(a.location, a.allowedHosts)) {
+      why('not from an allowed image host');
+      return null;
+    }
     const host = new URL(a.location).host;
-    if (this.failedHosts.has(host)) return null;
+    if (this.failedHosts.has(host)) {
+      why(`skipped (${host} unreachable earlier in this refresh)`);
+      return null;
+    }
     const ext = (extname(new URL(a.location).pathname) || '.jpg').toLowerCase();
     const dest = join(this.artDir, `${gameId}-${a.kind}${index !== undefined ? `-${index}` : ''}${ext}`);
     try {
       const r = await this.env.fetchImpl(a.location, { headers: { 'User-Agent': WIKIMEDIA_USER_AGENT }, redirect: 'manual' });
-      if (!r.ok) return null;
+      const fail = (reason: string) => {
+        log.warn('artwork download failed', { gameId, host, reason });
+        why(reason);
+        return null;
+      };
+      if (!r.ok) return fail(`download refused by ${host} (HTTP ${r.status})`);
+      this.networkFailures.delete(host);
       const type = r.headers.get('content-type') ?? '';
-      if (!/^image\//.test(type)) return null;
+      if (!/^image\//.test(type)) return fail(`download from ${host} was not an image (${type || 'no type'})`);
       const buf = Buffer.from(await r.arrayBuffer());
-      if (buf.length < 512 || buf.length > 25 * 1024 * 1024) return null;
+      if (buf.length < 512 || buf.length > 25 * 1024 * 1024) return fail(`download from ${host} has an unexpected size (${buf.length} bytes)`);
       await writeFile(dest, buf);
       return dest;
     } catch (err) {
-      if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|ECONNRESET|EAI_AGAIN/i.test(String((err as Error).message))) this.failedHosts.add(host);
+      const msg = (err as Error).message;
+      const code = (err as { cause?: { code?: string } }).cause?.code;
+      log.warn('artwork download failed', { gameId, host, error: msg, code });
+      why(`download from ${host} failed: ${msg}${code ? ` (${code})` : ''}`);
+      if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|ECONNRESET|EAI_AGAIN/i.test(String(msg))) this.noteNetworkFailure(host, this.failedHosts);
       return null;
     }
   }

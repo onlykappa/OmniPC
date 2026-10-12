@@ -409,12 +409,13 @@ export class AppContainer {
     const providersVersion = this.settings.getInternal('metadataProvidersVersion', 1);
     // v5/v6: Wikipedia covers were never used (non-free images were filtered
     // out, then image URLs with tracking parameters were rejected), so look
-    // again for every game still without a cover.
-    if (providersVersion < 6) {
+    // again for every game still without a cover. v7: once more, now that one
+    // network hiccup no longer switches a source off for the whole run.
+    if (providersVersion < 7) {
       const cur = this.settings.get('artworkProviders').filter((p) => p !== 'xbox-marketplace');
       const add = ['libretro-thumbnails', 'switch-titledb', 'wikipedia'].filter((p) => !cur.includes(p));
       this.settings.set({ artworkProviders: [...cur, ...add] });
-      this.settings.setInternal('metadataProvidersVersion', 6);
+      this.settings.setInternal('metadataProvidersVersion', 7);
       if (settings.onboardingComplete && settings.metadataOnline && !this.safeMode) {
         const reidentify: SystemId[] = providersVersion < 3 ? ['xbox', 'x360', 'switch'] : [];
         setTimeout(() => {
@@ -429,12 +430,14 @@ export class AppContainer {
     }
     // Identification v2: .zip/.7z outside arcade/system folders are no longer
     // games (they were all listed as Arcade); re-check existing arcade entries.
-    if (this.settings.getInternal('identifyVersion', 1) < 2) {
-      this.settings.setInternal('identifyVersion', 2);
+    // v3: archives in folders of systems whose emulator cannot open them (Xbox 360,
+    // PS2, ...) were listed as that system's games; re-check every archive once.
+    if (this.settings.getInternal('identifyVersion', 1) < 3) {
+      this.settings.setInternal('identifyVersion', 3);
       if (settings.onboardingComplete && this.library.listPaths().length) {
         setTimeout(() => {
           this.jobs.start('library.scan', 'Re-checking archives in your library', async (ctx) => {
-            const r = await this.scanner.scan({ full: false, reidentify: ['arcade'] }, ctx);
+            const r = await this.scanner.scan({ full: false, reidentify: ['arcade'], reidentifyArchives: true }, ctx);
             this.bus.emit('library.changed', { reason: 'scan' });
             return r;
           }, { lockKey: 'library' });

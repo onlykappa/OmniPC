@@ -1,3 +1,4 @@
+import { SystemMark } from '../components/SystemMark';
 import type { GameSummary } from '@shared/models';
 import { api } from '../lib/api';
 import { useLoad } from '../lib/hooks';
@@ -53,9 +54,8 @@ export function HomePage() {
             {data.systems.map((s) => (
               <button key={s.id} className="card system-card" onClick={() => navigate(`/library?system=${s.id}`)}>
                 <span className="stripe" style={{ background: s.accent }} />
-                <span className="tiny faint">{s.manufacturer}</span>
-                <strong style={{ fontSize: 17 }}>{s.name}</strong>
-                <span className="small muted">{s.gameCount} game{s.gameCount === 1 ? '' : 's'}</span>
+                <SystemMark system={s} />
+                <span className="small" title={`${s.manufacturer} ${s.name}`}><strong>{s.name}</strong> <span className="muted">· {s.gameCount} game{s.gameCount === 1 ? '' : 's'}</span></span>
               </button>
             ))}
           </div>

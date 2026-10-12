@@ -52,6 +52,8 @@ export interface GameMetadata {
   sourceId: string | null;
   locked: boolean;
   fetchedAt: string | null;
+  /** Only on the result of a refresh: what each source did (e.g. "Wikipedia: cover download refused (HTTP 403)"). Not stored. */
+  refreshNotes?: string[];
 }
 
 export interface CompatibilityInfo {
