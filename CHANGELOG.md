@@ -2,7 +2,7 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
-## [Unreleased]
+## [1.4.0] - 2026-10-12 — The Multi-PC Update
 
 ### Added
 - **Copy from another PC** (Share & Copy): set up a new PC, or top one up, from a PC that already
