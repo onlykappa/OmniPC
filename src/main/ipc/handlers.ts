@@ -522,6 +522,14 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
     },
     'steam.closeSteam': () => c.steam.closeSteam(),
 
+    'share.status': () => c.share.status(),
+    'share.setEnabled': (on) => c.share.setEnabled(!!on),
+    'share.setSharing': (partial) => c.share.setSharing(partial && typeof partial === 'object' ? partial : {}),
+    'share.openPairing': (minutes) => c.share.openPairing(Number(minutes)),
+    'share.closePairing': () => c.share.closePairing(),
+    'share.revoke': (deviceId) => c.share.revoke(String(deviceId ?? '')),
+    'share.rejectPending': (requestId) => c.share.rejectPending(String(requestId ?? '')),
+
     'dev.adapterReport': async (id): Promise<DevAdapterReport> => {
       const a = c.registry.require(id);
       const p = a.paths();
