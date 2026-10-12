@@ -2,6 +2,16 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Fixed
+- Box art from Wikipedia (used for Xbox 360 and other games without a dedicated art source)
+  never appeared: Wikipedia only returned freely-licensed images, and game covers almost never
+  are. Covers now come through, Wikimedia gets the User-Agent its policy requires, a second
+  search without the console name runs when the first finds nothing, and titles like
+  "Minecraft: Xbox 360 Edition" or "God of War" are no longer mangled before searching. Games
+  still without a cover are looked up again once after updating.
+
 ## [1.4.0] - 2026-10-12 — The Multi-PC Update
 
 ### Added

@@ -13,7 +13,7 @@ import type { JobContext } from '../core/jobs';
 import { logger } from '../core/logger';
 import { hostAllowed } from '../downloads/sources';
 import { SwitchTitleDb, switchTitleDbProvider } from './switchTitleDb';
-import { wikipediaProvider } from './wikipedia';
+import { WIKIMEDIA_USER_AGENT, wikipediaProvider } from './wikipedia';
 import { ALL_PROVIDERS, theGamesDbProvider, type ArtworkCandidate, type MetadataProvider, type MetadataSubject, type ProviderEnv } from './providers';
 import { libretroThumbnailsProvider, type LibretroThumbnails } from './libretroThumbnails';
 
@@ -164,7 +164,7 @@ export class MetadataService {
     const ext = (extname(new URL(a.location).pathname) || '.jpg').toLowerCase();
     const dest = join(this.artDir, `${gameId}-${a.kind}${index !== undefined ? `-${index}` : ''}${ext}`);
     try {
-      const r = await this.env.fetchImpl(a.location, { headers: { 'User-Agent': 'OmniPC-PC' }, redirect: 'manual' });
+      const r = await this.env.fetchImpl(a.location, { headers: { 'User-Agent': WIKIMEDIA_USER_AGENT }, redirect: 'manual' });
       if (!r.ok) return null;
       const type = r.headers.get('content-type') ?? '';
       if (!/^image\//.test(type)) return null;
