@@ -100,3 +100,15 @@ describe('validateGameFile', () => {
     expect((await validateGameFile(p, 'ps2', data.length)).state).toBe('ok');
   });
 });
+
+describe('archives', () => {
+  it('only treats zip/7z as arcade sets in arcade folders', async () => {
+    const zip = (p: string) => write(p, Buffer.from('PK\x05\x06' + '\0'.repeat(18), 'latin1'));
+    zip(join(t.dir, 'arc', 'mame', 'pacman.zip'));
+    zip(join(t.dir, 'arc', 'PS2', 'Some Game.zip'));
+    zip(join(t.dir, 'arc', 'downloads', 'game-patches.zip'));
+    expect((await identifyFile(join(t.dir, 'arc', 'mame', 'pacman.zip'), ['mame'])).systemId).toBe('arcade');
+    expect((await identifyFile(join(t.dir, 'arc', 'PS2', 'Some Game.zip'), ['PS2'])).systemId).toBe('ps2');
+    expect((await identifyFile(join(t.dir, 'arc', 'downloads', 'game-patches.zip'), ['downloads'])).systemId).toBeNull();
+  });
+});

@@ -354,6 +354,20 @@ export class AppContainer {
         }, 25000);
       }
     }
+    // Identification v2: .zip/.7z outside arcade/system folders are no longer
+    // games (they were all listed as Arcade); re-check existing arcade entries.
+    if (this.settings.getInternal('identifyVersion', 1) < 2) {
+      this.settings.setInternal('identifyVersion', 2);
+      if (settings.onboardingComplete && this.library.listPaths().length) {
+        setTimeout(() => {
+          this.jobs.start('library.scan', 'Re-checking archives in your library', async (ctx) => {
+            const r = await this.scanner.scan({ full: false, reidentify: ['arcade'] }, ctx);
+            this.bus.emit('library.changed', { reason: 'scan' });
+            return r;
+          }, { lockKey: 'library' });
+        }, 8000);
+      }
+    }
     // Validation rules changed (v2: N64 .z64 ROMs were mistaken for split ZIP
     // parts): re-check files previously flagged so stale warnings clear.
     if (this.settings.getInternal('validationVersion', 1) < 2) {

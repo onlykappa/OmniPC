@@ -2,6 +2,14 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Fixed
+- Any `.zip`/`.7z` file in a game folder showed up as an Arcade game (for example a
+  "game-patches.zip"). Archives are now Arcade sets only in arcade/MAME/FBNeo folders, zipped
+  games of a system in that system's folder, and ignored elsewhere. Existing entries are
+  re-checked once after updating.
+
 ## [1.3.0] - 2026-10-12 — The Customizability Update
 
 ### Fixed
