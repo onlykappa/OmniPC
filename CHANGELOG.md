@@ -5,9 +5,9 @@ All notable changes to OmniPC. Versions follow [Semantic Versioning](https://sem
 ## [1.4.3] - 2026-10-12
 
 ### Added
-- **System badges.** Home and Systems show each console with a badge: an outline of the kind of
-  device and its short name (PS2, 360, DS…) in the system's colour. These are OmniPC's own
-  drawings, not the manufacturers' logos.
+- **System logos.** Home and Systems show each console's logo (PlayStation, Xbox, Nintendo,
+  Sega…) on its card. The logos are bundled with the app; they are trademarks of their owners,
+  used only to identify the system (sources and licences: `src/renderer/assets/systems/SOURCES.md`).
 
 ### Fixed
 - **Xbox 360 box art still missing for some players.** Checked live: Batman: Arkham Origins, Dark
