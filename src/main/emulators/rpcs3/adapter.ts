@@ -26,6 +26,8 @@ import { runProcess } from '../../platform/exec';
 import { isWindows } from '../../platform/powershell';
 import { splitArgs } from '../pcsx2/adapter';
 import { YamlDocument, checkYaml } from './yaml';
+import type { SettingDef } from '@shared/emulatorSettings';
+import { RPCS3_SETTINGS, rpcs3Optimize, rpcs3SettingPath } from './settingsSchema';
 
 export const RPCS3_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
@@ -272,10 +274,30 @@ export class Rpcs3Adapter implements EmulatorAdapter {
   advancedValues(adv: Record<string, string>): YamlValue[] {
     const out: YamlValue[] = [];
     for (const [key, value] of Object.entries(adv)) {
-      const [section, name] = key.split('|');
-      if (section && name) out.push([[...section.split('/'), name], value]);
+      const path = rpcs3SettingPath(key);
+      if (path) out.push([path, value]);
     }
     return out;
+  }
+
+  settingsSchema(): SettingDef[] {
+    return RPCS3_SETTINGS;
+  }
+
+  async readSettings(): Promise<Record<string, string>> {
+    if (!existsSync(this.configYml())) return {};
+    const doc = await this.loadYaml(this.configYml()).catch(() => YamlDocument.empty());
+    const out: Record<string, string> = {};
+    for (const d of RPCS3_SETTINGS) {
+      const path = rpcs3SettingPath(d.key);
+      const v = path ? doc.get(path) : undefined;
+      if (v !== undefined) out[d.key] = v;
+    }
+    return out;
+  }
+
+  optimize(hw: HardwareProfile): { key: string; value: string; reason: string }[] {
+    return rpcs3Optimize(hw);
   }
 
   /** GuiConfigs/CurrentSettings.ini keys (rpcs3qt/gui_settings.h) that would otherwise block a launch with a dialog. */
