@@ -392,7 +392,7 @@ const SHARE_KINDS: { key: keyof ShareServerStatus['sharing']; label: string; des
   { key: 'games', label: 'Games', description: 'Game files from your library folders.' },
   { key: 'bios', label: 'BIOS, firmware & keys', description: 'Files in OmniPC\'s BIOS folders.' },
   { key: 'saves', label: 'Saves', description: 'A fresh backup of each emulator\'s saves.' },
-  { key: 'setup', label: 'Setup', description: 'Emulators and settings, never passwords, keys or tokens.' },
+  { key: 'setup', label: 'Setup', description: 'Emulators and settings, never passwords or sign-ins.' },
 ];
 
 export function ShareThisPc() {
