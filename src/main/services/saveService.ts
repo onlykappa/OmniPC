@@ -349,7 +349,25 @@ export class SaveService {
   restore(backupId: string): Promise<{ restoredTo: string; safetyBackup: string }> {
     return this.exclusive(async () => {
       const file = this.resolveBackupId(backupId);
-      const entries = await readZip(file);
+      const parsed = parseBackupFileName(basename(file));
+      const from = parsed ? `${basename(file)}${backupId.startsWith('pc:') ? ` from ${backupId.slice(3).split('/')[0]}` : ''}` : basename(file);
+      const { restoredTo, safetyBackup } = await this.restoreUnlocked(file, { fromText: from });
+      return { restoredTo, safetyBackup };
+    });
+  }
+
+  /**
+   * Restores an OmniPC save backup ZIP from any location (e.g. one received
+   * from another PC) with the same rules as `restore`: current saves are
+   * backed up first and only this PC's save folders for that emulator are
+   * written. `expectedEmulatorId` rejects a ZIP made for another emulator.
+   */
+  restoreFromFile(file: string, opts: { fromText: string; expectedEmulatorId?: string }): Promise<{ restoredTo: string; safetyBackup: string; emulatorId: string }> {
+    return this.exclusive(() => this.restoreUnlocked(file, opts));
+  }
+
+  private async restoreUnlocked(file: string, opts: { fromText: string; expectedEmulatorId?: string }): Promise<{ restoredTo: string; safetyBackup: string; emulatorId: string }> {
+      const entries = await readZip(file).catch((e: unknown) => { throw OmniFailure.wrap(e, 'BAD_BACKUP', 'This file is not a readable save backup.'); });
       const manifestEntry = entries.get(MANIFEST_NAME);
       if (!manifestEntry) throw new OmniFailure({ code: 'BAD_BACKUP', whatHappened: 'This file is not an OmniPC save backup.' });
       let manifest: { emulatorId?: unknown; locations?: { index?: unknown; label?: unknown }[] };
@@ -361,6 +379,7 @@ export class SaveService {
       const emuId = typeof manifest.emulatorId === 'string' ? manifest.emulatorId : '';
       const a = this.registry.get(emuId);
       if (!a || !a.manifest.implemented) throw new OmniFailure({ code: 'BAD_BACKUP', whatHappened: `This backup belongs to an emulator OmniPC does not know (${emuId || 'unknown'}).` });
+      if (opts.expectedEmulatorId !== undefined && opts.expectedEmulatorId !== emuId) throw new OmniFailure({ code: 'BAD_BACKUP', whatHappened: 'The save backup is for a different emulator than expected.' });
       const parsed = parseBackupFileName(basename(file));
       if (parsed && parsed.emulatorId !== emuId) throw new OmniFailure({ code: 'BAD_BACKUP', whatHappened: 'The backup file name and its contents do not match.' });
       if (this.runningEmulator() === emuId) throw new OmniFailure({ code: 'EMULATOR_RUNNING', whatHappened: `${a.manifest.name} is running. Close it before restoring saves.` });
@@ -386,10 +405,8 @@ export class SaveService {
         await mkdir(dirname(p.target), { recursive: true });
         await writeFile(p.target, p.data);
       }
-      const from = parsed ? `${basename(file)}${backupId.startsWith('pc:') ? ` from ${backupId.slice(3).split('/')[0]}` : ''}` : basename(file);
-      this.ops.addChange('saves.restore', emuId, `Saves restored from ${from}`);
-      return { restoredTo: [...new Set(plan.map((p) => p.root))].join(', '), safetyBackup: safety[0]?.path ?? 'nothing to back up' };
-    });
+      this.ops.addChange('saves.restore', emuId, `Saves restored from ${opts.fromText}`);
+      return { restoredTo: [...new Set(plan.map((p) => p.root))].join(', '), safetyBackup: safety[0]?.path ?? 'nothing to back up', emulatorId: emuId };
   }
 
   // ---------------------------------------------------------------- status
