@@ -17,8 +17,14 @@
 //     games/<title id>/              per-game cache (cache/cpu = PPTC, cache/shader), updates.json,
 //                                    dlc.json, mods.json, optional per-game Config.json
 //   BIOS/switch                      user-supplied prod.keys / title.keys (+ optional firmware dump)
+//
+// An existing Ryujinx installation outside OmniPC's folder ("use existing installation") keeps
+// its own data folder, the one Ryujinx uses when started on its own: a "portable" folder next
+// to Ryujinx.exe, else %APPDATA%\Ryujinx (see dataDir). OmniPC then passes that folder with -r,
+// so the firmware, saves and settings the user already has are the ones games use.
 
 import { registerContent } from './content';
+import { inspectFirmware, ownDataDirs, type FirmwareInspection } from './firmware';
 import type { SettingDef } from '@shared/emulatorSettings';
 import { RYUJINX_ENCODING, RYUJINX_SETTINGS, decodeRyujinx, encodeRyujinx, ryujinxOptimize } from './settingsSchema';
 import { existsSync, readdirSync, statSync } from 'node:fs';
@@ -103,12 +109,19 @@ export class RyujinxAdapter implements EmulatorAdapter {
     maxResolutionScale: 4,
   };
 
+  /** The executable OmniPC uses for Ryujinx (set by the emulator manager), so an installation outside OmniPC's folder is recognised. */
+  private activeExecutable: string | null = null;
+
   constructor(private readonly app: AppPaths) {}
+
+  setActiveExecutable(executable: string | null): void {
+    this.activeExecutable = executable;
+  }
 
   paths(): AdapterPaths {
     return {
       app: this.app.emulatorAppDir(ID),
-      data: this.app.emulatorDataDir(ID),
+      data: this.dataDir(),
       saves: this.app.emulatorSaveDir(ID),
       bios: this.app.systemBiosDir('switch'),
       cache: this.app.emulatorCacheDir(ID),
@@ -127,11 +140,76 @@ export class RyujinxAdapter implements EmulatorAdapter {
     return join(this.paths().data, 'bis', 'system', 'Contents', 'registered');
   }
 
+  /**
+   * The data folder Ryujinx runs with. OmniPC's own installation uses OmniPC's folder. An
+   * installation outside it uses its own folder (portable, else %APPDATA%\Ryujinx) once that
+   * folder holds Ryujinx data, unless only OmniPC's folder has usable firmware (an older setup
+   * that installed firmware through OmniPC keeps working).
+   */
+  dataDir(executable: string | null = this.activeExecutable): string {
+    const managed = this.app.emulatorDataDir(ID);
+    const own = this.ownDataDir(executable);
+    if (!own) return managed;
+    const isRyujinxData = existsSync(join(own, 'Config.json')) || existsSync(join(own, 'bis'));
+    if (!isRyujinxData) return managed;
+    if (inspectFirmware(own).loadable === 0 && inspectFirmware(managed).loadable > 0) return managed;
+    return own;
+  }
+
+  /** Whether Ryujinx runs with the user's own data folder rather than OmniPC's. */
+  usesOwnDataDir(): boolean {
+    return normalize(this.dataDir()).toLowerCase() !== normalize(this.app.emulatorDataDir(ID)).toLowerCase();
+  }
+
+  /** The folder an installation outside OmniPC's folder uses on its own (null for OmniPC's installation). */
+  private ownDataDir(executable: string | null): string | null {
+    if (!executable || !this.isExternal(executable)) return null;
+    const appData = process.env.APPDATA ?? join(homedir(), 'AppData', 'Roaming');
+    return ownDataDirs(dirname(executable), appData)[0]?.dir ?? null;
+  }
+
+  /** True when the executable is not the one OmniPC installed in its own emulator folder. */
+  private isExternal(executable: string): boolean {
+    const app = normalize(this.app.emulatorAppDir(ID)).toLowerCase();
+    const exeDir = normalize(dirname(executable)).toLowerCase();
+    return exeDir !== app && !exeDir.startsWith(app + (process.platform === 'win32' ? '\\' : '/'));
+  }
+
+  /**
+   * Firmware as seen by the Ryujinx OmniPC starts. OmniPC always passes its own data folder
+   * ("-r", see buildLaunch), so that folder is the one games started from OmniPC use. For an
+   * installation outside OmniPC's folder, the data folder that Ryujinx uses when started on its
+   * own (portable folder or %APPDATA%\Ryujinx) is inspected too, so firmware installed there is
+   * reported where it is instead of as "not installed". Read-only.
+   */
+  firmwareReport(executable: string | null = this.activeExecutable): { active: FirmwareInspection; own: (FirmwareInspection & { label: string }) | null } {
+    const active = inspectFirmware(this.dataDir(executable));
+    let own: (FirmwareInspection & { label: string }) | null = null;
+    if (executable && this.isExternal(executable)) {
+      const appData = process.env.APPDATA ?? join(homedir(), 'AppData', 'Roaming');
+      const [first] = ownDataDirs(dirname(executable), appData);
+      if (first && normalize(first.dir).toLowerCase() !== normalize(this.dataDir(executable)).toLowerCase()) own = { ...inspectFirmware(first.dir), label: first.label };
+    }
+    return { active, own };
+  }
+
+  /** Changes whenever the result of the firmware check could change (stale health results are re-tested). */
+  healthFingerprint(executable: string): string {
+    const r = this.firmwareReport(executable);
+    const part = (f: FirmwareInspection) => {
+      const st = existsSync(f.registeredDir) ? statSync(f.registeredDir) : null;
+      return `${f.registeredDir}|${st ? Math.round(st.mtimeMs) : 'none'}|${f.state}|${f.loadable}`;
+    };
+    return [normalize(executable).toLowerCase(), part(r.active), r.own ? part(r.own) : '-', existsSync(join(this.keysDir(), 'prod.keys')) ? 'keys' : 'nokeys'].join('#');
+  }
+
   saveDir(): string {
     return join(this.paths().data, 'bis', 'user', 'save');
   }
 
   logsDir(): string {
+    // Ryujinx writes Logs next to its executable when started with -r (AppDataManager.SetUpLogsDir).
+    if (this.activeExecutable && this.isExternal(this.activeExecutable)) return join(dirname(this.activeExecutable), 'Logs');
     return join(this.paths().app, 'Logs');
   }
 
@@ -321,6 +399,8 @@ export class RyujinxAdapter implements EmulatorAdapter {
         continue;
       }
       const dst = join(this.keysDir(), name);
+      // The user's own Ryujinx folder: keys already there are theirs and are never replaced.
+      if (existsSync(dst) && this.usesOwnDataDir()) continue;
       if (existsSync(dst) && (await readFile(dst)).equals(await readFile(src))) continue;
       await mkdir(this.keysDir(), { recursive: true });
       await copyFile(src, dst);
@@ -488,7 +568,7 @@ export class RyujinxAdapter implements EmulatorAdapter {
         await this.ensureDirs();
         await this.syncKeys().catch(() => null);
       },
-      notes: ['Opens Ryujinx with the OmniPC-managed data folder (keys, firmware, saves, settings).'],
+      notes: [this.usesOwnDataDir() ? `Opens Ryujinx with its own data folder ${this.paths().data} (keys, firmware, saves, settings).` : 'Opens Ryujinx with the OmniPC-managed data folder (keys, firmware, saves, settings).'],
     };
   }
 
@@ -523,8 +603,7 @@ export class RyujinxAdapter implements EmulatorAdapter {
     checks.push({ label: 'Startup dialogs suppressed', ok: cfg.exists && prompts.length === 0, detail: prompts.length ? `Would show a dialog: ${prompts.map((d) => d.key).join(', ')}` : cfg.exists ? 'Update check, exit confirmation and debug prompts are off' : 'Config.json missing' });
     const keys = existsSync(join(this.keysDir(), 'prod.keys'));
     checks.push({ label: 'prod.keys installed', ok: keys, detail: keys ? join(this.keysDir(), 'prod.keys') : `Missing: Ryujinx shows a "keys not found" error instead of starting the game. Put prod.keys in ${this.paths().bios}.` });
-    const fw = countFirmwareNcas(this.firmwareDir());
-    checks.push({ label: 'Firmware installed', ok: fw > 0, detail: fw > 0 ? `${fw} system NCAs in ${this.firmwareDir()}` : 'No firmware installed; most games will not start. Install it once with Tools > Install Firmware in Ryujinx.' });
+    checks.push(firmwareCheck(this.firmwareReport(executable)));
     const local = join(dirname(executable), 'Config.json');
     if (existsSync(local)) checks.push({ label: 'No Config.json next to Ryujinx.exe', ok: false, detail: `${local} overrides the OmniPC-managed settings` });
     // Ryujinx.exe has no flag that prints and exits: unknown arguments are treated as a game path
@@ -610,20 +689,27 @@ export class RyujinxAdapter implements EmulatorAdapter {
       : 'Required. Dump prod.keys (and optionally title.keys) from your own Switch (e.g. with Lockpick_RCM) and put them in this folder. OmniPC never downloads keys.';
 
     // Firmware
-    const fw = countFirmwareNcas(this.firmwareDir());
+    const { active, own } = this.firmwareReport();
+    const usable = active.loadable > 0;
     const srcDir = this.firmwareSourceDir();
     const srcFiles = existsSync(srcDir) ? await readdir(srcDir).catch(() => [] as string[]) : [];
     const srcNcas = srcFiles.filter((n) => /\.nca$/i.test(n)).length;
     const srcZip = srcFiles.find((n) => /\.zip$/i.test(n));
-    const fwFiles: BiosStatus['files'] = fw > 0 ? [{ path: this.firmwareDir(), sizeBytes: 0, valid: true, description: `${fw} installed system NCAs` }] : [];
+    const fwFiles: BiosStatus['files'] = [];
+    if (active.state !== 'missing') fwFiles.push({ path: active.registeredDir, sizeBytes: active.totalBytes, valid: usable, description: `${active.summary}${active.state === 'inconclusive' ? `: ${active.evidence.slice(1).join('; ')}` : ''}` });
+    if (own && own.state !== 'missing') fwFiles.push({ path: own.registeredDir, sizeBytes: own.totalBytes, valid: false, description: `${own.summary} in Ryujinx's own data folder (${own.label}); not used by games started from OmniPC` });
     if (srcNcas || srcZip) fwFiles.push({ path: srcZip ? join(srcDir, srcZip) : srcDir, sizeBytes: 0, valid: true, description: srcZip ? 'Firmware package to install' : `${srcNcas} firmware NCAs to install` });
-    const fwNote = fw > 0
+    const fwNote = active.state === 'installed'
       ? 'Firmware is installed in Ryujinx (bis/system/Contents/registered). To update it, install a newer firmware dump with Tools > Install Firmware.'
-      : `Required for most games. Dump the firmware from your own Switch (e.g. with TegraExplorer or Lockpick/DBI) and install it once in Ryujinx: open Ryujinx from OmniPC, then Tools > Install Firmware > Install a firmware from XCI or ZIP / from a directory. Ryujinx has no silent install option; you can keep the dump in ${srcDir}. prod.keys must be installed first. OmniPC never downloads firmware.`;
+      : usable
+        ? `Firmware: ${active.summary}. Ryujinx will load what is there, but some of it looks incomplete or misplaced; if games fail to start, reinstall the firmware with Tools > Install Firmware in Ryujinx (opened from OmniPC).`
+        : own && own.loadable > 0
+          ? `Firmware: ${own.summary} in ${own.dataDir} (${own.label}), the folder Ryujinx uses when you start it yourself. OmniPC starts Ryujinx with its own data folder (${this.paths().data}), which has no usable firmware, so games started from OmniPC cannot use it. Open Ryujinx from OmniPC and install the same firmware once with Tools > Install Firmware; OmniPC never copies firmware itself.`
+          : `Required for most games. Dump the firmware from your own Switch (e.g. with TegraExplorer or Lockpick/DBI) and install it once in Ryujinx: open Ryujinx from OmniPC, then Tools > Install Firmware > Install a firmware from XCI or ZIP / from a directory. Ryujinx has no silent install option; you can keep the dump in ${srcDir}. prod.keys must be installed first. OmniPC never downloads firmware.`;
 
     return [
       { ...base, label: 'Switch keys (prod.keys, title.keys)', required: true, requirementKind: 'keys', expectedLocation: bios, status: keysStatus, files: keyFiles, note: keysNote },
-      { ...base, label: 'Switch firmware', required: true, requirementKind: 'firmware', expectedLocation: this.firmwareDir(), status: fw > 0 ? 'found' : 'missing', files: fwFiles, note: fwNote },
+      { ...base, label: 'Switch firmware', required: true, requirementKind: 'firmware', expectedLocation: this.firmwareDir(), status: usable ? 'found' : active.state === 'inconclusive' ? 'invalid' : 'missing', files: fwFiles, note: fwNote },
     ];
   }
 
@@ -689,10 +775,11 @@ export class RyujinxAdapter implements EmulatorAdapter {
     const hasKeys = existsSync(join(keys, 'prod.keys'));
     return {
       id, source: ID, label, path: dir,
-      details: [`Settings: ${join(dir, 'Config.json')}`, `Saves: ${saves}`, `Keys: ${hasKeys ? join(keys, 'prod.keys') : 'none'}`, `Firmware: ${countFirmwareNcas(join(dir, 'bis', 'system', 'Contents', 'registered'))} NCAs`, `Game folders: ${gameDirs.join('; ') || 'none'}`],
+      details: [`Settings: ${join(dir, 'Config.json')}`, `Saves: ${saves}`, `Keys: ${hasKeys ? join(keys, 'prod.keys') : 'none'}`, `Firmware: ${inspectFirmware(dir).summary}`, `Game folders: ${gameDirs.join('; ') || 'none'}`],
       importable: { settings: false, saves: existsSync(saves), bios: hasKeys, romPaths: romPaths.length > 0, useInstallation: false },
       romPaths,
-      saveCopies: existsSync(saves) ? [{ from: saves, to: this.saveDir(), label: 'Switch game saves' }] : [],
+      // Nothing to copy when Ryujinx already runs with this folder.
+      saveCopies: existsSync(saves) && normalize(saves).toLowerCase() !== normalize(this.saveDir()).toLowerCase() ? [{ from: saves, to: this.saveDir(), label: 'Switch game saves' }] : [],
       biosDirs: hasKeys ? [{ dir: keys, systemId: 'switch' }] : [],
     };
   }
@@ -717,6 +804,17 @@ export function ryujinxResolutionScale(hw: HardwareProfile | null, preset: Perfo
   const display = hw?.displays.find((d) => d.primary) ?? hw?.displays[0];
   if (display && preset !== 'maximum') scale = Math.min(scale, display.height >= 2000 ? 3 : display.height >= 1400 ? 2 : 1);
   return Math.max(1, Math.min(4, scale));
+}
+
+/** The "Firmware installed" health-test line (see firmwareReport). */
+export function firmwareCheck(r: { active: FirmwareInspection; own: (FirmwareInspection & { label: string }) | null }): SmokeTestResult['checks'][number] {
+  const { active, own } = r;
+  if (active.loadable > 0) return { label: 'Firmware installed', ok: true, detail: `Firmware: ${active.summary} in ${active.registeredDir}${active.state === 'inconclusive' ? ` (${active.evidence.slice(1).join('; ')})` : ''}` };
+  if (own && own.loadable > 0) {
+    return { label: 'Firmware installed', ok: false, detail: `Firmware: ${own.summary} in ${own.registeredDir} (${own.label}), which Ryujinx uses when you start it yourself. OmniPC starts Ryujinx with its own data folder, where firmware is ${active.summary.charAt(0).toLowerCase()}${active.summary.slice(1)} (${active.registeredDir}), so games started from OmniPC cannot use it.` };
+  }
+  if (active.state === 'inconclusive') return { label: 'Firmware installed', ok: false, detail: `Firmware: ${active.summary}. ${active.evidence.slice(1).join('; ')}` };
+  return { label: 'Firmware installed', ok: false, detail: `Firmware: ${active.summary} in ${active.registeredDir}; most games will not start. Install it once with Tools > Install Firmware in Ryujinx.` };
 }
 
 /** Counts installed firmware NCAs (<id>.nca directories holding "00", ContentManager.SaveNca / LoadEntries). */

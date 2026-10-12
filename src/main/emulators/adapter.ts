@@ -124,6 +124,14 @@ export interface EmulatorAdapter {
   buildUiLaunch(executable: string): LaunchCommand;
 
   smokeTest(executable: string): Promise<SmokeTestResult>;
+  /**
+   * Optional: a value that changes whenever the smoke test result could change without OmniPC
+   * knowing (files the user adds outside OmniPC). A stored health result whose fingerprint no
+   * longer matches is re-tested instead of being shown as current.
+   */
+  healthFingerprint?(executable: string): string;
+  /** Optional: told which executable OmniPC uses (it may be an installation outside OmniPC's folder). */
+  setActiveExecutable?(executable: string | null): void;
   /** Emulator-specific environment checks beyond the generic ones. */
   validateEnvironment(hw: HardwareProfile | null, executable: string | null): Promise<Finding[]>;
 

@@ -84,7 +84,9 @@ export type BeforeEmulatorChangeHook = (emulatorId: string, what: 'update' | 'ro
 export class EmulatorManager {
   private beforeChange: BeforeEmulatorChangeHook | null = null;
 
-  constructor(private readonly d: EmulatorManagerDeps) {}
+  constructor(private readonly d: EmulatorManagerDeps) {
+    for (const a of d.registry.implemented()) a.setActiveExecutable?.(this.executableFor(a.manifest.id));
+  }
 
   setBeforeChangeHook(hook: BeforeEmulatorChangeHook | null): void {
     this.beforeChange = hook;
@@ -106,8 +108,24 @@ export class EmulatorManager {
 
   executableFor(id: string): string | null {
     const row = this.d.emuRepo.get(id);
-    if (row.custom_executable) return row.custom_executable;
-    return row.executable;
+    const exe = row.custom_executable || row.executable;
+    this.d.registry.get(id)?.setActiveExecutable?.(exe);
+    return exe;
+  }
+
+  /**
+   * Re-runs the health test when its stored result no longer describes this PC: the
+   * executable or the files the adapter checks changed since (see healthFingerprint), or the
+   * result predates fingerprints. Returns true when it re-tested.
+   */
+  async refreshStaleHealth(id: string): Promise<boolean> {
+    const a = this.d.registry.get(id);
+    const exe = this.executableFor(id);
+    if (!a?.healthFingerprint || !exe || !existsSync(exe) || this.d.emuRepo.get(id).install_state === 'not_installed') return false;
+    const stored = this.d.settings.getInternal<string | null>(`healthFingerprint.${id}`, null);
+    if (stored === a.healthFingerprint(exe)) return false;
+    await this.healthTest(id);
+    return true;
   }
 
   isInstalled(id: string): boolean {
@@ -388,6 +406,7 @@ export class EmulatorManager {
       if (a.prepareInstall) for (const n of await a.prepareInstall(p.app)) ctx.message(n);
       this.d.emuRepo.addVersion({ emulator_id: id, version: rel.version, installed_at: new Date().toISOString(), source_url: rel.url, sha256: dl.sha256, status: 'active', path: p.app });
       this.d.emuRepo.setInstalled(id, { state: 'installed', version: rel.version, installDir: p.app, executable: exe });
+      this.executableFor(id);
       this.d.emuRepo.setLatest(id, rel.version);
       this.d.ops.addChange(reason === 'update' ? 'emulator.updated' : 'emulator.installed', id, reason === 'update' ? `${a.manifest.name} updated ${previousVersion ?? '?'} → ${rel.version}` : `${a.manifest.name} ${rel.version} installed`, { version: rel.version, previousVersion, sha256: dl.sha256 });
       ctx.stepDone(exe);
@@ -456,6 +475,7 @@ export class EmulatorManager {
       return { ran: false, ok: false, checks: [{ label: 'Installed', ok: false, detail: 'Not installed' }] };
     }
     const r = await a.smokeTest(exe);
+    if (a.healthFingerprint) this.d.settings.setInternal(`healthFingerprint.${id}`, a.healthFingerprint(exe));
     const failed = r.checks.filter((c) => !c.ok);
     this.d.emuRepo.setHealth(id, failed.length ? 'error' : r.ran ? 'ready' : 'ready', failed.length ? failed.map((c) => `${c.label}: ${c.detail}`).join('; ') : r.ran ? null : 'Launch test skipped (not running on Windows)');
     if (ctx) {
@@ -496,6 +516,7 @@ export class EmulatorManager {
       this.d.emuRepo.setVersionStatus(cand.id, 'active', p.app);
       const exe = await a.findExecutable(p.app);
       this.d.emuRepo.setInstalled(id, { state: 'installed', version: cand.version, installDir: p.app, executable: exe });
+      this.executableFor(id);
       // Restore the configuration snapshot taken right before the update, if any.
       const pre = this.d.ops.backups(id).find((b) => b.reason === 'pre-update' && b.label.includes(row.version ?? '\u0000'));
       if (pre) {
@@ -580,6 +601,9 @@ export class EmulatorManager {
     if (!existsSync(executable)) throw new OmniFailure({ code: 'EXE_NOT_FOUND', whatHappened: `${executable} does not exist.` });
     const version = await a.detectVersion(executable);
     this.d.emuRepo.setInstalled(id, { state: 'external', version, installDir: join(executable, '..'), executable });
+    this.executableFor(id);
+    // The installation may bring its own settings file (e.g. Ryujinx's %APPDATA%\Ryujinx): back it up first.
+    await this.d.backups.create(id, 'Before using existing installation', 'pre-settings', a.configTargets()).catch(() => null);
     await a.applyConfig(this.configInput(id), 'all');
     this.d.ops.addChange('emulator.external', id, `${a.manifest.name}: using existing installation ${executable}`);
     await this.healthTest(id);
@@ -598,6 +622,7 @@ export class EmulatorManager {
 
   saveCustom(id: string, c: CustomEmulatorSettings): void {
     this.d.emuRepo.saveCustom(id, c);
+    this.executableFor(id);
     this.d.ops.addChange('config.custom', id, `${this.d.registry.require(id).manifest.name}: custom settings ${c.customConfigActive || c.customExecutable || c.customArgs ? 'enabled' : 'cleared'}`);
   }
 

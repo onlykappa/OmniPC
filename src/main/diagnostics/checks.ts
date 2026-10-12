@@ -240,6 +240,8 @@ export const CHECKS: HealthCheck[] = [
       const out: Finding[] = [];
       for (const a of d.registry.implemented()) {
         const id = a.manifest.id;
+        // A stored result from before the user changed something (e.g. installed firmware) is re-tested, not reported.
+        await d.emulators.refreshStaleHealth(id).catch(() => false);
         const st = d.emulators.status(id);
         if (st.installState === 'not_installed') continue;
         const subject = { kind: 'emulator' as const, id, label: a.manifest.name };
