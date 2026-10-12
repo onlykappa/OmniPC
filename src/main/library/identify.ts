@@ -378,6 +378,23 @@ export async function identifyFile(path: string, folderChain: string[]): Promise
   const candidates = systemsForExtension(ext).map((s) => s.id);
   const result: Identification = { systemId: null, title: parsed.title, baseTitle: parsed.baseTitle, region: parsed.region, serial: null, discNumber: parsed.discNumber, confidence: 'low', evidence, internalTitle: null };
   if (candidates.length === 0) return result;
+  // .zip/.7z are only Arcade sets inside an arcade folder. In another system's
+  // folder they are that system's (zipped) game; anywhere else they are just
+  // archives (patches, downloads...) and not games.
+  if (ext === '.zip' || ext === '.7z') {
+    const arcade = hinted.find((h) => h === 'arcade');
+    const other = hinted.find((h) => h !== 'arcade');
+    if (arcade) {
+      result.systemId = 'arcade';
+      result.confidence = 'medium';
+      evidence.push('Archive in an arcade folder');
+    } else if (other) {
+      result.systemId = other;
+      result.confidence = 'medium';
+      evidence.push(`Archive in a ${getSystem(other)?.name ?? other} folder`);
+    }
+    return result;
+  }
 
   const apply = (s: Sniff) => {
     result.systemId = s.systemId;

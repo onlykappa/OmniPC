@@ -243,12 +243,7 @@ export class SaveService {
     let name = backupFileName(id, now, kind);
     for (let i = 1; existsSync(join(target.dir, name)); i++) name = backupFileName(id, new Date(now.getTime() + i), kind);
     const dest = join(target.dir, name);
-    const zip = new yazl.ZipFile();
-    const manifest = { app: 'OmniPC', emulatorId: id, createdAt: now.toISOString(), kind, reason: kind, computer: this.computer, fingerprint: fp, locations: locs.map((l, i) => ({ index: i, label: l.label, path: l.path })) };
-    zip.addBuffer(Buffer.from(JSON.stringify(manifest, null, 2)), MANIFEST_NAME);
-    for (const [i, { l, files }] of perLoc.entries()) {
-      for (const f of files) zip.addFile(f.path, `${i}/${relative(l.path, f.path).replace(/\\/g, '/')}`);
-    }
+    const { zip, manifest } = this.buildZip(id, kind, now, fp, perLoc);
     await writeZipAtomically(zip, dest);
     const s = await stat(dest);
     this.setFingerprint(id, { fp, file: dest });
@@ -256,6 +251,36 @@ export class SaveService {
     this.ops.addChange('saves.backup', id, `${label} backed up${kind === 'manual' ? '' : ` (${KIND_TEXT[kind]})`}`);
     if (isAutomaticKind(kind)) await this.prune(target.dir, id).catch((e) => log.warn('save backup retention failed', { error: String(e) }));
     return { id: target.location === 'destination' ? `pc:${this.computer}/${name}` : name, emulatorId: id, label, path: dest, createdAt: manifest.createdAt, sizeBytes: s.size, kind, computer: this.computer, thisComputer: true, location: target.location };
+  }
+
+  private buildZip(id: string, kind: SaveBackupKind, now: Date, fp: SaveFingerprint, perLoc: { l: { label: string; path: string }; files: { path: string }[] }[]) {
+    const zip = new yazl.ZipFile();
+    const manifest = { app: 'OmniPC', emulatorId: id, createdAt: now.toISOString(), kind, reason: kind, computer: this.computer, fingerprint: fp, locations: perLoc.map(({ l }, i) => ({ index: i, label: l.label, path: l.path })) };
+    zip.addBuffer(Buffer.from(JSON.stringify(manifest, null, 2)), MANIFEST_NAME);
+    for (const [i, { l, files }] of perLoc.entries()) {
+      for (const f of files) zip.addFile(f.path, `${i}/${relative(l.path, f.path).replace(/\\/g, '/')}`);
+    }
+    return { zip, manifest };
+  }
+
+  /**
+   * Writes one emulator's saves, in the save backup ZIP format, to `dest`
+   * (used to send saves to another PC). It is not recorded as a backup of
+   * this PC: no fingerprint, change entry or retention. Null when the
+   * emulator has no save files. `fileName` is the backup name to use.
+   */
+  exportZip(emulatorId: string, dest: string): Promise<{ fileName: string; fileCount: number } | null> {
+    return this.exclusive(async () => {
+      const a = this.registry.get(emulatorId);
+      if (!a || !a.manifest.implemented) return null;
+      const perLoc = await Promise.all(a.saveLocations().filter((l) => existsSync(l.path)).map(async (l) => ({ l, files: await walk(l.path) })));
+      const all = perLoc.flatMap((x) => x.files);
+      if (!all.length) return null;
+      const now = new Date();
+      const { zip } = this.buildZip(emulatorId, 'manual', now, fingerprintOf(all), perLoc);
+      await writeZipAtomically(zip, dest);
+      return { fileName: backupFileName(emulatorId, now, 'manual'), fileCount: all.length };
+    });
   }
 
   private fingerprints(): Record<string, FingerprintRecord> {
@@ -349,6 +374,24 @@ export class SaveService {
   restore(backupId: string): Promise<{ restoredTo: string; safetyBackup: string }> {
     return this.exclusive(async () => {
       const file = this.resolveBackupId(backupId);
+      const parsed = parseBackupFileName(basename(file));
+      const from = parsed ? `${basename(file)}${backupId.startsWith('pc:') ? ` from ${backupId.slice(3).split('/')[0]}` : ''}` : basename(file);
+      const { restoredTo, safetyBackup } = await this.restoreUnlocked(file, { fromText: from });
+      return { restoredTo, safetyBackup };
+    });
+  }
+
+  /**
+   * Restores an OmniPC save backup ZIP from any location (e.g. one received
+   * from another PC) with the same rules as `restore`: current saves are
+   * backed up first and only this PC's save folders for that emulator are
+   * written. `expectedEmulatorId` rejects a ZIP made for another emulator.
+   */
+  restoreFromFile(file: string, opts: { fromText: string; expectedEmulatorId?: string }): Promise<{ restoredTo: string; safetyBackup: string; emulatorId: string }> {
+    return this.exclusive(() => this.restoreUnlocked(file, opts));
+  }
+
+  private async restoreUnlocked(file: string, opts: { fromText: string; expectedEmulatorId?: string }): Promise<{ restoredTo: string; safetyBackup: string; emulatorId: string }> {
       const entries = await readZip(file);
       const manifestEntry = entries.get(MANIFEST_NAME);
       if (!manifestEntry) throw new OmniFailure({ code: 'BAD_BACKUP', whatHappened: 'This file is not an OmniPC save backup.' });
@@ -361,6 +404,7 @@ export class SaveService {
       const emuId = typeof manifest.emulatorId === 'string' ? manifest.emulatorId : '';
       const a = this.registry.get(emuId);
       if (!a || !a.manifest.implemented) throw new OmniFailure({ code: 'BAD_BACKUP', whatHappened: `This backup belongs to an emulator OmniPC does not know (${emuId || 'unknown'}).` });
+      if (opts.expectedEmulatorId !== undefined && opts.expectedEmulatorId !== emuId) throw new OmniFailure({ code: 'BAD_BACKUP', whatHappened: 'The save backup is for a different emulator than expected.' });
       const parsed = parseBackupFileName(basename(file));
       if (parsed && parsed.emulatorId !== emuId) throw new OmniFailure({ code: 'BAD_BACKUP', whatHappened: 'The backup file name and its contents do not match.' });
       if (this.runningEmulator() === emuId) throw new OmniFailure({ code: 'EMULATOR_RUNNING', whatHappened: `${a.manifest.name} is running. Close it before restoring saves.` });
@@ -386,10 +430,8 @@ export class SaveService {
         await mkdir(dirname(p.target), { recursive: true });
         await writeFile(p.target, p.data);
       }
-      const from = parsed ? `${basename(file)}${backupId.startsWith('pc:') ? ` from ${backupId.slice(3).split('/')[0]}` : ''}` : basename(file);
-      this.ops.addChange('saves.restore', emuId, `Saves restored from ${from}`);
-      return { restoredTo: [...new Set(plan.map((p) => p.root))].join(', '), safetyBackup: safety[0]?.path ?? 'nothing to back up' };
-    });
+      this.ops.addChange('saves.restore', emuId, `Saves restored from ${opts.fromText}`);
+      return { restoredTo: [...new Set(plan.map((p) => p.root))].join(', '), safetyBackup: safety[0]?.path ?? 'nothing to back up', emulatorId: emuId };
   }
 
   // ---------------------------------------------------------------- status

@@ -9,6 +9,7 @@ import { api } from '../lib/api';
 import { describePad, pads } from '../lib/gamepad';
 import { useStore } from '../lib/store';
 import { Button, Chip, JobSteps, Panel, Segmented, Spinner } from '../components/ui';
+import { CopyFromPc } from './Share';
 
 const CHOICES: { id: SystemId; note?: string }[] = [
   { id: 'ps2' }, { id: 'gc' }, { id: 'wii' }, { id: 'ps1' }, { id: 'ps3' }, { id: 'psp' }, { id: 'wiiu' }, { id: 'nds' }, { id: 'xbox' }, { id: 'x360' }, { id: 'snes', note: 'Retro systems (RetroArch)' }, { id: 'ps4' }, { id: 'ps5', note: 'experimental' },
@@ -27,6 +28,7 @@ export function Onboarding(props: { onDone: () => void }) {
   const job = useStore((s) => (jobId ? s.jobs[jobId] : undefined));
   const [, tick] = useState(0);
   const toast = useStore((s) => s.toast);
+  const [copyMode, setCopyMode] = useState(false);
 
   useEffect(() => {
     if (step === 1 && !hw && !scanning) {
@@ -44,6 +46,19 @@ export function Onboarding(props: { onDone: () => void }) {
   const prev = () => setStep((s) => Math.max(0, s - 1));
   const connected = step === 4 ? pads() : [];
 
+  if (copyMode) {
+    const finish = async () => { await api('app.settings.set', { onboardingComplete: true }); props.onDone(); };
+    return (
+      <div className="onboarding">
+        <div className="frame" style={{ maxWidth: 1100, width: '100%' }}>
+          <div className="row"><Button variant="ghost" onClick={() => setCopyMode(false)}>← Back</Button><h2>Copy from another PC</h2></div>
+          <p className="small muted">Only your own PCs on your home network can connect, after you pair them with a code. Games, BIOS, keys and saves never leave your devices.</p>
+          <CopyFromPc preselect={{ setup: true, bios: true }} onFinished={() => void finish()} finishLabel="Start using OmniPC" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="onboarding">
       <div className="frame">
@@ -55,6 +70,10 @@ export function Onboarding(props: { onDone: () => void }) {
             <p className="muted" style={{ fontSize: 18, maxWidth: 720 }}>OmniPC installs and configures emulators for you, organises your library with artwork, maps your controller once for everything, and diagnoses and repairs problems on its own.</p>
             <p className="small faint">You supply your own games and console BIOS files. OmniPC never downloads games, BIOS, firmware or keys.</p>
             <div className="row"><Button variant="primary" size="big" onClick={next} autoFocus>Get started</Button><Button onClick={async () => { await api('app.settings.set', { onboardingComplete: true }); props.onDone(); }}>Skip setup</Button></div>
+            <button className="check-tile" style={{ maxWidth: 720 }} onClick={() => setCopyMode(true)}>
+              <span style={{ fontSize: 22 }}>⇄</span>
+              <div className="grow"><strong>Copy everything from another PC on my network</strong><div className="small faint">Already use OmniPC on another PC? Bring over its setup, emulators and BIOS (and games or saves if you like).</div></div>
+            </button>
           </div>
         )}
         {step === 1 && (

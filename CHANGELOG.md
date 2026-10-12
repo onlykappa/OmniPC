@@ -2,6 +2,28 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
+## [1.4.0] - 2026-10-12 — The Multi-PC Update
+
+### Added
+- **Copy from another PC** (Share & Copy): set up a new PC, or top one up, from a PC that already
+  has everything, over your home network. Find the other PC, pair once with a 6-digit code, see
+  its games (by system, with covers and sizes), BIOS/firmware/keys, saves and setup, and tick
+  exactly what you want. Items already on this PC are marked. Every file is checked (size and
+  SHA-256) and copies resume if interrupted; nothing on this PC is overwritten (a differing file
+  is kept and the copy saved alongside). Games go into a library folder and are scanned,
+  BIOS/keys into the right BIOS folders, saves are restored after backing up the current ones,
+  and "Setup" brings over settings, per-game profiles and the controller setup and installs the
+  same emulators from their official sources. Passwords, sign-ins and API keys are never copied.
+- **Share this PC**: off by default; only PCs on your home network that you paired can connect,
+  only the kinds of files you choose are shared, and paired PCs can be removed any time.
+- First-run wizard: **Copy everything from another PC on my network**.
+
+### Fixed
+- Any `.zip`/`.7z` file in a game folder showed up as an Arcade game (for example a
+  "game-patches.zip"). Archives are now Arcade sets only in arcade/MAME/FBNeo folders, zipped
+  games of a system in that system's folder, and ignored elsewhere. Existing entries are
+  re-checked once after updating.
+
 ## [1.3.0] - 2026-10-12 — The Customizability Update
 
 ### Fixed

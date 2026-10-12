@@ -128,6 +128,8 @@ await go('/doctor', 2500); await shot('doctor');
 await go('/doctor/games', 2500); await shot('fix-games');
 await go('/settings', 2000); await panel('#achievements', 'retroachievements'); await panel('#saves', 'save-backups'); await panel('#steam', 'steam-panel');
 await go('/controllers'); await shot('controllers');
+await go('/share', 2000); await shot('share-copy');
+await page.getByText('Share this PC', { exact: true }).first().click().catch(() => undefined); await page.waitForTimeout(800); await shot('share-this-pc');
 await go('/systems'); await shot('systems');
 await inv('app.setConsoleMode', true); await go('/home', 2500); await shot('console-mode');
 await app.close();

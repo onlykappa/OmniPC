@@ -522,6 +522,24 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
     },
     'steam.closeSteam': () => c.steam.closeSteam(),
 
+    // ------------------------------------------------- copy from another PC
+    'share.discover': () => c.shareCopy.discover(),
+    'share.knownPcs': () => c.shareCopy.knownPcs(),
+    'share.connect': (address, port) => c.shareCopy.connect(address, port),
+    'share.pairStart': (address, port) => c.shareCopy.pairStart(address, port),
+    'share.pairFinish': (requestId, code) => c.shareCopy.pairFinish(requestId, code),
+    'share.forget': (deviceId) => c.shareCopy.forget(deviceId),
+    'share.catalog': (deviceId) => c.shareCopy.catalogView(deviceId),
+    'share.copy': (deviceId, selection) => ({ jobId: c.shareCopy.copy(deviceId, selection).jobId }),
+    'share.suggestDestination': () => c.shareCopy.suggestDestination(),
+    'share.status': () => c.share.status(),
+    'share.setEnabled': (on) => c.share.setEnabled(!!on),
+    'share.setSharing': (partial) => c.share.setSharing(partial && typeof partial === 'object' ? partial : {}),
+    'share.openPairing': (minutes) => c.share.openPairing(Number(minutes)),
+    'share.closePairing': () => c.share.closePairing(),
+    'share.revoke': (deviceId) => c.share.revoke(String(deviceId ?? '')),
+    'share.rejectPending': (requestId) => c.share.rejectPending(String(requestId ?? '')),
+
     'dev.adapterReport': async (id): Promise<DevAdapterReport> => {
       const a = c.registry.require(id);
       const p = a.paths();
