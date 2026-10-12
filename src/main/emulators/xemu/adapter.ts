@@ -24,6 +24,8 @@ import { findExeIn, resolutionScaleFor } from '../common';
 import { fileVersion, isWindows } from '../../platform/powershell';
 import { splitArgs } from '../pcsx2/adapter';
 import { TomlDocument, checkToml, tomlEqual, type TomlTable, type TomlValue } from './toml';
+import type { SettingDef } from '@shared/emulatorSettings';
+import { XEMU_SETTINGS, xemuMenuValue, xemuOptimize, xemuTomlValue } from './settingsSchema';
 
 export const XEMU_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
@@ -81,11 +83,8 @@ function samePath(a: string | null | undefined, b: string): boolean {
 }
 
 /** "true"/"false" -> boolean, integers -> number, anything else stays a string. */
-function typedValue(v: string): TomlValue {
-  if (v === 'true' || v === 'false') return v === 'true';
-  if (/^-?\d+$/.test(v)) return parseInt(v, 10);
-  return v;
-}
+/** Menu setting defaults as TOML values (not written while the key is absent; xemu drops defaults on save). */
+const SCHEMA_DEFAULTS = new Map(XEMU_SETTINGS.map((d) => [d.key, xemuTomlValue(d.key, d.default)]));
 
 export class XemuAdapter implements EmulatorAdapter {
   readonly manifest = XEMU_MANIFEST;
@@ -289,7 +288,7 @@ export class XemuAdapter implements EmulatorAdapter {
   advancedValues(adv: Record<string, string>): Managed[] {
     return Object.entries(adv)
       .filter(([k]) => /^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)+$/.test(k))
-      .map(([k, v]): Managed => [k.split('.'), typedValue(v), undefined]);
+      .map(([k, v]): Managed => [k.split('.'), xemuTomlValue(k, v), SCHEMA_DEFAULTS.get(k)]);
   }
 
   /** controller_mapping + rumble values derived from the universal profile. */
@@ -337,6 +336,30 @@ export class XemuAdapter implements EmulatorAdapter {
     stick('left');
     stick('right');
     return { mapping, rumble: c.rumble, notes: [...new Set(notes)] };
+  }
+
+  settingsSchema(): SettingDef[] {
+    return XEMU_SETTINGS;
+  }
+
+  async readSettings(): Promise<Record<string, string>> {
+    if (!existsSync(this.configPath())) return {};
+    let doc: TomlDocument;
+    try {
+      doc = await this.loadDoc(this.configPath());
+    } catch {
+      return {};
+    }
+    const out: Record<string, string> = {};
+    for (const d of XEMU_SETTINGS) {
+      const v = xemuMenuValue(d.key, doc.get(d.key.split('.')));
+      if (v !== undefined) out[d.key] = v;
+    }
+    return out;
+  }
+
+  optimize(hw: HardwareProfile): { key: string; value: string; reason: string }[] {
+    return xemuOptimize(hw);
   }
 
   private async loadDoc(path: string): Promise<TomlDocument> {
