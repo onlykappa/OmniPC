@@ -52,11 +52,14 @@ export function pickArticle(pages: WikiPage[], title: string): WikiPage | null {
   // Exact title; then a close prefix either way ("Cuphead" / "Cuphead: Don't Deal…");
   // then, for the best search hit only, its title as the start of an edition name
   // ("Dark Souls II" for "Dark Souls II Scholar of the First Sin").
+  // Prefix matches only for plain titles: "Ninja Gaiden (NES video game)" is a
+  // different game from "Ninja Gaiden Black".
+  const plain = games.filter((p) => !/\(/.test(baseTitle(p.title)));
   const top = games[0];
   return games.find((p) => key(p) === want)
-    ?? games.find((p) => want.startsWith(key(p)) && key(p).length >= Math.max(6, want.length * 0.6))
-    ?? games.find((p) => key(p).startsWith(want) && want.length >= Math.max(6, key(p).length * 0.6))
-    ?? (top && key(top).length >= 8 && want.startsWith(key(top)) ? top : null);
+    ?? plain.find((p) => want.startsWith(key(p)) && key(p).length >= Math.max(6, want.length * 0.6))
+    ?? plain.find((p) => key(p).startsWith(want) && want.length >= Math.max(6, key(p).length * 0.6))
+    ?? (top && plain.includes(top) && key(top).length >= 8 && want.startsWith(key(top)) ? top : null);
 }
 
 /** First release year mentioned in the lead ("… released in 2013 …"). */
@@ -90,11 +93,13 @@ export function wikipediaProvider(fetchImpl: typeof fetch): MetadataProvider {
       // With the console name first; some articles only rank without it.
       const page = (await search(`${title} ${system} video game`)) ?? (system ? await search(`${title} video game`) : null);
       if (!page) return null;
-      const img = page.original?.source;
-      const usable = img && /^https:\/\/upload\.wikimedia\.org\//.test(img) && /\.(jpe?g|png|webp)$/i.test(img);
+      // The API appends tracking parameters ("…boxshot.JPG?utm_source=…"); check the path and drop them.
+      const url = page.original?.source ? new URL(page.original.source) : null;
+      const img = url ? `${url.origin}${url.pathname}` : null;
+      const usable = url && url.protocol === 'https:' && url.host === 'upload.wikimedia.org' && /\.(jpe?g|png|webp)$/i.test(url.pathname);
       return {
         sourceId: `wikipedia:${page.title}`,
-        artwork: usable ? [{ kind: 'cover', location: img, allowedHosts: WIKIPEDIA_HOSTS }] : [],
+        artwork: usable && img ? [{ kind: 'cover', location: img, allowedHosts: WIKIPEDIA_HOSTS }] : [],
         metadata: { description: page.extract?.trim() || null, releaseYear: yearFrom(page.extract), source: 'Wikipedia' },
       };
     },

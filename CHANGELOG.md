@@ -2,6 +2,17 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Fixed
+- Xbox and Xbox 360 games (and others using Wikipedia) still had no box art in 1.4.1: Wikipedia's
+  image links end with tracking parameters, and OmniPC rejected them as "not an image". Checked
+  against the live Wikipedia API: Halo 2, Halo 3, Halo: Reach, Gears of War 2, Forza Horizon,
+  Red Dead Redemption, GTA V, Fable and more now get covers. Games still without a cover are
+  looked up again once after updating.
+- A Wikipedia article for a different version of a game ("Ninja Gaiden (NES video game)" for
+  "Ninja Gaiden Black") is no longer used for its description.
+
 ## [1.4.1] - 2026-10-12
 
 ### Fixed
