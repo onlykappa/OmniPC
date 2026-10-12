@@ -24,6 +24,8 @@ import { findExeIn, preferredRenderer, resolutionScaleFor } from '../common';
 import { fileVersion, isWindows } from '../../platform/powershell';
 import { splitArgs } from '../pcsx2/adapter';
 import { writeAchievementsConfig, type RaFiles } from '../../achievements/emulatorConfig';
+import type { SettingDef } from '@shared/emulatorSettings';
+import { PPSSPP_SETTINGS, ppssppOptimize, ppssppValue } from './settingsSchema';
 
 export const PPSSPP_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
@@ -293,6 +295,27 @@ export class PpssppAdapter implements EmulatorAdapter {
     return changed;
   }
 
+  settingsSchema(): SettingDef[] {
+    return PPSSPP_SETTINGS;
+  }
+
+  async readSettings(): Promise<Record<string, string>> {
+    if (!existsSync(this.iniPath())) return {};
+    const doc = await loadIni(this.iniPath()).catch(() => null);
+    if (!doc) return {};
+    const out: Record<string, string> = {};
+    for (const d of PPSSPP_SETTINGS) {
+      const [section, key] = d.key.split('|');
+      const v = doc.get(section, key);
+      if (v !== undefined) out[d.key] = v;
+    }
+    return out;
+  }
+
+  optimize(hw: HardwareProfile): { key: string; value: string; reason: string }[] {
+    return ppssppOptimize(hw);
+  }
+
   async applyConfig(input: ConfigInput, scope: 'all' | 'controller' | 'graphics' | 'paths'): Promise<ConfigWriteResult> {
     await this.ensureDirs();
     const changed: string[] = [];
@@ -310,7 +333,7 @@ export class PpssppAdapter implements EmulatorAdapter {
         for (const [s, k, v] of this.graphicsValues(input.settings)) set(s, k, v);
         for (const [key, value] of Object.entries(input.settings.advanced)) {
           const [section, name] = key.split('|');
-          if (section && name) set(section, name, value);
+          if (section && name) set(section, name, ppssppValue(key, value));
         }
       }
       if (changed.some((c) => !c.startsWith('installed.txt')) || !existsSync(this.iniPath())) await saveIni(this.iniPath(), doc);
@@ -407,7 +430,7 @@ export class PpssppAdapter implements EmulatorAdapter {
     if (o.aspectRatio !== undefined) out.push(g.get('DisplayLayout.Landscape|DisplayStretch')!);
     for (const [key, value] of Object.entries(o.advanced ?? {})) {
       const [section, name] = key.split('|');
-      if (section && name) out.push([section, name, value]);
+      if (section && name) out.push([section, name, ppssppValue(key, value)]);
     }
     return out;
   }
