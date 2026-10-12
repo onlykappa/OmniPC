@@ -25,6 +25,7 @@ describe('Wikipedia artwork', () => {
     // Only the best hit may match by edition prefix; short names never do.
     expect(pickArticle([page('Mario Kart 8', '2014 video game', 1)], 'Mario Kart 8 Deluxe')?.title).toBe('Mario Kart 8');
     expect(pickArticle([page('Halo 3', '2007 video game', 1), page('Halo', '2001 video game', 2)], 'Halo Wars')).toBeNull();
+    expect(pickArticle([page('Ninja Gaiden (NES video game)', '1988 video game', 1)], 'Ninja Gaiden Black')).toBeNull();
   });
 
   it('returns the infobox cover and lead text, only from Wikimedia', async () => {
@@ -38,6 +39,9 @@ describe('Wikipedia artwork', () => {
     const p = wikipediaProvider(fetchImpl);
     const r = await p.lookup({ gameId: 1, systemId: 'x360', title: 'Dark Souls II Scholar of the First Sin', serial: null, region: null, primaryPath: 'x' }, { emulatorAppDir: () => null, fetchImpl, theGamesDbApiKey: '' });
     expect(r?.artwork?.[0]).toMatchObject({ kind: 'cover', allowedHosts: ['en.wikipedia.org', 'upload.wikimedia.org'] });
+    // Real API image URLs carry tracking parameters (seen live); they must not hide the cover.
+    const tracked = wikipediaProvider((async () => Response.json({ query: { pages: [page('Halo 3', '2007 video game', 1, 'https://upload.wikimedia.org/wikipedia/en/b/b4/Halo_3_final_boxshot.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=original')] } })) as unknown as typeof fetch);
+    expect((await tracked.lookup({ gameId: 1, systemId: 'x360', title: 'Halo 3', serial: null, region: null, primaryPath: 'x' }, { emulatorAppDir: () => null, fetchImpl, theGamesDbApiKey: '' }))?.artwork?.[0]?.location).toBe('https://upload.wikimedia.org/wikipedia/en/b/b4/Halo_3_final_boxshot.JPG');
     expect(r?.metadata?.releaseYear).toBe(2013);
     const svg = wikipediaProvider((async () => Response.json({ query: { pages: [page('Cuphead', '2017 video game', 1, 'https://upload.wikimedia.org/x/logo.svg')] } })) as unknown as typeof fetch);
     expect((await svg.lookup({ gameId: 1, systemId: 'switch', title: 'Cuphead', serial: null, region: null, primaryPath: 'x' }, { emulatorAppDir: () => null, fetchImpl, theGamesDbApiKey: '' }))?.artwork).toEqual([]);

@@ -407,13 +407,14 @@ export class AppContainer {
     //      (and its failure used to stop all online art), so it is removed and
     //      games still without a cover are fetched again.
     const providersVersion = this.settings.getInternal('metadataProvidersVersion', 1);
-    // v5: Wikipedia covers were never returned (non-free images were filtered
-    // out), so look again for every game still without a cover.
-    if (providersVersion < 5) {
+    // v5/v6: Wikipedia covers were never used (non-free images were filtered
+    // out, then image URLs with tracking parameters were rejected), so look
+    // again for every game still without a cover.
+    if (providersVersion < 6) {
       const cur = this.settings.get('artworkProviders').filter((p) => p !== 'xbox-marketplace');
       const add = ['libretro-thumbnails', 'switch-titledb', 'wikipedia'].filter((p) => !cur.includes(p));
       this.settings.set({ artworkProviders: [...cur, ...add] });
-      this.settings.setInternal('metadataProvidersVersion', 5);
+      this.settings.setInternal('metadataProvidersVersion', 6);
       if (settings.onboardingComplete && settings.metadataOnline && !this.safeMode) {
         const reidentify: SystemId[] = providersVersion < 3 ? ['xbox', 'x360', 'switch'] : [];
         setTimeout(() => {
