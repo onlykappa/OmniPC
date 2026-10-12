@@ -25,6 +25,8 @@ import { inspectPs2Bios } from '../../bios/validators';
 import { compareVersions } from '../versions';
 import { readFile } from 'node:fs/promises';
 import { writeAchievementsConfig, type RaFiles } from '../../achievements/emulatorConfig';
+import type { SettingDef } from '@shared/emulatorSettings';
+import { PCSX2_SETTINGS, pcsx2Optimize } from './settingsSchema';
 
 export const PCSX2_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
@@ -160,6 +162,26 @@ export class Pcsx2Adapter implements EmulatorAdapter {
       ['Folders', 'Snapshots', join(p.saves, 'snaps')],
       ['Folders', 'Cache', p.cache],
     ];
+  }
+
+  settingsSchema(): SettingDef[] {
+    return PCSX2_SETTINGS;
+  }
+
+  async readSettings(): Promise<Record<string, string>> {
+    if (!existsSync(this.iniPath())) return {};
+    const doc = await loadIni(this.iniPath());
+    const out: Record<string, string> = {};
+    for (const d of PCSX2_SETTINGS) {
+      const [section, key] = d.key.split('|');
+      const v = doc.get(section, key);
+      if (v !== undefined) out[d.key] = v;
+    }
+    return out;
+  }
+
+  optimize(hw: HardwareProfile): { key: string; value: string; reason: string }[] {
+    return pcsx2Optimize(hw);
   }
 
   graphicsValues(s: EmulatorSettings): [string, string, string | number | boolean][] {

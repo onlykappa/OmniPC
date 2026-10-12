@@ -1,0 +1,92 @@
+// Box art and a short description from the game's English Wikipedia article.
+// A fallback for games the dedicated art sources do not cover (Xbox 360,
+// newer Switch titles, ...). Uses the public MediaWiki API (no key): one
+// search request per game; the cover is the article's infobox image on
+// upload.wikimedia.org. A page is only used when Wikipedia's own short
+// description says it is a video game and its title matches the game.
+
+import { getSystem, type SystemId } from '@shared/systems';
+import type { MetadataProvider, MetadataSubject } from './providers';
+import { titleKey } from './libretroThumbnails';
+
+export const WIKIPEDIA_HOSTS = ['en.wikipedia.org', 'upload.wikimedia.org'];
+
+/** Removes dump/release noise from file-derived titles ("… Xbox 360 ISO", "[NTSC]", "v1.0"). */
+export function cleanGameTitle(title: string): string {
+  return title
+    .replace(/[([][^)\]]*[)\]]/g, ' ')
+    .replace(/\b(xbox\s*360|x360|xbox|iso|xiso|god|xex|nsp|xci|ntsc(-[uj])?|pal|rgh|jtag|repack|update|dlc|v\d+(\.\d+)*)\b/gi, ' ')
+    .replace(/[_]+/g, ' ')
+    .replace(/\s+-\s*$/, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+interface WikiPage {
+  title: string;
+  index?: number;
+  original?: { source: string };
+  pageprops?: { 'wikibase-shortdesc'?: string; disambiguation?: string };
+  extract?: string;
+}
+
+/** Article title without a "(2013 video game)" style suffix. */
+const baseTitle = (t: string) => t.replace(/\s*\((\d{4}\s+)?video\s+game\)\s*$/i, '');
+
+/** Picks the article for a game from search results (null when nothing is clearly right). */
+export function pickArticle(pages: WikiPage[], title: string): WikiPage | null {
+  const want = titleKey(cleanGameTitle(title));
+  if (!want) return null;
+  const games = [...pages]
+    .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+    .filter((p) => {
+      const d = p.pageprops?.['wikibase-shortdesc'] ?? '';
+      return !p.pageprops?.disambiguation && /video game/i.test(d) && !/series|franchise|character|compilation of|engine|console/i.test(d);
+    });
+  const key = (p: WikiPage) => titleKey(baseTitle(p.title).replace(/:/g, ' -'));
+  // Exact title; then a close prefix either way ("Cuphead" / "Cuphead: Don't Deal…");
+  // then, for the best search hit only, its title as the start of an edition name
+  // ("Dark Souls II" for "Dark Souls II Scholar of the First Sin").
+  const top = games[0];
+  return games.find((p) => key(p) === want)
+    ?? games.find((p) => want.startsWith(key(p)) && key(p).length >= Math.max(6, want.length * 0.6))
+    ?? games.find((p) => key(p).startsWith(want) && want.length >= Math.max(6, key(p).length * 0.6))
+    ?? (top && key(top).length >= 8 && want.startsWith(key(top)) ? top : null);
+}
+
+/** First release year mentioned in the lead ("… released in 2013 …"). */
+function yearFrom(text: string | undefined): number | null {
+  const m = /\b(19[7-9]\d|20[0-4]\d)\b/.exec(text ?? '');
+  return m ? Number(m[1]) : null;
+}
+
+export function wikipediaProvider(fetchImpl: typeof fetch): MetadataProvider {
+  return {
+    id: 'wikipedia',
+    label: 'Wikipedia (box art & description)',
+    online: true,
+    description: 'Box art and a short description from the game\'s Wikipedia article, for games other sources don\'t cover.',
+    async lookup(s: MetadataSubject) {
+      const title = cleanGameTitle(s.title);
+      if (title.length < 2) return null;
+      const system = getSystem(s.systemId as SystemId)?.name ?? '';
+      const params = new URLSearchParams({
+        action: 'query', format: 'json', formatversion: '2', generator: 'search', gsrlimit: '6', gsrnamespace: '0',
+        gsrsearch: `${title} ${system} video game`,
+        prop: 'pageimages|pageprops|extracts', piprop: 'original', exintro: '1', explaintext: '1', exsentences: '4', ppprop: 'wikibase-shortdesc|disambiguation',
+      });
+      const r = await fetchImpl(`https://en.wikipedia.org/w/api.php?${params}`, { headers: { 'User-Agent': 'OmniPC (https://github.com/onlykappa/OmniPC)' } });
+      if (!r.ok) return null;
+      const body = (await r.json()) as { query?: { pages?: WikiPage[] } };
+      const page = pickArticle(body.query?.pages ?? [], s.title);
+      if (!page) return null;
+      const img = page.original?.source;
+      const usable = img && /^https:\/\/upload\.wikimedia\.org\//.test(img) && /\.(jpe?g|png|webp)$/i.test(img);
+      return {
+        sourceId: `wikipedia:${page.title}`,
+        artwork: usable ? [{ kind: 'cover', location: img, allowedHosts: WIKIPEDIA_HOSTS }] : [],
+        metadata: { description: page.extract?.trim() || null, releaseYear: yearFrom(page.extract), source: 'Wikipedia' },
+      };
+    },
+  };
+}

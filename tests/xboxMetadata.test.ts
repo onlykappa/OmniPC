@@ -2,7 +2,6 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { join } from 'node:path';
 import { identifyFile } from '../src/main/library/identify';
 import { pickThumbnail } from '../src/main/metadata/libretroThumbnails';
-import { xbox360BoxArtUrl, xbox360MarketplaceProvider } from '../src/main/metadata/xboxMarketplace';
 import { write } from './fixtures/builders.mjs';
 import { tempDir } from './helpers';
 
@@ -62,13 +61,6 @@ describe('Xbox discs', () => {
     const names = ['Halo 2 (USA).png', 'Halo - Combat Evolved (USA).png', 'Halo - Combat Evolved (Europe).png'];
     expect(pickThumbnail(names, 'halo_ce', 'Halo', 'USA')).toBe('Halo - Combat Evolved (USA).png');
     expect(pickThumbnail(names, 'Halo 2', 'Halo 2', null)).toBe('Halo 2 (USA).png');
-  });
-  it('builds Xbox Marketplace box art links from the 360 title ID', async () => {
-    expect(xbox360BoxArtUrl('4D5307E6')).toBe('https://download.xbox.com/content/images/66acd000-77fe-1000-9115-d8024d5307e6/1033/boxartlg.jpg');
-    expect(xbox360BoxArtUrl('../evil')).toBeNull();
-    const env = { emulatorAppDir: () => null, fetchImpl: fetch, theGamesDbApiKey: '' };
-    expect(await xbox360MarketplaceProvider.lookup({ gameId: 1, systemId: 'xbox', title: 'Halo', serial: '4D530004', region: null, primaryPath: 'x' }, env)).toBeNull();
-    expect((await xbox360MarketplaceProvider.lookup({ gameId: 1, systemId: 'x360', title: 'Gears', serial: '4D5307E6', region: null, primaryPath: 'x' }, env))?.artwork?.[0].allowedHosts).toEqual(['download.xbox.com']);
   });
 });
 

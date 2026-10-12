@@ -1,6 +1,7 @@
 // Implementation of the typed OmniApi contract. Electron-specific actions
 // (dialogs, shell, relaunch) arrive via `UiHost` so this module stays testable.
 
+import { applySuggestions, optimizeSuggestions, settingsView } from '../emulators/settingsView';
 import { existsSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import type { OmniApi, SystemSummary, HomeData, OnboardingInstallPlan, DevAdapterReport } from '@shared/ipc';
@@ -281,6 +282,32 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
       return c.emulators.details(id);
     },
     'emulators.renderers': (id) => c.registry.require(id).renderers(c.hardware()),
+    'emulators.settingsView': (id) => settingsView(c.registry.require(id), c.emulators.settingsFor(id), c.emulators.isInstalled(id)),
+    'emulators.optimizePreview': (id) => optimizeSuggestions(c.registry.require(id), c.emulators.settingsFor(id), c.hardware()),
+    'emulators.optimizeApply': async (id, fields) => {
+      const hw = c.hardware();
+      if (!hw) throw new OmniFailure({ code: 'NO_HARDWARE_PROFILE', whatHappened: 'OmniPC has not scanned this PC yet.', userAction: ['Run a health check first.'] });
+      await c.emulators.saveSettings(id, applySuggestions(c.registry.require(id), c.emulators.settingsFor(id), hw, fields));
+      return c.emulators.details(id);
+    },
+    'emulators.optimizeAllPreview': () => c.registry.implemented()
+      .filter((a) => c.emulators.isInstalled(a.manifest.id))
+      .map((a) => ({ emulatorId: a.manifest.id, name: a.manifest.name, suggestions: optimizeSuggestions(a, c.emulators.settingsFor(a.manifest.id), c.hardware()) }))
+      .filter((e) => e.suggestions.length),
+    'emulators.optimizeAllApply': async (ids) => {
+      const hw = c.hardware();
+      if (!hw) throw new OmniFailure({ code: 'NO_HARDWARE_PROFILE', whatHappened: 'OmniPC has not scanned this PC yet.', userAction: ['Run a health check first.'] });
+      const out: { emulatorId: string; changed: number }[] = [];
+      for (const id of ids) {
+        const a = c.registry.require(id);
+        if (!c.emulators.isInstalled(id)) continue;
+        const fields = optimizeSuggestions(a, c.emulators.settingsFor(id), hw).map((s) => s.field);
+        if (!fields.length) continue;
+        await c.emulators.saveSettings(id, applySuggestions(a, c.emulators.settingsFor(id), hw, fields));
+        out.push({ emulatorId: id, changed: fields.length });
+      }
+      return out;
+    },
     'emulators.useExisting': (id, exe) => c.emulators.useExisting(id, exe),
 
     // --------------------------------------------------------------- backups

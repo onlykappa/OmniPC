@@ -13,7 +13,7 @@ import type { JobContext } from '../core/jobs';
 import { logger } from '../core/logger';
 import { hostAllowed } from '../downloads/sources';
 import { SwitchTitleDb, switchTitleDbProvider } from './switchTitleDb';
-import { xbox360MarketplaceProvider } from './xboxMarketplace';
+import { wikipediaProvider } from './wikipedia';
 import { ALL_PROVIDERS, theGamesDbProvider, type ArtworkCandidate, type MetadataProvider, type MetadataSubject, type ProviderEnv } from './providers';
 import { libretroThumbnailsProvider, type LibretroThumbnails } from './libretroThumbnails';
 
@@ -22,9 +22,9 @@ import { libretroThumbnailsProvider, type LibretroThumbnails } from './libretroT
  * PS2 covers), then libretro-thumbnails for every system, then TheGamesDB.
  * The first provider that supplies a cover wins; later ones fill gaps.
  */
-export function defaultProviders(lt: LibretroThumbnails, switchDb: SwitchTitleDb): MetadataProvider[] {
+export function defaultProviders(lt: LibretroThumbnails, switchDb: SwitchTitleDb, fetchImpl: typeof fetch = fetch): MetadataProvider[] {
   const base = ALL_PROVIDERS.filter((p) => p !== theGamesDbProvider);
-  return [...base, switchTitleDbProvider(switchDb), xbox360MarketplaceProvider, libretroThumbnailsProvider(lt), theGamesDbProvider];
+  return [...base, switchTitleDbProvider(switchDb), libretroThumbnailsProvider(lt), wikipediaProvider(fetchImpl), theGamesDbProvider];
 }
 
 const MAX_SCREENSHOTS = 4;
@@ -35,7 +35,13 @@ const log = logger.scope('metadata');
 export type Thumbnailer = (src: string, dest: string, width: number) => Promise<boolean>;
 
 export class MetadataService {
-  private offline = false;
+  /**
+   * Online providers / image hosts that failed with a network error during the
+   * current refresh. They are skipped for the rest of it, so one dead server
+   * (or a site blocked on this network) never stops the other sources.
+   */
+  private failedProviders = new Set<string>();
+  private failedHosts = new Set<string>();
 
   constructor(
     private readonly repo: LibraryRepo,
@@ -76,13 +82,15 @@ export class MetadataService {
     let background: string | null = null;
     const screenshots: string[] = [];
     for (const p of this.enabledProviders()) {
-      if (p.online && this.offline) continue;
+      if (p.online && this.failedProviders.has(p.id)) continue;
+      // Wikipedia only fills gaps: skip it when a cover and a description were already found.
+      if (p.id === 'wikipedia' && cover && patch.description) continue;
       let res;
       try {
         res = await p.lookup(subj, env);
       } catch (err) {
         log.warn(`provider ${p.id} failed`, { gameId, error: (err as Error).message });
-        if (p.online && /fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT/i.test(String((err as Error).message))) this.offline = true;
+        if (p.online && /fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|ECONNRESET|EAI_AGAIN/i.test(String((err as Error).message))) this.failedProviders.add(p.id);
         continue;
       }
       if (!res) continue;
@@ -131,7 +139,8 @@ export class MetadataService {
 
   async refreshAll(ctx?: JobContext, opts: { onlyMissing: boolean; withoutCover?: boolean } = { onlyMissing: true }): Promise<{ processed: number }> {
     const games = opts.withoutCover ? this.repo.gamesWithoutCover() : opts.onlyMissing ? this.repo.gamesNeedingMetadata(5000) : this.repo.allGames();
-    this.offline = false;
+    this.failedProviders.clear();
+    this.failedHosts.clear();
     let i = 0;
     for (const g of games) {
       ctx?.throwIfCancelled();
@@ -150,6 +159,8 @@ export class MetadataService {
       return a.location;
     }
     if (!a.allowedHosts || !hostAllowed(a.location, a.allowedHosts)) return null;
+    const host = new URL(a.location).host;
+    if (this.failedHosts.has(host)) return null;
     const ext = (extname(new URL(a.location).pathname) || '.jpg').toLowerCase();
     const dest = join(this.artDir, `${gameId}-${a.kind}${index !== undefined ? `-${index}` : ''}${ext}`);
     try {
@@ -162,7 +173,7 @@ export class MetadataService {
       await writeFile(dest, buf);
       return dest;
     } catch (err) {
-      if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT/i.test(String((err as Error).message))) this.offline = true;
+      if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|ECONNRESET|EAI_AGAIN/i.test(String((err as Error).message))) this.failedHosts.add(host);
       return null;
     }
   }

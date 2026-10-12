@@ -8,6 +8,8 @@ import { useStore } from '../lib/store';
 import { PlayButton } from '../components/PlayButton';
 import { AddToSteamButton } from './Steam';
 import { SettingsEditor } from '../components/SettingsEditor';
+import { EmulatorSettingsMenu } from '../components/EmulatorSettingsMenu';
+import type { EmulatorSettingsView } from '@shared/emulatorSettings';
 import { Button, Chip, Empty, Panel, Spinner } from '../components/ui';
 import { bytes, duration, when } from '../lib/format';
 
@@ -139,6 +141,7 @@ function GameSettings({ game, onSaved }: { game: GameDetails; onSaved: () => voi
         {emu ? (
           <SettingsEditor overrideMode base={emu.settings} value={overrides} renderers={renderers} caps={{ aspectRatios: emu.manifest.id === 'dolphin' ? [{ id: 'auto', label: 'Auto' }, { id: '16:9', label: '16:9' }, { id: '4:3', label: '4:3' }, { id: 'stretch', label: 'Stretch' }] : [{ id: 'auto', label: 'Auto' }, { id: '4:3', label: '4:3' }, { id: '16:9', label: '16:9' }, { id: 'stretch', label: 'Stretch' }], frameLimit: emu.manifest.id === 'dolphin', vsync: true, maxScale: 8 }} onChange={setOverrides} />
         ) : <p className="muted">Install the emulator to configure per-game settings.</p>}
+        {emu && <GameSettingsMenu emulatorId={emu.manifest.id} base={emu.settings.advanced ?? {}} value={overrides.advanced ?? {}} onChange={(adv) => setOverrides({ ...overrides, advanced: adv })} />}
         <label className="field">Custom launch arguments (advanced)
           <input type="text" value={args} onChange={(e) => setArgs(e.target.value)} placeholder="e.g. -fastboot" />
         </label>
@@ -210,5 +213,20 @@ function GameDiagnostics({ game, onChanged }: { game: GameDetails; onChanged: ()
         ))}
       </Panel>
     </div>
+  );
+}
+
+/** Per-game values for the emulator's own settings (on top of its global settings). */
+function GameSettingsMenu(props: { emulatorId: string; base: Record<string, string>; value: Record<string, string>; onChange: (v: Record<string, string>) => void }) {
+  const [view, setView] = useState<EmulatorSettingsView | null>(null);
+  useEffect(() => {
+    void api('emulators.settingsView', props.emulatorId).then(setView).catch(() => setView(null));
+  }, [props.emulatorId]);
+  if (!view || !view.defs.some((d) => d.perGame !== false)) return null;
+  return (
+    <details>
+      <summary className="small">More settings for this game ({Object.keys(props.value).length} changed)</summary>
+      <div style={{ marginTop: 10 }}><EmulatorSettingsMenu overrideMode view={view} base={props.base} value={props.value} onChange={props.onChange} /></div>
+    </details>
   );
 }

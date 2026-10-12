@@ -10,7 +10,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   autoRepairSafeIssues: true,
   backgroundHealthChecks: true,
   metadataOnline: true,
-  artworkProviders: ['local-files', 'emulator-databases', 'gametdb', 'ps2-covers', 'switch-titledb', 'xbox-marketplace', 'libretro-thumbnails'],
+  artworkProviders: ['local-files', 'emulator-databases', 'gametdb', 'ps2-covers', 'switch-titledb', 'libretro-thumbnails', 'wikipedia'],
   theGamesDbApiKey: '',
   updateChannel: 'stable',
   checkUpdatesOnStart: true,

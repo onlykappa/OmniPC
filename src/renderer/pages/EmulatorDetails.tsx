@@ -6,6 +6,8 @@ import { useAction, useLoad } from '../lib/hooks';
 import { navigate } from '../lib/router';
 import { useStore } from '../lib/store';
 import { SettingsEditor } from '../components/SettingsEditor';
+import { EmulatorSettingsMenu } from '../components/EmulatorSettingsMenu';
+import type { EmulatorSettingsView, OptimizeSuggestion } from '@shared/emulatorSettings';
 import { Button, Chip, Modal, Panel, SevIcon, Spinner, Toggle, healthTone } from '../components/ui';
 import { RepairButton } from '../components/RepairButton';
 import { bytes, clock } from '../lib/format';
@@ -19,10 +21,15 @@ export function EmulatorDetailsPage(props: { id: string }) {
   const [report, setReport] = useState<HealthReport | null>(null);
   const [diff, setDiff] = useState<ConfigDiff | null>(null);
   const [confirm, setConfirm] = useState<null | { title: string; body: string; run: () => Promise<unknown> }>(null);
+  const [view, setView] = useState<EmulatorSettingsView | null>(null);
+  const [optimize, setOptimize] = useState<OptimizeSuggestion[] | null>(null);
   const toast = useStore((s) => s.toast);
   useEffect(() => {
     void api('emulators.renderers', props.id).then(setRenderers).catch(() => setRenderers([]));
   }, [props.id]);
+  useEffect(() => {
+    void api('emulators.settingsView', props.id).then(setView).catch(() => setView(null));
+  }, [props.id, v, emu?.settings]);
   useEffect(() => {
     if (emu) {
       setSettings(emu.settings);
@@ -70,6 +77,17 @@ export function EmulatorDetailsPage(props: { id: string }) {
           {report.findings.map((f) => <div key={f.id} className="finding"><SevIcon severity={f.severity} /><div className="grow"><strong>{f.title}</strong>{f.detail && <div className="small muted">{f.detail}</div>}</div>{f.repair && <RepairButton suggestion={f.repair} onDone={() => void health()} />}</div>)}
         </Panel>
       )}
+      {emu.implemented && view && view.defs.length > 0 && (
+        <Panel id="all-settings" title={`${emu.name} settings`} actions={<>
+          <Button onClick={async () => setOptimize(await api('emulators.optimizePreview', emu.id))}>Optimize for my PC</Button>
+          {installed && <Button onClick={() => void api('emulators.launchUi', emu.id)}>Open {emu.name}</Button>}
+          <Button variant="primary" busy={saving} onClick={() => void save()}>Apply</Button>
+        </>}>
+          <p className="small faint">Change {emu.name}'s settings here instead of inside the emulator. Applying backs up the current configuration first, and games with their own profile keep their per-game values.</p>
+          <EmulatorSettingsMenu view={view} value={settings.advanced ?? {}} onChange={(adv) => setSettings({ ...settings, advanced: adv })} />
+        </Panel>
+      )}
+      {optimize && <OptimizeModal emulator={emu.name} suggestions={optimize} onClose={() => setOptimize(null)} onApply={async (fields) => { await api('emulators.optimizeApply', emu.id, fields); setOptimize(null); toast('success', `${emu.name} optimized for this PC`, 'The previous configuration was backed up and can be restored.'); reload(); }} />}
       {emu.implemented && (
         <div className="grid cols-2">
           <Panel id="settings" title="Settings" actions={<Button variant="primary" busy={saving} onClick={() => void save()}>Apply</Button>}>
@@ -132,5 +150,30 @@ export function EmulatorDetailsPage(props: { id: string }) {
         </Modal>
       )}
     </div>
+  );
+}
+
+function OptimizeModal(props: { emulator: string; suggestions: OptimizeSuggestion[]; onClose: () => void; onApply: (fields: string[]) => Promise<void> }) {
+  const [picked, setPicked] = useState(() => new Set(props.suggestions.map((s) => s.field)));
+  const [busy, setBusy] = useState(false);
+  return (
+    <Modal onClose={props.onClose}>
+      <h2>Optimize {props.emulator} for this PC</h2>
+      {props.suggestions.length === 0 ? <p className="muted">{props.emulator} already uses the recommended settings for your hardware.</p> : (
+        <>
+          <p className="small muted">OmniPC suggests these changes based on your graphics card, processor and memory. Untick anything you want to keep.</p>
+          {props.suggestions.map((s) => (
+            <label key={s.field} className="row" style={{ alignItems: 'flex-start', gap: 10 }}>
+              <input type="checkbox" checked={picked.has(s.field)} onChange={(e) => { const n = new Set(picked); if (e.target.checked) n.add(s.field); else n.delete(s.field); setPicked(n); }} />
+              <span className="col" style={{ gap: 2 }}><strong>{s.label}: {s.from} → {s.to}</strong><span className="small muted">{s.reason}</span></span>
+            </label>
+          ))}
+        </>
+      )}
+      <div className="row right">
+        <Button onClick={props.onClose}>Close</Button>
+        {props.suggestions.length > 0 && <Button variant="primary" busy={busy} disabled={!picked.size} onClick={async () => { setBusy(true); try { await props.onApply([...picked]); } finally { setBusy(false); } }}>Apply {picked.size} change{picked.size === 1 ? '' : 's'}</Button>}
+      </div>
+    </Modal>
   );
 }
