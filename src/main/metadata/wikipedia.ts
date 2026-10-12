@@ -86,7 +86,7 @@ export function wikipediaProvider(fetchImpl: typeof fetch): MetadataProvider {
           prop: 'pageimages|pageprops|extracts', piprop: 'original', pilicense: 'any', exintro: '1', explaintext: '1', exsentences: '4', ppprop: 'wikibase-shortdesc|disambiguation',
         });
         const r = await fetchImpl(`https://en.wikipedia.org/w/api.php?${params}`, { headers: { 'User-Agent': WIKIMEDIA_USER_AGENT } });
-        if (!r.ok) return null;
+        if (!r.ok) throw new Error(`Wikipedia search answered HTTP ${r.status}`);
         const body = (await r.json()) as { query?: { pages?: WikiPage[] } };
         return pickArticle(body.query?.pages ?? [], s.title);
       };

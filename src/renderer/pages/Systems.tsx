@@ -1,3 +1,4 @@
+import { SystemMark } from '../components/SystemMark';
 import { api } from '../lib/api';
 import { useAction, useLoad } from '../lib/hooks';
 import { navigate } from '../lib/router';
@@ -16,8 +17,8 @@ export function SystemsPage() {
         {data.map((s) => (
           <div key={s.id} className="card system-card" style={{ cursor: 'default' }}>
             <span className="stripe" style={{ background: s.accent }} />
-            <div className="row"><span className="tiny faint">{s.manufacturer}</span><span className="right small muted">{s.gameCount} {s.gameCount === 1 ? "game" : "games"}</span></div>
-            <strong style={{ fontSize: 18 }}>{s.name}</strong>
+            <div className="row"><SystemMark system={s} /><span className="right small muted">{s.gameCount} {s.gameCount === 1 ? "game" : "games"}</span></div>
+            <div><strong style={{ fontSize: 16 }}>{s.name}</strong> <span className="tiny faint">{s.manufacturer}</span></div>
             <div className="row">
               {s.emulatorName ? <Chip tone={s.emulatorInstalled ? 'ok' : s.emulatorImplemented ? undefined : 'planned'}>{s.emulatorName}{s.emulatorInstalled ? ' · installed' : s.emulatorImplemented ? '' : ' · planned'}</Chip> : <Chip>No emulator</Chip>}
               {s.bios === 'found' && <Chip tone="ok">BIOS found</Chip>}

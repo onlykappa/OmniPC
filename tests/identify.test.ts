@@ -108,7 +108,13 @@ describe('archives', () => {
     zip(join(t.dir, 'arc', 'PS2', 'Some Game.zip'));
     zip(join(t.dir, 'arc', 'downloads', 'game-patches.zip'));
     expect((await identifyFile(join(t.dir, 'arc', 'mame', 'pacman.zip'), ['mame'])).systemId).toBe('arcade');
-    expect((await identifyFile(join(t.dir, 'arc', 'PS2', 'Some Game.zip'), ['PS2'])).systemId).toBe('ps2');
+    // PCSX2 and Xenia cannot open archives: a zip in their folders is not a game.
+    expect((await identifyFile(join(t.dir, 'arc', 'PS2', 'Some Game.zip'), ['PS2'])).systemId).toBeNull();
+    zip(join(t.dir, 'arc', 'Xbox 360', 'game-patches.zip'));
+    expect((await identifyFile(join(t.dir, 'arc', 'Xbox 360', 'game-patches.zip'), ['Xbox 360'])).systemId).toBeNull();
+    // RetroArch loads zipped ROMs.
+    zip(join(t.dir, 'arc', 'snes', 'Some Game.zip'));
+    expect((await identifyFile(join(t.dir, 'arc', 'snes', 'Some Game.zip'), ['snes'])).systemId).toBe('snes');
     expect((await identifyFile(join(t.dir, 'arc', 'downloads', 'game-patches.zip'), ['downloads'])).systemId).toBeNull();
   });
 });

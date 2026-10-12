@@ -2,6 +2,27 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
+## [1.4.3] - 2026-10-12
+
+### Added
+- **System badges.** Home and Systems show each console with a badge: an outline of the kind of
+  device and its short name (PS2, 360, DS…) in the system's colour. These are OmniPC's own
+  drawings, not the manufacturers' logos.
+
+### Fixed
+- **Xbox 360 box art still missing for some players.** Checked live: Batman: Arkham Origins, Dark
+  Souls II and Lego Star Wars: The Complete Saga are found on Wikipedia and their covers download
+  fine, so the remaining failures were on the way. A single network hiccup used to switch a source
+  off for the rest of the refresh (and for every later Refresh metadata click); now it takes three
+  in a row, and Refresh metadata always tries every source again. Games without a cover are looked
+  up once more after updating.
+- **Refresh metadata says why there is no cover** (for example "cover download refused by
+  upload.wikimedia.org (HTTP 403)" or "no match"), and failed artwork downloads are written to the
+  log, so a diagnostics package shows the cause.
+- **A .zip in an Xbox 360, PS2, Switch… folder was listed as a game** (for example
+  "game-patches"). Only systems whose emulator opens zipped games (RetroArch: NES, SNES, Genesis,
+  arcade…) treat archives as games now; existing entries are re-checked once after updating.
+
 ## [1.4.2] - 2026-10-12
 
 ### Fixed

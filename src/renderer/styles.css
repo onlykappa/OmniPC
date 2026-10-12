@@ -178,8 +178,11 @@ table.table td { padding: 10px; border-bottom: 1px solid var(--line); vertical-a
 .step.skipped { color: var(--faint); }
 .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #33405a; border-top-color: var(--accent); animation: spin .8s linear infinite; display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.system-card { padding: 18px; display: flex; flex-direction: column; gap: 10px; min-height: 150px; }
+.system-card { padding: 18px; display: flex; flex-direction: column; gap: 12px; min-height: 110px; }
 .system-card .stripe { position: absolute; inset: 0 0 auto 0; height: 4px; }
+.system-mark { --mark: oklch(from var(--accent) max(l, 0.74) c h); display: inline-flex; align-items: center; gap: 12px; }
+.system-mark-icon { display: inline-grid; place-items: center; border-radius: 12px; color: var(--mark); background: color-mix(in oklab, var(--mark) 14%, transparent); border: 1px solid color-mix(in oklab, var(--mark) 32%, transparent); flex: none; }
+.system-mark-label { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; color: var(--mark); }
 .emu-card { padding: 18px; display: flex; flex-direction: column; gap: 12px; cursor: default; }
 .pad-diagram { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
 .pad-btn { padding: 12px 6px; border-radius: 12px; text-align: center; background: var(--bg-2); border: 1px solid var(--line); font-weight: 600; transition: all 80ms; font-size: 13px; }

@@ -167,7 +167,12 @@ function MetadataEditor({ game, onSaved }: { game: GameDetails; onSaved: () => v
       <Panel title="Metadata & artwork">
         <p className="small muted">Source: {game.metadata.source ?? 'none'} {game.metadata.locked && <Chip>Locked</Chip>} · fetched {when(game.metadata.fetchedAt)}</p>
         <div className="row">
-          <Button onClick={async () => { await api('metadata.refresh', game.id); onSaved(); toast('success', 'Metadata refreshed'); }}>Refresh metadata</Button>
+          <Button onClick={async () => {
+            const m = await api('metadata.refresh', game.id);
+            onSaved();
+            if (m.coverPath) toast('success', 'Metadata refreshed');
+            else toast('warning', 'No cover art found', (m.refreshNotes ?? []).slice(-3).join(' · ') || 'No source had artwork for this title. Try editing the title to the game\'s exact name.');
+          }}>Refresh metadata</Button>
           <Button onClick={async () => { const f = await api('app.pickFile', 'Choose cover art', ['png', 'jpg', 'jpeg', 'webp']); if (f) { await api('metadata.setArtwork', game.id, 'cover', f); onSaved(); } }}>Change cover…</Button>
           <Button onClick={async () => { const f = await api('app.pickFile', 'Choose background art', ['png', 'jpg', 'jpeg', 'webp']); if (f) { await api('metadata.setArtwork', game.id, 'background', f); onSaved(); } }}>Change background…</Button>
           <Button variant="danger" onClick={async () => { await api('metadata.clear', game.id); onSaved(); }}>Remove metadata</Button>

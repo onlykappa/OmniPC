@@ -179,7 +179,7 @@ export class LibraryScanner {
     return { available, unavailable, remapped };
   }
 
-  async scan(opts: { full: boolean; pathIds?: number[]; /** Re-read unchanged files of these systems (after identification improves). */ reidentify?: SystemId[] }, ctx?: JobContext): Promise<ScanSummary> {
+  async scan(opts: { full: boolean; pathIds?: number[]; /** Re-read unchanged files of these systems (after identification improves). */ reidentify?: SystemId[]; /** Re-read unchanged .zip/.7z files. */ reidentifyArchives?: boolean }, ctx?: JobContext): Promise<ScanSummary> {
     const started = Date.now();
     const scanId = randomUUID();
     const summary: ScanSummary = { rootPaths: [], filesSeen: 0, added: 0, updated: 0, removed: 0, unchanged: 0, markedUnavailable: 0, bySystem: {}, unrecognized: 0, duplicates: [], durationMs: 0 };
@@ -209,7 +209,7 @@ export class LibraryScanner {
         if (!st) continue;
         const existing = this.repo.fileByPath(f.path);
         const prev = existing ? this.repo.getGame(existing.game_id) : undefined;
-        if (existing && !opts.full && existing.size_bytes === st.size && existing.mtime_ms === st.mtimeMs && !(prev && opts.reidentify?.includes(prev.system_id))) {
+        if (existing && !opts.full && existing.size_bytes === st.size && existing.mtime_ms === st.mtimeMs && !(prev && opts.reidentify?.includes(prev.system_id)) && !(opts.reidentifyArchives && /\.(zip|7z)$/i.test(f.path))) {
           touch.push(existing.id);
           summary.unchanged++;
           const g = prev;
