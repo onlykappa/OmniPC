@@ -2,7 +2,7 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
-## [Unreleased]
+## [1.3.0] - 2026-10-12 — The Customizability Update
 
 ### Fixed
 - **Box art stopped downloading for many games** (most visible on Switch and Xbox 360): the Xbox
@@ -11,10 +11,22 @@ All notable changes to OmniPC. Versions follow [Semantic Versioning](https://sem
   dead source is removed, and games still without a cover are fetched again after updating.
 
 ### Added
+- **Emulator settings menus**: change every emulator's important settings inside OmniPC instead
+  of opening the emulator: 13 emulators, over 340 settings, in tabs (Graphics, Performance,
+  Audio, System, Fixes & hacks, Interface) with search, a plain-English explanation for each,
+  the emulator's default, OmniPC's recommendation, and warnings on risky hacks. Values changed
+  inside the emulator show up here too. Every change backs up the configuration first.
+- **Per-game settings**: the same menu on a game's page changes settings for that game only.
+- **Optimize for my PC**: per emulator, or "Optimize all" on the Emulators page. Suggests the
+  best settings for your graphics card, processor and memory, explains each one, and lets you
+  untick anything before applying.
 - **Wikipedia** as a fallback for box art and descriptions (for example Xbox 360 games), used
   only when the article is clearly that video game.
-- **Emulator settings menus** (in progress): change an emulator's settings inside OmniPC, per
-  game too, and "Optimize for my PC" per emulator or for all of them.
+
+### Changed
+- Settings OmniPC writes now use the exact value types each emulator expects (Dolphin/PPSSPP
+  True/False, typed TOML/JSON for melonDS, xemu, Xenia, shadPS4 and Ryujinx), so they always
+  take effect. shadPS4 per-game settings are written to its per-game config files.
 
 ## [1.2.0] - 2026-10-11
 

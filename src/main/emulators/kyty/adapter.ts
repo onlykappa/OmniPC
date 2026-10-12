@@ -25,6 +25,8 @@ import { findExeIn } from '../common';
 import { runProcess } from '../../platform/exec';
 import { isWindows } from '../../platform/powershell';
 import { splitArgs } from '../pcsx2/adapter';
+import type { SettingDef } from '@shared/emulatorSettings';
+import { KYTY_SETTINGS, kytyOptimize } from './settingsSchema';
 
 export const KYTY_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
@@ -175,6 +177,26 @@ export class KytyAdapter implements EmulatorAdapter {
     }
     // Fifo = vsync; Mailbox is upstream's default (src/common/emulatorConfig.h).
     return { screenWidth: w, screenHeight: h, fullscreen: s.fullscreen, presentMode: s.vsync ? 'Fifo' : 'Mailbox', options };
+  }
+
+  settingsSchema(): SettingDef[] {
+    return KYTY_SETTINGS;
+  }
+
+  /** KytyPS5 has no config file; the current values are the options OmniPC passes at launch. */
+  async readSettings(): Promise<Record<string, string>> {
+    const opts = (await this.readConfig().catch(() => null))?.managed?.options;
+    const out: Record<string, string> = {};
+    if (!opts || typeof opts !== 'object') return out;
+    for (const d of KYTY_SETTINGS) {
+      const v = (opts as Record<string, unknown>)[d.key];
+      if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') out[d.key] = String(v);
+    }
+    return out;
+  }
+
+  optimize(hw: HardwareProfile): { key: string; value: string; reason: string }[] {
+    return kytyOptimize(hw);
   }
 
   async readConfig(): Promise<KytyConfigFile | null> {

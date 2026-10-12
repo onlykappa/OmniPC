@@ -19,6 +19,8 @@
 //   BIOS/switch                      user-supplied prod.keys / title.keys (+ optional firmware dump)
 
 import { registerContent } from './content';
+import type { SettingDef } from '@shared/emulatorSettings';
+import { RYUJINX_ENCODING, RYUJINX_SETTINGS, decodeRyujinx, encodeRyujinx, ryujinxOptimize } from './settingsSchema';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { copyFile, mkdir, readdir, readFile, rm, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
@@ -214,6 +216,25 @@ export class RyujinxAdapter implements EmulatorAdapter {
       aspect_ratio: RYUJINX_ASPECT[s.aspectRatio] ?? RYUJINX_ASPECT['16:9'],
       start_fullscreen: s.fullscreen,
     };
+  }
+
+  settingsSchema(): SettingDef[] {
+    return RYUJINX_SETTINGS;
+  }
+
+  async readSettings(): Promise<Record<string, string>> {
+    const { doc } = await this.readConfig().catch(() => ({ doc: null }));
+    const out: Record<string, string> = {};
+    if (!doc) return out;
+    for (const d of RYUJINX_SETTINGS) {
+      const v = decodeRyujinx(d.key, doc[d.key]);
+      if (v !== undefined) out[d.key] = v;
+    }
+    return out;
+  }
+
+  optimize(hw: HardwareProfile): { key: string; value: string; reason: string }[] {
+    return ryujinxOptimize(hw);
   }
 
   async readConfig(): Promise<{ doc: JsonObject | null; existed: boolean }> {
@@ -747,6 +768,12 @@ function advancedValues(adv: Record<string, string>, doc: JsonObject): Record<st
   const out: Record<string, Json> = {};
   for (const [key, raw] of Object.entries(adv)) {
     if (!/^[a-z][a-z0-9_]*$/.test(key) || key === 'version') continue;
+    if (RYUJINX_ENCODING[key]) {
+      // Menu settings: always written with the JSON type Ryujinx expects (a wrong type invalidates Config.json).
+      const enc = encodeRyujinx(key, raw);
+      if (enc !== undefined) out[key] = enc;
+      continue;
+    }
     const existing = doc[key];
     if (existing !== undefined && existing !== null && typeof existing === 'object') continue;
     const v = String(raw).trim();

@@ -28,6 +28,8 @@ import { runProcess } from '../../platform/exec';
 import { fileVersion, isWindows } from '../../platform/powershell';
 import { splitArgs } from '../pcsx2/adapter';
 import { writeAchievementsConfig, type RaFiles } from '../../achievements/emulatorConfig';
+import type { SettingDef } from '@shared/emulatorSettings';
+import { DUCKSTATION_OVERCLOCK_KEY, DUCKSTATION_SETTINGS, duckstationOptimize, duckstationValues, readOverclockPercent } from './settingsSchema';
 
 export const DUCKSTATION_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
@@ -214,6 +216,32 @@ export class DuckStationAdapter implements EmulatorAdapter {
     ];
   }
 
+  settingsSchema(): SettingDef[] {
+    return DUCKSTATION_SETTINGS;
+  }
+
+  async readSettings(): Promise<Record<string, string>> {
+    if (!existsSync(this.iniPath())) return {};
+    const doc = await loadIni(this.iniPath()).catch(() => null);
+    if (!doc) return {};
+    const out: Record<string, string> = {};
+    for (const d of DUCKSTATION_SETTINGS) {
+      if (d.key === DUCKSTATION_OVERCLOCK_KEY) {
+        const pct = readOverclockPercent(doc.get('CPU', 'OverclockNumerator'), doc.get('CPU', 'OverclockDenominator'));
+        if (pct !== undefined) out[d.key] = pct;
+        continue;
+      }
+      const [section, key] = d.key.split('|');
+      const v = doc.get(section, key);
+      if (v !== undefined) out[d.key] = v;
+    }
+    return out;
+  }
+
+  optimize(hw: HardwareProfile): { key: string; value: string; reason: string }[] {
+    return duckstationOptimize(hw);
+  }
+
   async applyConfig(input: ConfigInput, scope: 'all' | 'controller' | 'graphics' | 'paths'): Promise<ConfigWriteResult> {
     await this.ensureDirs();
     const notes: string[] = [];
@@ -237,8 +265,7 @@ export class DuckStationAdapter implements EmulatorAdapter {
     if (scope === 'all' || scope === 'graphics') {
       for (const [s, k, v] of this.graphicsValues(input.settings)) set(s, k, v);
       for (const [key, value] of Object.entries(input.settings.advanced)) {
-        const [section, name] = key.split('|');
-        if (section && name) set(section, name, value);
+        for (const [section, name, v] of duckstationValues(key, value)) set(section, name, v);
       }
     }
     if (scope === 'all' || scope === 'controller') {
@@ -392,10 +419,7 @@ export class DuckStationAdapter implements EmulatorAdapter {
     if (o.aspectRatio !== undefined) out.push(g[2]);
     if (o.vsync !== undefined) out.push(g[3]);
     if (o.frameLimit !== undefined) out.push(g[4]);
-    for (const [key, value] of Object.entries(o.advanced ?? {})) {
-      const [section, name] = key.split('|');
-      if (section && name) out.push([section, name, value]);
-    }
+    for (const [key, value] of Object.entries(o.advanced ?? {})) out.push(...duckstationValues(key, value));
     return out;
   }
 

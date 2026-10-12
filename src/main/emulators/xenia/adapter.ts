@@ -25,6 +25,8 @@ import { findExeIn, resolutionScaleFor } from '../common';
 import { isWindows } from '../../platform/powershell';
 import { splitArgs } from '../pcsx2/adapter';
 import { TomlDocument, checkToml, type TomlValue } from './toml';
+import type { SettingDef } from '@shared/emulatorSettings';
+import { XENIA_CVAR_TYPES, XENIA_EMPTY_AS, XENIA_SETTINGS, xeniaOptimize } from './settingsSchema';
 
 export const XENIA_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
@@ -174,7 +176,7 @@ export class XeniaAdapter implements EmulatorAdapter {
     for (const [k, raw] of Object.entries(adv ?? {})) {
       const [table, key] = k.split('|');
       if (!table || !key || !/^[A-Za-z0-9_]+$/.test(key)) continue;
-      out.push([table, key, inferValue(String(raw))]);
+      out.push([table, key, encodeCvar(k, String(raw))]);
     }
     return out;
   }
@@ -196,6 +198,27 @@ export class XeniaAdapter implements EmulatorAdapter {
     if (c.deviceIndex !== 0) notes.push('Xenia assigns players in controller connection order (XInput slot / SDL device order); it has no setting to pick a specific controller for player 1.');
     if (hid === 'sdl') notes.push('Non-Xbox controllers use Xenia\'s SDL input driver with the standard Xbox layout (South = A).');
     return { values, notes };
+  }
+
+  settingsSchema(): SettingDef[] {
+    return XENIA_SETTINGS;
+  }
+
+  async readSettings(): Promise<Record<string, string>> {
+    const doc = await this.readConfig().catch(() => null);
+    if (!doc) return {};
+    const out: Record<string, string> = {};
+    for (const d of XENIA_SETTINGS) {
+      const [table, key] = d.key.split('|');
+      const v = doc.get(table, key);
+      if (v === undefined) continue;
+      out[d.key] = v === '' && XENIA_EMPTY_AS[d.key] ? XENIA_EMPTY_AS[d.key] : v;
+    }
+    return out;
+  }
+
+  optimize(hw: HardwareProfile): { key: string; value: string; reason: string }[] {
+    return xeniaOptimize(hw);
   }
 
   async readConfig(): Promise<TomlDocument | null> {
@@ -457,6 +480,17 @@ export class XeniaAdapter implements EmulatorAdapter {
   persistentAppPaths(): string[] {
     return ['portable.txt', XENIA_CONFIG_NAME, 'content', 'config', 'patches', 'plugins', 'cache0', 'cache1', 'cache', 'cache_host', 'xconfig.settings', 'recent.toml', 'gamecontrollerdb.txt'];
   }
+}
+
+/** Encodes a menu value with the cvar's declared TOML type; unknown cvars fall back to inference. */
+function encodeCvar(key: string, raw: string): TomlValue {
+  const type = XENIA_CVAR_TYPES[key];
+  const s = raw.trim();
+  if (type === 'bool') return /^(true|1|yes|on)$/i.test(s);
+  if (type === 'int' && /^-?\d+(\.\d+)?$/.test(s)) return Math.trunc(Number(s));
+  if (type === 'double' && Number.isFinite(Number(s)) && s !== '') return { float: Number(s) };
+  if (type === 'string') return /^'.*'$/.test(s) || /^".*"$/.test(s) ? s.slice(1, -1) : s;
+  return inferValue(s);
 }
 
 function inferValue(raw: string): TomlValue {

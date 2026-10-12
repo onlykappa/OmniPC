@@ -25,6 +25,8 @@ import { runProcess } from '../../platform/exec';
 import { fileVersion, isWindows } from '../../platform/powershell';
 import { splitArgs } from '../pcsx2/adapter';
 import { writeAchievementsConfig, type RaFiles } from '../../achievements/emulatorConfig';
+import type { SettingDef } from '@shared/emulatorSettings';
+import { DOLPHIN_SETTINGS, dolphinOptimize, dolphinValue } from './settingsSchema';
 
 export const DOLPHIN_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
@@ -175,6 +177,29 @@ export class DolphinAdapter implements EmulatorAdapter {
     ];
   }
 
+  settingsSchema(): SettingDef[] {
+    return DOLPHIN_SETTINGS;
+  }
+
+  async readSettings(): Promise<Record<string, string>> {
+    const out: Record<string, string> = {};
+    const docs = new Map<string, IniDocument | null>();
+    for (const d of DOLPHIN_SETTINGS) {
+      const [file, section, key] = d.key.split('|');
+      if (!docs.has(file)) {
+        const path = this.configPath(file);
+        docs.set(file, existsSync(path) ? await loadIni(path).catch(() => null) : null);
+      }
+      const v = docs.get(file)?.get(section, key);
+      if (v !== undefined) out[d.key] = v;
+    }
+    return out;
+  }
+
+  optimize(hw: HardwareProfile): { key: string; value: string; reason: string }[] {
+    return dolphinOptimize(hw);
+  }
+
   private deviceString(c: UniversalControllerProfile): { device: string; table: Record<UniversalButton, string>; bestEffort: boolean } {
     if (c.controllerKind === 'xbox' || c.controllerKind === 'generic') return { device: `XInput/${c.deviceIndex}/Gamepad`, table: XINPUT, bestEffort: c.controllerKind === 'generic' };
     return { device: `SDL/${c.deviceIndex}/${SDL_DEVICE_NAMES[c.controllerKind] ?? SDL_DEVICE_NAMES.generic}`, table: SDL, bestEffort: true };
@@ -227,7 +252,7 @@ export class DolphinAdapter implements EmulatorAdapter {
       await set('GFX.ini', 'Hardware', 'VSync', s.vsync);
       for (const [key, value] of Object.entries(s.advanced)) {
         const [file, section, name] = key.split('|');
-        if (file && section && name && /^(Dolphin|GFX)\.ini$/.test(file)) await set(file, section, name, value);
+        if (file && section && name && /^(Dolphin|GFX)\.ini$/.test(file)) await set(file, section, name, dolphinValue(key, value));
       }
     }
     if (scope === 'all' || scope === 'controller') {
@@ -292,7 +317,7 @@ export class DolphinAdapter implements EmulatorAdapter {
     for (const [key, value] of Object.entries(o.advanced ?? {})) {
       const [file, section, name] = key.split('|');
       const system = file === 'GFX.ini' ? 'GFX' : file === 'Dolphin.ini' ? 'Dolphin' : null;
-      if (system && section && name) c(`${system}.${section}.${name}=${value}`);
+      if (system && section && name) c(`${system}.${section}.${name}=${dolphinValue(key, value)}`);
     }
     void base;
     return args;

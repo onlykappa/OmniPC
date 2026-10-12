@@ -27,6 +27,8 @@ import { findExeIn } from '../common';
 import { runProcess } from '../../platform/exec';
 import { fileVersion, isWindows } from '../../platform/powershell';
 import { splitArgs } from '../pcsx2/adapter';
+import type { SettingDef } from '@shared/emulatorSettings';
+import { CEMU_SETTINGS, cemuOptimize } from './settingsSchema';
 import { child, childElements, element, getText, parseXml, serializeXml, setText, textOf, tryParseXml, type XmlDocument, type XmlElement } from './xml';
 
 export const CEMU_MANIFEST = manifestJson as unknown as EmulatorManifest;
@@ -186,6 +188,27 @@ export class CemuAdapter implements EmulatorAdapter {
     const doc = parseXml(await readFile(file, 'utf8'));
     if (doc.root.name !== 'content') throw new Error(`settings.xml root element is <${doc.root.name}>, expected <content>`);
     return { doc, existed: true };
+  }
+
+  settingsSchema(): SettingDef[] {
+    return CEMU_SETTINGS;
+  }
+
+  async readSettings(): Promise<Record<string, string>> {
+    if (!existsSync(this.settingsPath())) return {};
+    const parsed = tryParseXml(await readFile(this.settingsPath(), 'utf8').catch(() => ''));
+    if (!parsed.doc) return {};
+    const out: Record<string, string> = {};
+    for (const d of CEMU_SETTINGS) {
+      const path = advancedPath(d.key);
+      const v = path ? getText(parsed.doc.root, path) : null;
+      if (v !== null && v !== '') out[d.key] = v;
+    }
+    return out;
+  }
+
+  optimize(hw: HardwareProfile): { key: string; value: string; reason: string }[] {
+    return cemuOptimize(hw);
   }
 
   /** Managed paths: [xml path below <content>, value]. */
