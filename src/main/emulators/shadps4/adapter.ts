@@ -30,6 +30,8 @@ import { findExeIn } from '../common';
 import { runProcess } from '../../platform/exec';
 import { fileVersion, isWindows } from '../../platform/powershell';
 import { splitArgs } from '../pcsx2/adapter';
+import type { SettingDef } from '@shared/emulatorSettings';
+import { SHADPS4_SETTINGS, SHADPS4_TYPES, shadps4Optimize } from './settingsSchema';
 
 export const SHADPS4_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
@@ -293,6 +295,25 @@ export class Shadps4Adapter implements EmulatorAdapter {
     };
   }
 
+  settingsSchema(): SettingDef[] {
+    return SHADPS4_SETTINGS;
+  }
+
+  async readSettings(): Promise<Record<string, string>> {
+    const doc = await this.readConfig().catch(() => null);
+    const out: Record<string, string> = {};
+    if (!doc) return out;
+    for (const d of SHADPS4_SETTINGS) {
+      const v = getJson(doc, d.key);
+      if (typeof v === 'boolean' || typeof v === 'number' || typeof v === 'string') out[d.key] = String(v);
+    }
+    return out;
+  }
+
+  optimize(hw: HardwareProfile): { key: string; value: string; reason: string }[] {
+    return shadps4Optimize(hw);
+  }
+
   async readConfig(): Promise<JsonObject | null> {
     return readJsonObject(this.configPath());
   }
@@ -422,9 +443,11 @@ export class Shadps4Adapter implements EmulatorAdapter {
       values['GPU.window_width'] = w;
       values['GPU.window_height'] = h;
     }
-    if (!Object.keys(values).length) return [];
     const path = this.gameConfigPath(titleId);
     const doc = (await readJsonObject(path)) ?? {};
+    // Menu settings overridden for this game (every schema key is in shadPS4's GetOverrideableFields).
+    Object.assign(values, advancedValues(overrides.advanced ?? {}, doc));
+    if (!Object.keys(values).length) return [];
     let changed = !existsSync(path);
     for (const [k, v] of Object.entries(values)) changed = setJson(doc, k, v) || changed;
     if (changed) await atomicWrite(path, `${JSON.stringify(doc, null, 2)}\n`);
@@ -435,7 +458,7 @@ export class Shadps4Adapter implements EmulatorAdapter {
     const notes: string[] = [];
     const fullscreen = profile?.overrides.fullscreen ?? settings.fullscreen;
     const titleId = gameTitleId(target);
-    const hasOverrides = !!profile && Object.keys(profile.overrides).some((k) => k !== 'advanced');
+    const hasOverrides = !!profile && (Object.keys(profile.overrides).some((k) => k !== 'advanced') || Object.keys(profile.overrides.advanced ?? {}).length > 0);
     if (hasOverrides && !titleId) notes.push('Per-game overrides need the PS4 title ID (e.g. CUSA00001); only fullscreen is applied for this launch.');
     const args = ['--fullscreen', fullscreen ? 'true' : 'false'];
     if (profile?.customArgs) args.push(...splitArgs(profile.customArgs));
@@ -640,8 +663,17 @@ function advancedValues(adv: Record<string, string>, doc: JsonObject): Record<st
   for (const [key, raw] of Object.entries(adv)) {
     const m = /^([A-Za-z]+)\.([A-Za-z0-9_]+)$/.exec(key);
     if (!m || !GROUPS.includes(m[1]) || MANAGED_TYPES[key] === 'string' && /_dir$/.test(m[2])) continue;
+    const v = String(raw).trim();
+    const declared = SHADPS4_TYPES[key];
+    if (declared) {
+      // Menu settings: write the JSON type shadPS4 expects, whatever is in the file now.
+      if (declared === 'boolean') {
+        if (/^(true|false|1|0)$/i.test(v)) out[key] = /^(true|1)$/i.test(v);
+      } else if (declared === 'string') out[key] = v;
+      else if (/^-?\d+(\.\d+)?$/.test(v)) out[key] = declared === 'integer' ? Math.round(Number(v)) : Number(v);
+      continue;
+    }
     const existing = getJson(doc, key);
-    const v = String(raw);
     if (typeof existing === 'boolean' || (existing === undefined && /^(true|false)$/i.test(v))) {
       if (/^(true|false|1|0)$/i.test(v)) out[key] = /^(true|1)$/i.test(v);
     } else if (typeof existing === 'number' || (existing === undefined && /^-?\d+(\.\d+)?$/.test(v))) {
