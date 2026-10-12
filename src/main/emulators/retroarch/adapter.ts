@@ -30,6 +30,8 @@ import { runProcess } from '../../platform/exec';
 import { fileVersion, isWindows } from '../../platform/powershell';
 import { OmniFailure } from '../../core/errors';
 import { splitArgs } from '../pcsx2/adapter';
+import type { SettingDef } from '@shared/emulatorSettings';
+import { RETROARCH_SETTINGS, retroarchOptimize } from './settingsSchema';
 import { CfgDocument, checkCfg } from './cfg';
 import { writeAchievementsConfig, type RaFiles } from '../../achievements/emulatorConfig';
 
@@ -270,6 +272,29 @@ export class RetroArchAdapter implements EmulatorAdapter {
       ['video_vsync', s.vsync],
       ['aspect_ratio_index', ASPECT_INDEX[s.aspectRatio] ?? ASPECT_INDEX.core],
     ];
+  }
+
+  settingsSchema(): SettingDef[] {
+    return RETROARCH_SETTINGS;
+  }
+
+  /** Current values of the menu settings in retroarch.cfg (floats such as "0.000000" are normalised by the menu). */
+  async readSettings(): Promise<Record<string, string>> {
+    if (!existsSync(this.cfgPath())) return {};
+    const doc = await this.loadCfg();
+    const out: Record<string, string> = {};
+    for (const d of RETROARCH_SETTINGS) {
+      let v = doc.get(d.key.slice(4));
+      if (v === undefined) continue;
+      // Before v1.17 video_black_frame_insertion was a boolean.
+      if (d.key === 'cfg|video_black_frame_insertion' && /^(true|false)$/.test(v)) v = v === 'true' ? '1' : '0';
+      out[d.key] = v;
+    }
+    return out;
+  }
+
+  optimize(hw: HardwareProfile): { key: string; value: string; reason: string }[] {
+    return retroarchOptimize(hw);
   }
 
   private async loadCfg(path = this.cfgPath()): Promise<CfgDocument> {

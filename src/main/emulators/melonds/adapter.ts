@@ -26,6 +26,8 @@ import { findExeIn, resolutionScaleFor } from '../common';
 import { fileVersion, isWindows } from '../../platform/powershell';
 import { splitArgs } from '../pcsx2/adapter';
 import { TomlDocument, checkToml, type TomlScalar } from './toml';
+import type { SettingDef } from '@shared/emulatorSettings';
+import { MELONDS_SETTINGS, melondsOptimize, melondsTomlValue } from './settingsSchema';
 
 export const MELONDS_MANIFEST = manifestJson as unknown as EmulatorManifest;
 
@@ -118,6 +120,11 @@ const PORTABLE_FILES = [
 ];
 
 const P = (s: string): Path => s.split('.');
+
+/** TOML type of an existing value, so free-form advanced keys keep melonDS's expected type. */
+function existingKind(doc: TomlDocument, path: Path): 'string' | 'int' | 'float' | 'bool' | undefined {
+  return (['bool', 'int', 'float', 'string'] as const).find((k) => doc.getTyped(path, k) !== undefined);
+}
 
 export class MelonDsAdapter implements EmulatorAdapter {
   readonly manifest = MELONDS_MANIFEST;
@@ -231,6 +238,30 @@ export class MelonDsAdapter implements EmulatorAdapter {
     ];
   }
 
+  settingsSchema(): SettingDef[] {
+    return MELONDS_SETTINGS;
+  }
+
+  async readSettings(): Promise<Record<string, string>> {
+    if (!existsSync(this.tomlPath())) return {};
+    let doc: TomlDocument;
+    try {
+      doc = await this.loadToml();
+    } catch {
+      return {};
+    }
+    const out: Record<string, string> = {};
+    for (const d of MELONDS_SETTINGS) {
+      const v = doc.get(P(d.key));
+      if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') out[d.key] = String(v);
+    }
+    return out;
+  }
+
+  optimize(hw: HardwareProfile): { key: string; value: string; reason: string }[] {
+    return melondsOptimize(hw);
+  }
+
   private async loadToml(): Promise<TomlDocument> {
     const file = this.tomlPath();
     if (!existsSync(file)) return TomlDocument.empty();
@@ -305,8 +336,8 @@ export class MelonDsAdapter implements EmulatorAdapter {
     if (scope === 'all' || scope === 'graphics') {
       for (const [k, v] of this.graphicsValues(input.settings)) set(k, v);
       for (const [key, value] of Object.entries(input.settings.advanced)) {
-        // advanced keys are dotted TOML paths, e.g. "3D.GL.BetterPolygons".
-        if (/^\w+(\.\w+)*$/.test(key)) set(P(key), value as TomlScalar);
+        // advanced keys are dotted TOML paths, e.g. "3D.GL.BetterPolygons"; values are typed for melonDS.
+        if (/^\w+(\.\w+)*$/.test(key)) set(P(key), melondsTomlValue(key, value, existingKind(doc, P(key))));
       }
     }
     if (scope === 'all' || scope === 'controller') {
@@ -462,7 +493,7 @@ export class MelonDsAdapter implements EmulatorAdapter {
     if (o.aspectRatio !== undefined) out.push(g[2], g[3]);
     if (o.vsync !== undefined) out.push(g[4]);
     if (o.frameLimit !== undefined) out.push(g[5]);
-    for (const [key, value] of Object.entries(o.advanced ?? {})) if (/^[\w.]+$/.test(key)) out.push([P(key), value as TomlScalar]);
+    for (const [key, value] of Object.entries(o.advanced ?? {})) if (/^\w+(\.\w+)*$/.test(key)) out.push([P(key), melondsTomlValue(key, value)]);
     return out;
   }
 
