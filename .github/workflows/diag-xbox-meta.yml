@@ -1,0 +1,14 @@
+name: Diag Xbox metadata (temporary)
+on:
+  push:
+    branches: ['claude/xbox-meta-diag']
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npx --yes esbuild@0.25.0 scripts/diag/xbox-meta.ts --bundle --platform=node --format=cjs --alias:@shared=./src/shared --outfile=/tmp/diag.cjs
+      - run: node /tmp/diag.cjs
