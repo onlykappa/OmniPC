@@ -43,6 +43,7 @@ import { SteamService, defaultSelfLauncher, type SelfLauncher } from '../steam/s
 import { RetroAchievementsService } from '../achievements/service';
 import { TokenVault, type SecretCipher, type StoredRaToken } from '../achievements/tokenVault';
 import { raUserAgent } from '../achievements/raApi';
+import { ShareServer, type ShareOptions } from '../share/server';
 
 const log = logger.scope('container');
 
@@ -59,6 +60,8 @@ export interface Host {
   /** Encrypts secrets at rest (Electron safeStorage); without it the RetroAchievements token is stored unprotected. */
   secretCipher?: SecretCipher;
   appVersion?: string;
+  /** Overrides for the "Share this PC" server (tests). */
+  share?: ShareOptions;
 }
 
 export interface ContainerOptions {
@@ -96,6 +99,7 @@ export class AppContainer {
   readonly importer: ImportService;
   readonly steam: SteamService;
   readonly achievements: RetroAchievementsService;
+  readonly share: ShareServer;
   readonly safeMode: boolean;
   private hardwareProfile: HardwareProfile | null;
   private pads: { pads: DetectedController[]; reportedAt: number | null } = { pads: [], reportedAt: null };
@@ -211,6 +215,23 @@ export class AppContainer {
     });
     this.autoSaveBackup = new AutoSaveBackup({ saves: this.saves, settings: this.settings, launches: this.launches, jobs: this.jobs, bus: this.bus, emulators: this.emulators, activeEmulator: () => this.launcher.activeSession()?.emulatorId ?? null, backgroundEnabled: () => !this.safeMode });
     this.importer = new ImportService(this.registry, this.emulators, this.library, this.ops, this.bios, this.paths);
+    this.share = new ShareServer({
+      library: this.library,
+      paths: this.paths,
+      saveLocations: () => this.saves.locations(),
+      emulatorName: (id) => this.registry.get(id)?.manifest.name ?? id,
+      settings: this.settings,
+      bus: this.bus,
+      appVersion: opts.host.appVersion ?? '0.0.0',
+      emulatorIds: () => this.registry.implemented().map((a) => a.manifest.id),
+      isInstalled: (id) => this.emulators.isInstalled(id),
+      emulatorVersion: (id) => this.emuRepo.get(id).version,
+      storedEmulatorSettings: (id) => this.emuRepo.getSettings(id),
+      settingsFor: (id) => this.emulators.settingsFor(id),
+      controllerProfile: () => this.ops.getControllerProfile(),
+      gameProfile: (id) => this.ops.getGameProfile(id),
+      exportSaves: (id, dest) => this.saves.exportZip(id, dest),
+    }, opts.host.share);
     this.steam = new SteamService({ library: this.library, paths: this.paths, launcher: opts.host.selfLauncher ?? defaultSelfLauncher });
     // When an emulator becomes available, its bundled title/compatibility
     // database can improve metadata for games scanned earlier.
@@ -313,6 +334,8 @@ export class AppContainer {
       log.info('safe mode: background services disabled');
       return;
     }
+    // "Share this PC" stays on across restarts when the user left it on.
+    if (this.share.wantsEnabled()) await this.share.start().then(() => this.bus.emit('share.changed', this.share.status())).catch((e) => log.warn('sharing could not start', errorMessage(e)));
     const age = newestBackupAgeHours(this.paths.databaseBackups);
     if (age === null || age > 24) await backupDatabase(this.db, this.paths.databaseBackups).catch((e) => log.warn('db backup failed', errorMessage(e)));
     if (!this.hardwareProfile) await this.scanHardware().catch((e) => log.warn('hardware scan failed', errorMessage(e)));
@@ -409,6 +432,7 @@ export class AppContainer {
   shutdown(): void {
     for (const t of this.timers) clearInterval(t);
     this.autoSaveBackup.stop();
+    void this.share.stop();
     try {
       this.db.close();
     } catch {
