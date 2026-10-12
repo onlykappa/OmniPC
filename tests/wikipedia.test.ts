@@ -7,6 +7,9 @@ describe('Wikipedia artwork', () => {
   it('cleans dump names', () => {
     expect(cleanGameTitle('Batman - Arkham Origins Xbox 360 ISO')).toBe('Batman - Arkham Origins');
     expect(cleanGameTitle('Red_Dead_Redemption (USA) [NTSC-U]')).toBe('Red Dead Redemption');
+    expect(cleanGameTitle('Minecraft: Xbox 360 Edition')).toBe('Minecraft: Xbox 360 Edition');
+    expect(cleanGameTitle('God of War II')).toBe('God of War II');
+    expect(cleanGameTitle('Halo_3_Xbox360')).toBe('Halo 3');
   });
 
   it('picks the matching video game article and ignores look-alikes', () => {
@@ -28,6 +31,8 @@ describe('Wikipedia artwork', () => {
     const fetchImpl = (async (u: string) => {
       expect(u).toContain('en.wikipedia.org/w/api.php');
       expect(new URL(u).searchParams.get('gsrsearch')).toBe('Dark Souls II Scholar of the First Sin Xbox 360 video game');
+      // Game covers are non-free files; without this Wikipedia returns no image.
+      expect(new URL(u).searchParams.get('pilicense')).toBe('any');
       return Response.json({ query: { pages: [page('Dark Souls II', '2014 video game', 1, 'https://upload.wikimedia.org/wikipedia/en/d/df/Dark_Souls_II_cover.jpg')] } });
     }) as typeof fetch;
     const p = wikipediaProvider(fetchImpl);
@@ -36,5 +41,17 @@ describe('Wikipedia artwork', () => {
     expect(r?.metadata?.releaseYear).toBe(2013);
     const svg = wikipediaProvider((async () => Response.json({ query: { pages: [page('Cuphead', '2017 video game', 1, 'https://upload.wikimedia.org/x/logo.svg')] } })) as unknown as typeof fetch);
     expect((await svg.lookup({ gameId: 1, systemId: 'switch', title: 'Cuphead', serial: null, region: null, primaryPath: 'x' }, { emulatorAppDir: () => null, fetchImpl, theGamesDbApiKey: '' }))?.artwork).toEqual([]);
+  });
+
+  it('searches again without the console name when the first search finds nothing', async () => {
+    const queries: string[] = [];
+    const fetchImpl = (async (u: string) => {
+      const q = new URL(u).searchParams.get('gsrsearch')!;
+      queries.push(q);
+      return Response.json({ query: { pages: q.includes('Xbox') ? [] : [page('Fable II', '2008 video game', 1)] } });
+    }) as typeof fetch;
+    const r = await wikipediaProvider(fetchImpl).lookup({ gameId: 1, systemId: 'x360', title: 'Fable II', serial: null, region: null, primaryPath: 'x' }, { emulatorAppDir: () => null, fetchImpl, theGamesDbApiKey: '' });
+    expect(queries).toEqual(['Fable II Xbox 360 video game', 'Fable II video game']);
+    expect(r?.sourceId).toBe('wikipedia:Fable II');
   });
 });

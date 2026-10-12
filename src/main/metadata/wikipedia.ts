@@ -10,13 +10,18 @@ import type { MetadataProvider, MetadataSubject } from './providers';
 import { titleKey } from './libretroThumbnails';
 
 export const WIKIPEDIA_HOSTS = ['en.wikipedia.org', 'upload.wikimedia.org'];
+/** Wikimedia refuses generic User-Agents; its policy asks for a name and a contact URL. */
+export const WIKIMEDIA_USER_AGENT = 'OmniPC (https://github.com/onlykappa/OmniPC)';
 
 /** Removes dump/release noise from file-derived titles ("… Xbox 360 ISO", "[NTSC]", "v1.0"). */
 export function cleanGameTitle(title: string): string {
   return title
     .replace(/[([][^)\]]*[)\]]/g, ' ')
-    .replace(/\b(xbox\s*360|x360|xbox|iso|xiso|god|xex|nsp|xci|ntsc(-[uj])?|pal|rgh|jtag|repack|update|dlc|v\d+(\.\d+)*)\b/gi, ' ')
     .replace(/[_]+/g, ' ')
+    .replace(/\b(iso|xiso|xex|nsp|xci|ntsc(-[uj])?|pal|rgh|jtag|repack|update|dlc|v\d+(\.\d+)*)\b/gi, ' ')
+    // The console name only as a trailing tag ("Halo 3 Xbox 360"), never inside
+    // a real title ("Minecraft: Xbox 360 Edition").
+    .replace(/(\s|-)+(xbox\s*360|x360|xbox)\s*$/i, ' ')
     .replace(/\s+-\s*$/, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
@@ -70,15 +75,20 @@ export function wikipediaProvider(fetchImpl: typeof fetch): MetadataProvider {
       const title = cleanGameTitle(s.title);
       if (title.length < 2) return null;
       const system = getSystem(s.systemId as SystemId)?.name ?? '';
-      const params = new URLSearchParams({
-        action: 'query', format: 'json', formatversion: '2', generator: 'search', gsrlimit: '6', gsrnamespace: '0',
-        gsrsearch: `${title} ${system} video game`,
-        prop: 'pageimages|pageprops|extracts', piprop: 'original', exintro: '1', explaintext: '1', exsentences: '4', ppprop: 'wikibase-shortdesc|disambiguation',
-      });
-      const r = await fetchImpl(`https://en.wikipedia.org/w/api.php?${params}`, { headers: { 'User-Agent': 'OmniPC (https://github.com/onlykappa/OmniPC)' } });
-      if (!r.ok) return null;
-      const body = (await r.json()) as { query?: { pages?: WikiPage[] } };
-      const page = pickArticle(body.query?.pages ?? [], s.title);
+      const search = async (q: string) => {
+        const params = new URLSearchParams({
+          action: 'query', format: 'json', formatversion: '2', generator: 'search', gsrlimit: '6', gsrnamespace: '0', gsrsearch: q,
+          // Box art on Wikipedia is almost always a non-free (fair use) file, which
+          // PageImages leaves out unless asked for any license.
+          prop: 'pageimages|pageprops|extracts', piprop: 'original', pilicense: 'any', exintro: '1', explaintext: '1', exsentences: '4', ppprop: 'wikibase-shortdesc|disambiguation',
+        });
+        const r = await fetchImpl(`https://en.wikipedia.org/w/api.php?${params}`, { headers: { 'User-Agent': WIKIMEDIA_USER_AGENT } });
+        if (!r.ok) return null;
+        const body = (await r.json()) as { query?: { pages?: WikiPage[] } };
+        return pickArticle(body.query?.pages ?? [], s.title);
+      };
+      // With the console name first; some articles only rank without it.
+      const page = (await search(`${title} ${system} video game`)) ?? (system ? await search(`${title} video game`) : null);
       if (!page) return null;
       const img = page.original?.source;
       const usable = img && /^https:\/\/upload\.wikimedia\.org\//.test(img) && /\.(jpe?g|png|webp)$/i.test(img);
