@@ -43,6 +43,11 @@ import { SteamService, defaultSelfLauncher, type SelfLauncher } from '../steam/s
 import { RetroAchievementsService } from '../achievements/service';
 import { TokenVault, type SecretCipher, type StoredRaToken } from '../achievements/tokenVault';
 import { raUserAgent } from '../achievements/raApi';
+import { hostname } from 'node:os';
+import { ShareClient } from '../share/client';
+import { discover } from '../share/discovery';
+import { ShareCopyService, type Discoverer } from '../share/copy';
+import { SetupImporter } from '../share/setupImport';
 import { ShareServer, type ShareOptions } from '../share/server';
 
 const log = logger.scope('container');
@@ -60,6 +65,8 @@ export interface Host {
   /** Encrypts secrets at rest (Electron safeStorage); without it the RetroAchievements token is stored unprotected. */
   secretCipher?: SecretCipher;
   appVersion?: string;
+  /** Finds sharing PCs on the local network (tests inject a fake). */
+  shareDiscoverer?: Discoverer;
   /** Overrides for the "Share this PC" server (tests). */
   share?: ShareOptions;
 }
@@ -99,6 +106,8 @@ export class AppContainer {
   readonly importer: ImportService;
   readonly steam: SteamService;
   readonly achievements: RetroAchievementsService;
+  /** "Copy from another PC" (client side of multi-PC sharing). */
+  readonly shareCopy: ShareCopyService;
   readonly share: ShareServer;
   readonly safeMode: boolean;
   private hardwareProfile: HardwareProfile | null;
@@ -233,6 +242,7 @@ export class AppContainer {
       exportSaves: (id, dest) => this.saves.exportZip(id, dest),
     }, opts.host.share);
     this.steam = new SteamService({ library: this.library, paths: this.paths, launcher: opts.host.selfLauncher ?? defaultSelfLauncher });
+    this.shareCopy = this.createShareCopy(opts.host.shareDiscoverer);
     // When an emulator becomes available, its bundled title/compatibility
     // database can improve metadata for games scanned earlier.
     const installed = new Set(this.registry.implemented().filter((a) => this.emulators.isInstalled(a.manifest.id)).map((a) => a.manifest.id));
@@ -258,6 +268,43 @@ export class AppContainer {
 
   hardware(): HardwareProfile | null {
     return this.hardwareProfile;
+  }
+
+  private createShareCopy(discoverer: Discoverer | undefined): ShareCopyService {
+    const client = new ShareClient({ store: this.settings, identity: () => ({ deviceId: this.share.deviceId, name: hostname() }), fetchImpl: this.opts.host.fetchImpl });
+    const setup = new SetupImporter({
+      settings: this.settings,
+      emulators: this.emulators,
+      isKnownEmulator: (id) => !!this.registry.get(id)?.manifest.implemented,
+      ops: this.ops,
+      library: this.library,
+      backup: () => backupDatabase(this.db, this.paths.databaseBackups, 7, 'before-setup-copy'),
+    });
+    return new ShareCopyService({
+      client,
+      // Our own deviceId is passed so this PC never finds itself.
+      discoverer: discoverer ?? { discover: (ms) => discover(ms, { deviceId: this.share.deviceId }) },
+      jobs: this.jobs,
+      paths: this.paths,
+      library: this.library,
+      addLibraryPath: async (p) => {
+        const { driveInfoFor, driveOf } = await import('../platform/drives');
+        const drive = await driveInfoFor(p).catch(() => null);
+        this.library.addPath(p, drive?.volumeSerial ?? null, driveOf(p));
+        this.ops.addChange('library.path', null, `Game folder added: ${p}`);
+        this.bus.emit('library.changed', { reason: 'paths' });
+      },
+      scanLibrary: () => this.scanLibrary(false).done,
+      saves: this.saves,
+      setup,
+      ops: this.ops,
+      notifications: this.notifications,
+      documentsDir: join(this.opts.homeDir, 'Documents'),
+      onChanged: (what) => {
+        if (what === 'library') this.bus.emit('library.changed', { reason: 'share' });
+        else this.bus.emit('emulators.changed', { id: null });
+      },
+    });
   }
 
   async scanHardware(): Promise<HardwareProfile> {
