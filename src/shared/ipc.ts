@@ -300,6 +300,18 @@ export interface OmniApi {
   'share.copy': (deviceId: string, selection: import('./share').CopySelection) => { jobId: string };
   /** Default games folder: the first library folder, else Documents\OmniPC Games. */
   'share.suggestDestination': () => string;
+  // Share this PC (sharing side of "Copy from another PC"; protocol in ./share)
+  'share.status': () => import('./share').ShareServerStatus;
+  /** Starts/stops the local-network server (the choice is remembered). */
+  'share.setEnabled': (on: boolean) => import('./share').ShareServerStatus;
+  /** Narrows what is shared (games / BIOS / saves / setup). */
+  'share.setSharing': (partial: Partial<import('./share').ShareServerStatus['sharing']>) => import('./share').ShareServerStatus;
+  /** Accepts pairing requests for `minutes` (1-60); pending codes appear in status.pending. */
+  'share.openPairing': (minutes: number) => import('./share').ShareServerStatus;
+  'share.closePairing': () => import('./share').ShareServerStatus;
+  /** Removes a paired PC; its token stops working at once. */
+  'share.revoke': (deviceId: string) => import('./share').ShareServerStatus;
+  'share.rejectPending': (requestId: string) => import('./share').ShareServerStatus;
 
   // Developer
   'dev.adapterReport': (emulatorId: string) => DevAdapterReport;
@@ -322,6 +334,7 @@ export interface OmniEvents {
   'drives.changed': { available: string[]; unavailable: string[] };
   'app.consoleMode': { enabled: boolean };
   'app.update': AppUpdateState;
+  'share.changed': import('./share').ShareServerStatus;
 }
 
 export type OmniEventName = keyof OmniEvents;

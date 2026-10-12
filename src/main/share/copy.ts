@@ -18,7 +18,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { basename, dirname, extname, isAbsolute, join, resolve, sep } from 'node:path';
 import { getSystem } from '@shared/systems';
-import { isLocalAddress, type CopySelection, type DiscoveredPc, type DiscoveryAnnounce, type ShareCatalog, type ShareFile, type ShareGameItem, type ShareInfo } from '@shared/share';
+import { isLocalAddress, type CopySelection, type DiscoveredPc, type ShareCatalog, type ShareFile, type ShareGameItem, type ShareInfo } from '@shared/share';
 import type { CopyEntry, CopySummary, SetupImportResult, ShareCatalogView } from '@shared/shareCopy';
 import type { AppNotification, SaveLocation } from '@shared/models';
 import type { JobContext, JobManager } from '../core/jobs';
@@ -32,12 +32,9 @@ import { gameMatcher, type SetupImporter } from './setupImport';
 
 const log = logger.scope('share-copy');
 
-/** A PC that answered the discovery broadcast, with the address it answered from. */
-export type DiscoveredAnnounce = DiscoveryAnnounce & { address: string };
-
 /** Discovery (implemented by the sharing side's discovery module). */
 export interface Discoverer {
-  discover(timeoutMs: number): Promise<DiscoveredAnnounce[]>;
+  discover(timeoutMs: number): Promise<DiscoveredPc[]>;
 }
 
 export interface ShareCopyDeps {
@@ -194,12 +191,12 @@ export class ShareCopyService {
   async discover(timeoutMs = 2000): Promise<DiscoveredPc[]> {
     const found = await this.d.discoverer.discover(timeoutMs).catch((e) => {
       log.warn('discovery failed', { error: errorMessage(e) });
-      return [] as DiscoveredAnnounce[];
+      return [] as DiscoveredPc[];
     });
     const paired = new Set(this.d.client.paired().map((p) => p.deviceId));
     const out = new Map<string, DiscoveredPc>();
     for (const a of found) {
-      if (!a || a.kind !== 'omnipc-announce' || typeof a.deviceId !== 'string' || typeof a.address !== 'string' || !isLocalAddress(a.address)) continue;
+      if (!a || typeof a.deviceId !== 'string' || typeof a.address !== 'string' || !isLocalAddress(a.address)) continue;
       if (paired.has(a.deviceId)) this.d.client.updateAddress(a.deviceId, a.address.replace(/^::ffff:/i, ''), a.port, a.name);
       out.set(a.deviceId, { deviceId: a.deviceId, name: String(a.name ?? 'PC').slice(0, 100), address: a.address.replace(/^::ffff:/i, ''), port: a.port, version: String(a.version ?? ''), paired: paired.has(a.deviceId) });
     }

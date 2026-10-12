@@ -275,9 +275,9 @@ describe('pairing', () => {
     const pc = makeClientPc({
       discoverer: {
         discover: async () => [
-          { kind: 'omnipc-announce', protocol: 1, deviceId: server.info.deviceId, name: 'Living Room PC', port: server.port, version: '1.4.0', address: '::ffff:127.0.0.1' },
-          { kind: 'omnipc-announce', protocol: 1, deviceId: 'evil', name: 'Internet', port: 1, version: '1', address: '8.8.8.8' },
-          { kind: 'omnipc-announce', protocol: 1, deviceId: 'other', name: 'Bedroom', port: 47632, version: '1.4.0', address: '192.168.1.40' },
+          { deviceId: server.info.deviceId, name: 'Living Room PC', port: server.port, version: '1.4.0', address: '::ffff:127.0.0.1', paired: false },
+          { deviceId: 'evil', name: 'Internet', port: 1, version: '1', address: '8.8.8.8', paired: false },
+          { deviceId: 'other', name: 'Bedroom', port: 47632, version: '1.4.0', address: '192.168.1.40', paired: false },
         ],
       },
     });
@@ -541,9 +541,9 @@ describe('setup import', () => {
         ],
         controllerProfile: { id: 9, name: 'Their pad', controllerKind: 'dualsense', deviceIndex: 0, mapping: { A: 'B' } as never, nintendoLayoutForNintendoSystems: true, rumble: false, deadzone: 0.2, perSystem: {}, updatedAt: '' },
         profiles: [
-          { systemId: 'ps2', title: 'Whatever', serial: 'SLUS-20312', profile: { emulatorId: 'pcsx2', overrides: { resolutionScale: 4 }, customArgs: '--run-something', notes: 'by serial' } },
-          { systemId: 'gc', title: 'Super Mario Sunshine!', serial: null, profile: { emulatorId: 'evil', overrides: {}, customArgs: null, notes: 'by title' } },
-          { systemId: 'wii', title: 'Not Here', serial: null, profile: { emulatorId: null, overrides: {}, customArgs: null, notes: null } },
+          { systemId: 'ps2', title: 'Whatever', serial: 'SLUS-20312', profile: { emulatorId: 'pcsx2', overrides: { resolutionScale: 4 }, customArgs: '--run-something', notes: 'by serial', updatedAt: '' } },
+          { systemId: 'gc', title: 'Super Mario Sunshine!', serial: null, profile: { emulatorId: 'evil', overrides: {}, customArgs: null, notes: 'by title', updatedAt: '' } },
+          { systemId: 'wii', title: 'Not Here', serial: null, profile: { emulatorId: null, overrides: {}, customArgs: null, notes: null, updatedAt: '' } },
         ],
       };
       const pc = makeClientPc({ games: [{ id: 11, system_id: 'ps2', title: 'Final Fantasy X', serial: 'SLUS_203.12' }, { id: 12, system_id: 'gc', title: 'super mario sunshine', serial: null }] });
@@ -588,5 +588,71 @@ describe('setup import', () => {
   it('sanitizeSettings only keeps keys that are present', () => {
     expect(sanitizeSettings({ reduceMotion: true }, structuredClone(DEFAULT_SETTINGS))).toEqual({ reduceMotion: true });
     expect(sanitizeSettings({ launchTimeoutSeconds: 'x', updateChannel: 'evil', aiApiKey: 'k' }, structuredClone(DEFAULT_SETTINGS))).toEqual({});
+  });
+});
+
+describe('end to end with the real sharing server', () => {
+  it('pairs, lists, and copies games, BIOS and setup between two OmniPC containers', async () => {
+    const { AppContainer } = await import('../src/main/services/container');
+    const { ps1Bin, ps2Bios, write } = await import('./fixtures/builders.mjs');
+    const root = join(t.dir, 'e2e');
+    const host = (name: string) => ({
+      thumbnailer: async () => false,
+      displays: () => [],
+      // Local-network requests go through; anything on the internet is blocked.
+      fetchImpl: ((url: string | URL, init?: RequestInit) => (String(url).startsWith('http://127.0.0.1:') ? fetch(url, init) : Promise.resolve(new Response('no', { status: 404 })))) as unknown as typeof fetch,
+      appVersion: '1.4.0',
+      shareDiscoverer: { discover: async () => [] },
+      share: { port: 0, host: '127.0.0.1', discoveryPort: null, name, tmpDir: join(root, `${name}-tmp`) },
+    });
+    const srcGames = join(root, 'A-Games');
+    write(join(srcGames, 'PS1', 'Crash', 'Crash (USA).cue'), 'FILE "Crash (USA).bin" BINARY\r\n  TRACK 01 MODE2/2352\r\n    INDEX 01 00:00:00\r\n');
+    write(join(srcGames, 'PS1', 'Crash', 'Crash (USA).bin'), ps1Bin('SCUS_949.00'));
+    write(join(root, 'A-tmp', '.keep'), '');
+    write(join(root, 'B-tmp', '.keep'), '');
+    const a = new AppContainer({ userDataDir: join(root, 'A'), homeDir: join(root, 'A-home'), safeMode: false, host: host('A') });
+    const b = new AppContainer({ userDataDir: join(root, 'B'), homeDir: join(root, 'B-home'), safeMode: false, host: host('B') });
+    try {
+      for (const c of [a, b]) c.settings.set({ onboardingComplete: true, metadataOnline: false });
+      a.settings.set({ reduceMotion: true, aiApiKey: 'sk-SECRET' });
+      a.library.addPath(srcGames, null, null);
+      await a.scanLibrary(false).done;
+      write(join(a.paths.systemBiosDir('ps2'), 'SCPH-70012.bin'), ps2Bios());
+      const st = await a.share.setEnabled(true);
+      a.share.openPairing(10);
+
+      const { requestId, server: info } = await b.shareCopy.pairStart('127.0.0.1', st.port!);
+      expect(info.name).toBe('A');
+      const code = a.share.status().pending[0].code;
+      await expect(b.shareCopy.pairFinish(requestId, code === '000000' ? '111111' : '000000')).rejects.toMatchObject({ detail: { code: 'SHARE_WRONG_CODE' } });
+      await b.shareCopy.pairFinish(requestId, code);
+      expect(a.share.status().paired.map((p) => p.deviceId)).toEqual([b.share.deviceId]);
+
+      const view = await b.shareCopy.catalogView(st.deviceId);
+      expect(view.catalog.games).toHaveLength(1);
+      const game = view.catalog.games[0];
+      expect(view.have.games[game.id]).toBe(false);
+      const bios = view.catalog.bios.find((x) => x.systemId === 'ps2')!;
+      expect(view.have.bios[bios.id]).toBe(false);
+
+      const dest = join(root, 'B-Games');
+      const r = await b.shareCopy.copy(st.deviceId, { gameIds: [game.id], biosIds: [bios.id], savesIds: [], setup: true, gamesDestination: dest }).done;
+      expect(r.failed).toEqual([]);
+      const copiedBin = game.files.find((f) => f.path.endsWith('.bin'))!;
+      expect(readFileSync(join(dest, game.folder, copiedBin.path)).equals(readFileSync(join(srcGames, 'PS1', 'Crash', 'Crash (USA).bin')))).toBe(true);
+      expect(existsSync(join(b.paths.systemBiosDir('ps2'), 'SCPH-70012.bin'))).toBe(true);
+      expect(b.library.listPaths().map((p) => p.path)).toEqual([dest]);
+      expect(b.library.allGames()).toHaveLength(1);
+      expect(b.settings.get('reduceMotion')).toBe(true);
+      expect(b.settings.get('aiApiKey')).toBe('');
+      const after = await b.shareCopy.catalogView(st.deviceId);
+      expect(after.have.games[game.id]).toBe(true);
+      expect(after.have.bios[bios.id]).toBe(true);
+    } finally {
+      await a.share.stop();
+      await b.share.stop();
+      a.shutdown();
+      b.shutdown();
+    }
   });
 });

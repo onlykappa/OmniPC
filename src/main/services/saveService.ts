@@ -243,12 +243,7 @@ export class SaveService {
     let name = backupFileName(id, now, kind);
     for (let i = 1; existsSync(join(target.dir, name)); i++) name = backupFileName(id, new Date(now.getTime() + i), kind);
     const dest = join(target.dir, name);
-    const zip = new yazl.ZipFile();
-    const manifest = { app: 'OmniPC', emulatorId: id, createdAt: now.toISOString(), kind, reason: kind, computer: this.computer, fingerprint: fp, locations: locs.map((l, i) => ({ index: i, label: l.label, path: l.path })) };
-    zip.addBuffer(Buffer.from(JSON.stringify(manifest, null, 2)), MANIFEST_NAME);
-    for (const [i, { l, files }] of perLoc.entries()) {
-      for (const f of files) zip.addFile(f.path, `${i}/${relative(l.path, f.path).replace(/\\/g, '/')}`);
-    }
+    const { zip, manifest } = this.buildZip(id, kind, now, fp, perLoc);
     await writeZipAtomically(zip, dest);
     const s = await stat(dest);
     this.setFingerprint(id, { fp, file: dest });
@@ -256,6 +251,36 @@ export class SaveService {
     this.ops.addChange('saves.backup', id, `${label} backed up${kind === 'manual' ? '' : ` (${KIND_TEXT[kind]})`}`);
     if (isAutomaticKind(kind)) await this.prune(target.dir, id).catch((e) => log.warn('save backup retention failed', { error: String(e) }));
     return { id: target.location === 'destination' ? `pc:${this.computer}/${name}` : name, emulatorId: id, label, path: dest, createdAt: manifest.createdAt, sizeBytes: s.size, kind, computer: this.computer, thisComputer: true, location: target.location };
+  }
+
+  private buildZip(id: string, kind: SaveBackupKind, now: Date, fp: SaveFingerprint, perLoc: { l: { label: string; path: string }; files: { path: string }[] }[]) {
+    const zip = new yazl.ZipFile();
+    const manifest = { app: 'OmniPC', emulatorId: id, createdAt: now.toISOString(), kind, reason: kind, computer: this.computer, fingerprint: fp, locations: perLoc.map(({ l }, i) => ({ index: i, label: l.label, path: l.path })) };
+    zip.addBuffer(Buffer.from(JSON.stringify(manifest, null, 2)), MANIFEST_NAME);
+    for (const [i, { l, files }] of perLoc.entries()) {
+      for (const f of files) zip.addFile(f.path, `${i}/${relative(l.path, f.path).replace(/\\/g, '/')}`);
+    }
+    return { zip, manifest };
+  }
+
+  /**
+   * Writes one emulator's saves, in the save backup ZIP format, to `dest`
+   * (used to send saves to another PC). It is not recorded as a backup of
+   * this PC: no fingerprint, change entry or retention. Null when the
+   * emulator has no save files. `fileName` is the backup name to use.
+   */
+  exportZip(emulatorId: string, dest: string): Promise<{ fileName: string; fileCount: number } | null> {
+    return this.exclusive(async () => {
+      const a = this.registry.get(emulatorId);
+      if (!a || !a.manifest.implemented) return null;
+      const perLoc = await Promise.all(a.saveLocations().filter((l) => existsSync(l.path)).map(async (l) => ({ l, files: await walk(l.path) })));
+      const all = perLoc.flatMap((x) => x.files);
+      if (!all.length) return null;
+      const now = new Date();
+      const { zip } = this.buildZip(emulatorId, 'manual', now, fingerprintOf(all), perLoc);
+      await writeZipAtomically(zip, dest);
+      return { fileName: backupFileName(emulatorId, now, 'manual'), fileCount: all.length };
+    });
   }
 
   private fingerprints(): Record<string, FingerprintRecord> {

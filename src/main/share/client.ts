@@ -4,7 +4,6 @@
 // nothing received is executed: responses are parsed as JSON or written to
 // files the caller chose.
 
-import { randomUUID } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
@@ -266,7 +265,8 @@ export class ShareClient {
     }
     const me = this.opts.identity();
     const closed = () => new OmniFailure({ code: 'SHARE_PAIRING_CLOSED', whatHappened: `${info.name} isn't accepting new PCs right now.`, userAction: [`On ${info.name}, click "Allow a new PC", then try again.`] });
-    const r = await this.json<{ requestId?: unknown }>(address, port, '/v1/pair/request', { method: 'POST', body: { deviceId: me.deviceId, name: me.name }, peerName: info.name, errors: { 403: closed, 409: closed, 423: closed } });
+    const busy = () => new OmniFailure({ code: 'SHARE_PAIRING_BUSY', whatHappened: `${info.name} has too many PCs waiting to pair.`, userAction: [`On ${info.name}, reject the requests you don't recognise, then try again.`] });
+    const r = await this.json<{ requestId?: unknown }>(address, port, '/v1/pair/request', { method: 'POST', body: { deviceId: me.deviceId, name: me.name }, peerName: info.name, errors: { 403: closed, 409: closed, 423: closed, 429: busy } });
     if (typeof r?.requestId !== 'string' || !r.requestId) throw notSharing('No pairing request id.');
     this.pending.set(r.requestId, { address, port, info, expires: Date.now() + PAIR_REQUEST_TTL_MS });
     return { requestId: r.requestId, server: info };
@@ -383,16 +383,4 @@ export class ShareClient {
     }
     return size;
   }
-}
-
-export const CLIENT_DEVICE_ID_KEY = 'share.deviceId';
-
-/** This PC's identity when it asks another PC to pair (device id created once). */
-export function clientIdentity(store: ShareClientStore, name: string): ClientIdentity {
-  let deviceId = store.getInternal<string | null>(CLIENT_DEVICE_ID_KEY, null);
-  if (typeof deviceId !== 'string' || !deviceId) {
-    deviceId = randomUUID();
-    store.setInternal(CLIENT_DEVICE_ID_KEY, deviceId);
-  }
-  return { deviceId, name };
 }
