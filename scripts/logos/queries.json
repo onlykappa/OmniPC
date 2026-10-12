@@ -1,0 +1,22 @@
+{
+ "ps1": {"titles": ["PlayStation logo.svg"], "search": "PlayStation logo"},
+ "ps2": {"titles": ["PlayStation 2 logo.svg"], "search": "PlayStation 2 logo"},
+ "ps3": {"titles": ["PlayStation 3 logo (2009).svg", "PS3 logo.svg"], "search": "PlayStation 3 logo"},
+ "ps4": {"titles": ["PlayStation 4 logo and wordmark.svg", "PS4 logo.svg"], "search": "PlayStation 4 logo"},
+ "ps5": {"titles": ["PlayStation 5 logo and wordmark.svg", "PS5 logo.svg"], "search": "PlayStation 5 logo"},
+ "psp": {"titles": ["PSP Logo.svg", "PlayStation Portable logo.svg"], "search": "PlayStation Portable logo"},
+ "gc": {"titles": ["Nintendo GameCube Logo.svg", "Nintendo GameCube logo.svg"], "search": "Nintendo GameCube logo"},
+ "wii": {"titles": ["Wii.svg", "Wii logo.svg"], "search": "Wii logo"},
+ "wiiu": {"titles": ["WiiU.svg", "Wii U logo.svg"], "search": "Wii U logo"},
+ "switch": {"titles": ["Nintendo Switch Logo.svg", "Nintendo Switch logo, square.svg"], "search": "Nintendo Switch logo"},
+ "nds": {"titles": ["Nintendo DS Logo.svg", "Nintendo DS logo.svg"], "search": "Nintendo DS logo"},
+ "xbox": {"titles": ["Xbox logo (2001).svg", "Xbox logo.svg"], "search": "Xbox 2001 logo"},
+ "x360": {"titles": ["Xbox 360 full logo.svg", "Xbox 360 Logo.svg"], "search": "Xbox 360 logo"},
+ "nes": {"titles": ["NES logo.svg", "Nintendo Entertainment System logo.svg"], "search": "Nintendo Entertainment System logo"},
+ "snes": {"titles": ["SNES logo.svg", "Super Nintendo Entertainment System logo.svg"], "search": "Super Nintendo Entertainment System logo"},
+ "n64": {"titles": ["Nintendo 64 Logo.svg", "N64-logo.svg"], "search": "Nintendo 64 logo"},
+ "gb": {"titles": ["Gameboy logo.svg", "Game Boy logo.svg"], "search": "Game Boy logo"},
+ "gbc": {"titles": ["Game Boy Color logo.svg"], "search": "Game Boy Color logo"},
+ "gba": {"titles": ["Game Boy Advance logo.svg", "Gameboy advance logo.svg"], "search": "Game Boy Advance logo"},
+ "genesis": {"titles": ["Sega Genesis Logo.svg", "Sega genesis logo.svg"], "search": "Sega Genesis logo"}
+}
