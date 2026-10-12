@@ -1,0 +1,18 @@
+name: Diag Ryujinx source (temporary)
+on:
+  push:
+    branches: ['claude/diag-ryujinx-src']
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set +e
+          B=https://git.ryujinx.app/ryubing/ryujinx/raw/branch/master/src
+          for f in Ryujinx.HLE/FileSystem/ContentManager.cs Ryujinx.Common/Configuration/AppDataManager.cs; do
+            echo "===== $f"; curl -sSfL "$B/$f" -o /tmp/f.cs || { echo FETCH FAILED; continue; }
+            grep -n -i -E "registered|EnumerateDirectories|EnumerateFiles|GetFiles|\"00\"|\.nca|portable|LaunchMode|BaseDirPath|SpecialFolder|ApplicationData|IsPortable|GetCurrentFirmwareVersion|SystemVersion" /tmp/f.cs | head -120
+          done
+          echo "===== log strings"
+          curl -sSfL "$B/Ryujinx/Headless/HeadlessRyujinx.cs" -o /tmp/h.cs; grep -rn -i "firmware version" /tmp/h.cs | head
+          curl -sSfL "$B/Ryujinx/Systems/AppHost.cs" -o /tmp/a.cs || curl -sSfL "$B/Ryujinx/AppHost.cs" -o /tmp/a.cs; grep -n -i "firmware" /tmp/a.cs | head -20
