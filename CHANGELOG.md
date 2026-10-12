@@ -2,9 +2,19 @@
 
 All notable changes to OmniPC. Versions follow [Semantic Versioning](https://semver.org).
 
-## [Unreleased]
+## [1.4.2] - 2026-10-12
 
 ### Fixed
+- **Ryujinx: "No firmware installed" although Ryujinx has firmware.** An existing Ryujinx
+  installation you pointed OmniPC at was always started with OmniPC's own data folder, so the
+  firmware, keys and saves in Ryujinx's own folder (`%APPDATA%\Ryujinx`, or the `portable` folder
+  next to Ryujinx.exe) were ignored, the health test reported no firmware, and Switch games were
+  blocked. OmniPC now starts such an installation with its own folder, and checks firmware the
+  way Ryujinx loads it: "Installed (N system titles)", or "Present, validation inconclusive" with
+  the reason (for example a firmware copied one folder too deep, empty or partial entries). The
+  check is read-only, keys already in Ryujinx's folder are never replaced, its Config.json is
+  backed up before OmniPC changes a setting, and an out-of-date health result is re-tested
+  instead of being shown.
 - Xbox and Xbox 360 games (and others using Wikipedia) still had no box art in 1.4.1: Wikipedia's
   image links end with tracking parameters, and OmniPC rejected them as "not an image". Checked
   against the live Wikipedia API: Halo 2, Halo 3, Halo: Reach, Gears of War 2, Forza Horizon,

@@ -406,6 +406,7 @@ export class EmulatorManager {
       if (a.prepareInstall) for (const n of await a.prepareInstall(p.app)) ctx.message(n);
       this.d.emuRepo.addVersion({ emulator_id: id, version: rel.version, installed_at: new Date().toISOString(), source_url: rel.url, sha256: dl.sha256, status: 'active', path: p.app });
       this.d.emuRepo.setInstalled(id, { state: 'installed', version: rel.version, installDir: p.app, executable: exe });
+      this.executableFor(id);
       this.d.emuRepo.setLatest(id, rel.version);
       this.d.ops.addChange(reason === 'update' ? 'emulator.updated' : 'emulator.installed', id, reason === 'update' ? `${a.manifest.name} updated ${previousVersion ?? '?'} → ${rel.version}` : `${a.manifest.name} ${rel.version} installed`, { version: rel.version, previousVersion, sha256: dl.sha256 });
       ctx.stepDone(exe);
@@ -515,6 +516,7 @@ export class EmulatorManager {
       this.d.emuRepo.setVersionStatus(cand.id, 'active', p.app);
       const exe = await a.findExecutable(p.app);
       this.d.emuRepo.setInstalled(id, { state: 'installed', version: cand.version, installDir: p.app, executable: exe });
+      this.executableFor(id);
       // Restore the configuration snapshot taken right before the update, if any.
       const pre = this.d.ops.backups(id).find((b) => b.reason === 'pre-update' && b.label.includes(row.version ?? '\u0000'));
       if (pre) {
@@ -599,6 +601,9 @@ export class EmulatorManager {
     if (!existsSync(executable)) throw new OmniFailure({ code: 'EXE_NOT_FOUND', whatHappened: `${executable} does not exist.` });
     const version = await a.detectVersion(executable);
     this.d.emuRepo.setInstalled(id, { state: 'external', version, installDir: join(executable, '..'), executable });
+    this.executableFor(id);
+    // The installation may bring its own settings file (e.g. Ryujinx's %APPDATA%\Ryujinx): back it up first.
+    await this.d.backups.create(id, 'Before using existing installation', 'pre-settings', a.configTargets()).catch(() => null);
     await a.applyConfig(this.configInput(id), 'all');
     this.d.ops.addChange('emulator.external', id, `${a.manifest.name}: using existing installation ${executable}`);
     await this.healthTest(id);
@@ -617,6 +622,7 @@ export class EmulatorManager {
 
   saveCustom(id: string, c: CustomEmulatorSettings): void {
     this.d.emuRepo.saveCustom(id, c);
+    this.executableFor(id);
     this.d.ops.addChange('config.custom', id, `${this.d.registry.require(id).manifest.name}: custom settings ${c.customConfigActive || c.customExecutable || c.customArgs ? 'enabled' : 'cleared'}`);
   }
 

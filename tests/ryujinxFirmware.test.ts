@@ -80,26 +80,59 @@ describe('Ryujinx firmware detection', () => {
     return { a, managedData: a.paths().data, managedExe: makeExe(a.paths().app) };
   };
 
-  it('1. finds firmware in the default %APPDATA%\\Ryujinx of an installation outside OmniPC and says where it is', async () => {
-    const { a } = setup();
+  it('1. an existing installation uses its %APPDATA%\\Ryujinx folder, so its firmware is found and used', async () => {
+    const { a, managedData } = setup();
     const exe = makeExe(join(fresh('Downloads'), 'ryujinx-canary-1.3.351-win_x64', 'publish'));
-    installFirmware(join(appData, 'Ryujinx'), 238);
-    const r = a.firmwareReport(exe);
-    expect(r.own?.state).toBe('installed');
-    expect(r.own?.loadable).toBe(238);
-    expect(r.own?.label).toBe('%APPDATA%\\Ryujinx');
-    const check = firmwareCheck(r);
-    // Never "No firmware installed" when it is installed somewhere Ryujinx uses.
-    expect(check.detail).not.toMatch(/No firmware installed|Not installed \(no firmware folder\) in/);
-    expect(check.detail).toContain('Firmware: Installed (238 system titles)');
-    expect(check.detail).toContain(join(appData, 'Ryujinx'));
-    // ...but OmniPC starts Ryujinx with its own data folder, so games started from OmniPC can't use it.
-    expect(check.ok).toBe(false);
-    expect(check.detail).toMatch(/OmniPC starts Ryujinx with its own data folder/);
+    const userData = join(appData, 'Ryujinx');
+    installFirmware(userData, 238);
+    writeFileSync(join(userData, 'Config.json'), '{}');
     a.setActiveExecutable(exe);
-    const fw = (await a.biosStatus())[1];
-    expect(fw.files.some((f) => f.path === registeredDirOf(join(appData, 'Ryujinx')) && /Installed \(238/.test(f.description))).toBe(true);
-    expect(fw.note).toContain(join(appData, 'Ryujinx'));
+    expect(a.paths().data).toBe(userData);
+    expect(a.usesOwnDataDir()).toBe(true);
+    const r = a.firmwareReport();
+    expect(r.active).toMatchObject({ dataDir: userData, state: 'installed', loadable: 238 });
+    expect(r.own).toBeNull();
+    const check = firmwareCheck(r);
+    expect(check.ok).toBe(true);
+    expect(check.detail).toMatch(/^Firmware: Installed \(238 system titles\)/);
+    expect((await a.biosStatus())[1].status).toBe('found');
+    expect((await a.smokeTest(exe)).checks.find((c) => c.label === 'Firmware installed')?.ok).toBe(true);
+    // Games and the Ryujinx window start with that folder.
+    const launch = await a.buildLaunch({ path: join(t.dir, 'game.nsp'), serial: null, extraContent: [] } as never, exe, a.defaultSettings(null, 'balanced'), null, null);
+    expect(launch.args.slice(0, 2)).toEqual(['-r', userData]);
+    expect(a.buildUiLaunch(exe).args.slice(0, 2)).toEqual(['-r', userData]);
+    expect(a.logsDir()).toBe(join(exe, '..', 'Logs'));
+    // OmniPC's own folder is not the one reported.
+    expect(r.active.registeredDir).not.toContain(managedData);
+  });
+
+  it('1b. keeps OmniPC\'s folder when the installation has no data of its own, or only OmniPC\'s folder has firmware', () => {
+    const { a, managedData } = setup();
+    const exe = makeExe(join(fresh('Fresh Download'), 'publish'));
+    a.setActiveExecutable(exe);
+    expect(a.paths().data).toBe(managedData); // no %APPDATA%\Ryujinx yet
+    installFirmware(managedData, 100);
+    mkdirSync(join(appData, 'Ryujinx'), { recursive: true });
+    writeFileSync(join(appData, 'Ryujinx', 'Config.json'), '{}');
+    expect(a.paths().data).toBe(managedData); // firmware only in OmniPC's folder
+    const r = a.firmwareReport();
+    expect(r.active.state).toBe('installed');
+    expect(r.own).toMatchObject({ dataDir: join(appData, 'Ryujinx'), state: 'missing' });
+  });
+
+  it('1c. never replaces keys already in the installation\'s own folder', async () => {
+    const { a } = setup();
+    const exe = makeExe(join(fresh('Downloads'), 'publish'));
+    const userData = join(appData, 'Ryujinx');
+    installFirmware(userData, 30);
+    mkdirSync(join(userData, 'system'), { recursive: true });
+    writeFileSync(join(userData, 'system', 'prod.keys'), `header_key = ${'11'.repeat(32)}\n`);
+    mkdirSync(a.paths().bios, { recursive: true });
+    writeFileSync(join(a.paths().bios, 'prod.keys'), `header_key = ${'22'.repeat(32)}\n`);
+    a.setActiveExecutable(exe);
+    const res = await a.syncKeys();
+    expect(res.changed).toEqual([]);
+    expect(readFileSync(join(userData, 'system', 'prod.keys'), 'utf8')).toContain('11'.repeat(32));
   });
 
   it('2. uses the portable folder of a portable installation instead of %APPDATA%', () => {
@@ -108,10 +141,9 @@ describe('Ryujinx firmware detection', () => {
     const exe = makeExe(dir);
     installFirmware(join(dir, 'portable'), 50);
     installFirmware(join(appData, 'Ryujinx'), 30);
-    const r = a.firmwareReport(exe);
-    expect(r.own?.dataDir).toBe(join(dir, 'portable'));
-    expect(r.own?.label).toMatch(/portable/);
-    expect(r.own?.loadable).toBe(50);
+    a.setActiveExecutable(exe);
+    expect(a.paths().data).toBe(join(dir, 'portable'));
+    expect(a.firmwareReport().active).toMatchObject({ dataDir: join(dir, 'portable'), loadable: 50, state: 'installed' });
   });
 
   it('3. reports firmware in OmniPC\'s managed installation as installed', async () => {
@@ -225,13 +257,14 @@ describe('Ryujinx firmware detection', () => {
     installFirmware(join(one, 'portable'), 60);
     mkdirSync(join(two, 'portable'), { recursive: true });
     installFirmware(join(appData, 'Ryujinx'), 70);
-    expect(a.firmwareReport(exe1).own).toMatchObject({ dataDir: join(one, 'portable'), loadable: 60 });
-    // exe2 is portable too (its folder exists, empty): its own folder, not %APPDATA%.
+    expect(a.firmwareReport(exe1).active).toMatchObject({ dataDir: join(one, 'portable'), loadable: 60 });
+    // exe2 is portable too (its folder exists but is empty): never %APPDATA%, which belongs to a non-portable install.
     expect(a.firmwareReport(exe2).own).toMatchObject({ dataDir: join(two, 'portable'), state: 'missing' });
+    expect(a.firmwareReport(exe2).active.dataDir).not.toContain(join(appData, 'Ryujinx'));
     a.setActiveExecutable(exe1);
-    expect(a.firmwareReport().own?.loadable).toBe(60);
+    expect(a.paths().data).toBe(join(one, 'portable'));
     a.setActiveExecutable(exe2);
-    expect(a.firmwareReport().own?.loadable).toBe(0);
+    expect(a.paths().data).not.toBe(join(one, 'portable'));
   });
 
   it('9. handles paths with spaces', () => {
