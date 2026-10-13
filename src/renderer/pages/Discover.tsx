@@ -10,7 +10,8 @@ import { bytes } from '../lib/format';
 const LABEL: Record<string,string> = { 'not-downloaded':'Not downloaded', 'in-library':'In Library', downloading:'Downloading', downloaded:'Downloaded, needs preparation', extracted:'Extracted', failed:'Download failed', interrupted:'Interrupted' };
 export function DiscoverPage() {
   const [search,setSearch]=useState('');const [platform,setPlatform]=useState<''|'ps4'|'ps5'>('');const [status,setStatus]=useState<''|'not-downloaded'|'in-library'>('');const [genre,setGenre]=useState('');const [offset,setOffset]=useState(0);const [tick,setTick]=useState(0);const [selected,setSelected]=useState<string|null>(null);
-  const jobs=useStore(s=>Object.values(s.jobs).filter(j=>j.kind.startsWith('discover-')&&(j.state==='running'||j.state==='queued'||j.state==='failed')).slice(0,5));
+  const jobRecords=useStore(s=>s.jobs);
+  const jobs=Object.values(jobRecords).filter(j=>j.kind.startsWith('discover-')&&(j.state==='running'||j.state==='queued'||j.state==='failed')).slice(0,5);
   useEffect(()=>onEvent('discover.changed',()=>setTick(t=>t+1)),[]);
   const {data,error,loading}=useLoad(()=>api('discover.query',{search,platform,status,genre,offset,limit:48}),[search,platform,status,genre,offset,tick]);
   const [load,busy]=useAction(async()=>{await api('discover.load');});const [importZip,importing]=useAction(async()=>{await api('discover.import');});

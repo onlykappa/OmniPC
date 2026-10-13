@@ -26,6 +26,8 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Exercise Discover in the real Windows app
+        run: node scripts/smoke-discover.mjs
       - name: Package Windows beta
         shell: bash
         run: npx electron-builder --win nsis zip --x64 --publish never --config.win.artifactName='OmniPC-Discover-Beta-${version}-${arch}.${ext}'
