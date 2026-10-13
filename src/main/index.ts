@@ -166,8 +166,8 @@ app.whenReady().then(async () => {
   // OmniPC self-update from the official GitHub Releases (installed Windows build only).
   const updater = new AppUpdateService({
     currentVersion: app.getVersion(),
-    updater: app.isPackaged && process.platform === 'win32' && !process.env.PORTABLE_EXECUTABLE_DIR ? autoUpdater : null,
-    unsupportedReason: !app.isPackaged ? 'Self-update is disabled in development builds.' : process.platform !== 'win32' ? 'Self-update is only available on Windows.' : 'Self-update is not available for portable copies.',
+    updater: app.isPackaged && process.platform === 'win32' && !process.env.PORTABLE_EXECUTABLE_DIR && !app.getVersion().includes('-beta.') ? autoUpdater : null,
+    unsupportedReason: app.getVersion().includes('-beta.') ? 'Private beta: public-channel self-updates are disabled.' : !app.isPackaged ? 'Self-update is disabled in development builds.' : process.platform !== 'win32' ? 'Self-update is only available on Windows.' : 'Self-update is not available for portable copies.',
     emit: (state) => c.bus.emit('app.update', state),
     notify: (title, body) => void c.notifications.add('info', title, body, { link: '/settings#updates', dedupeMs: 6 * 3600 * 1000 }),
     isBusy: () => !!c.launcher.activeSession(),

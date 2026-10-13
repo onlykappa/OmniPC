@@ -18,6 +18,7 @@ import { hostAllowed } from './sources';
 const log = logger.scope('downloads');
 
 export interface DownloadRequest {
+  rejectHtml?: boolean;
   name: string;
   url: string;
   version: string | null;
@@ -139,6 +140,7 @@ export class DownloadManager {
     try {
       const res = await this.fetchFollowingTrusted(i.req.url, i.req.allowedHosts, headers, i.controller.signal);
       if (!res.ok && res.status !== 206) throw new OmniFailure({ code: 'HTTP_ERROR', whatHappened: `The server returned HTTP ${res.status} for ${i.req.name}.`, probableCause: res.status === 404 ? 'The release file no longer exists upstream.' : null });
+      if (i.req.rejectHtml && /(?:text\/html|application\/(?:xhtml|json))/i.test(res.headers.get('content-type') || '')) { await res.body?.cancel(); throw new Error('This source returned a web page. Open it in your browser to obtain the file.'); }
       const resumed = res.status === 206 && startOffset > 0;
       const len = Number(res.headers.get('content-length') ?? 0) || null;
       i.item.totalBytes = len !== null ? len + (resumed ? startOffset : 0) : i.req.expectedSize;

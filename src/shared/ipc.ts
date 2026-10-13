@@ -97,6 +97,16 @@ export interface DevAdapterReport {
 }
 
 export interface OmniApi {
+  'discover.query': (query: import('./discover').DiscoverQuery) => import('./discover').DiscoverPage;
+  'discover.detail': (id: string) => import('./discover').DiscoverDetail | null;
+  'discover.load': () => { jobId: string };
+  'discover.import': () => Promise<{ jobId: string } | null>;
+  'discover.download': (gameId: string, sourceId: string) => { jobId: string };
+  'discover.openSource': (gameId: string, sourceId: string, partId: string) => void;
+  'discover.reveal': (transferId: string) => void;
+  'discover.extract': (transferId: string) => { jobId: string };
+  'discover.addFolder': () => Promise<{ jobId: string } | null>;
+
   // App
   'app.info': () => AppInfo;
   /** OmniPC self-update: state, check GitHub Releases, download, restart to install. */
@@ -323,6 +333,7 @@ export type OmniResult<M extends OmniMethod> = ReturnType<OmniApi[M]>;
 
 /** Events pushed from main to renderer. */
 export interface OmniEvents {
+  'discover.changed': { reason: string };
   'job.update': JobStatus;
   'download.update': DownloadItem;
   'notification': AppNotification;

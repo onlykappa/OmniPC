@@ -1,3 +1,4 @@
+import { DiscoverPage } from './pages/Discover';
 import { DoctorGamesPage } from './pages/DoctorGames';
 import { useEffect, useState } from 'react';
 import { api, hasBridge, onEvent } from './lib/api';
@@ -30,6 +31,7 @@ function Router() {
   const r = useRoute();
   const [a, b, c] = r.parts;
   switch (a) {
+    case 'discover': return <DiscoverPage />;
     case 'library': return b === 'duplicates' ? <DuplicatesPage /> : <LibraryPage />;
     case 'game': return <GameDetailsPage key={b} id={Number(b)} />;
     case 'systems': return <SystemsPage />;

@@ -2,6 +2,7 @@
 // Electron imports so the whole backend can be exercised by integration tests;
 // Electron-specific capabilities arrive through the `Host` interface.
 
+import { DiscoverService } from '../discover/service';
 import type { SystemId } from '@shared/systems';
 import { mkdir } from 'node:fs/promises';
 import type { spawn } from 'node:child_process';
@@ -91,6 +92,7 @@ export class AppContainer {
   readonly ops: OpsRepo;
   readonly backups: ConfigBackupService;
   readonly downloads: DownloadManager;
+  readonly discover: DiscoverService;
   readonly registry: AdapterRegistry;
   readonly notifications: NotificationService;
   readonly emulators: EmulatorManager;
@@ -131,6 +133,7 @@ export class AppContainer {
     this.hardwareProfile = this.settings.getInternal<HardwareProfile | null>('hardware', null);
     this.backups = new ConfigBackupService(this.paths.configBackups, this.ops);
     this.downloads = new DownloadManager(this.paths.downloads, this.bus, opts.host.fetchImpl ?? fetch);
+    this.discover = new DiscoverService({ paths: this.paths, downloads: this.downloads, jobs: this.jobs, bus: this.bus, fetchImpl: opts.host.fetchImpl, localGames: () => this.library.allGames(), scanFolder: async folder => { if (this.safeMode) throw new Error('Folder scan is disabled in Safe Mode'); const {driveInfoFor,driveOf} = await import('../platform/drives'); const drive = await driveInfoFor(folder); this.library.addPath(folder,drive?.volumeSerial??null,driveOf(folder)); await this.scanLibrary(false).done; } });
     this.registry = new AdapterRegistry(this.paths, opts.host.extraAdapters?.(this.paths) ?? []);
     this.notifications = new NotificationService(this.ops, this.bus);
     this.emulators = new EmulatorManager({
@@ -483,6 +486,7 @@ export class AppContainer {
   }
 
   shutdown(): void {
+    this.discover.shutdown();
     for (const t of this.timers) clearInterval(t);
     this.autoSaveBackup.stop();
     void this.share.stop();

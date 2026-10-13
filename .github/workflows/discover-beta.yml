@@ -1,0 +1,60 @@
+name: Discover private beta
+
+on:
+  push:
+    branches: [discover-private-beta]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: discover-private-beta
+  cancel-in-progress: false
+
+jobs:
+  beta:
+    if: github.ref == 'refs/heads/discover-private-beta'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Package Windows beta
+        shell: bash
+        run: npx electron-builder --win nsis zip --x64 --publish never --config.win.artifactName='OmniPC-Discover-Beta-${version}-${arch}.${ext}'
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Upload only to an unpublished draft
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const version = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+            if (!version.includes('-beta.')) throw new Error('Only beta versions are allowed');
+            const tag = `v${version}`;
+            const releases = await github.paginate(github.rest.repos.listReleases, {...context.repo, per_page: 100});
+            let release = releases.find(r => r.tag_name === tag);
+            if (release && !release.draft) throw new Error('Refusing to modify a published release');
+            if (!release) release = (await github.rest.repos.createRelease({
+              ...context.repo, tag_name: tag, target_commitish: context.sha,
+              name: `OmniPC Discover beta ${version}`, draft: true, prerelease: true, make_latest: 'false',
+              body: 'Unpublished Windows beta for initial testing. Visible to repository writers only.\n\nDownload the installer (.exe), or extract the portable ZIP and open OmniPC.exe. Open Discover and select Load Overdrive catalog, or Import release ZIP using the official v0.2.2 ZIP. The catalog is imported locally and is not included in this repository.\n\nCatalog games are not installed games. Sources may require browser steps, archive preparation, and a compatible emulator. Public-channel automatic updates are disabled in this beta. Do not publish until testing is complete.'
+            })).data;
+            const files = fs.readdirSync('release').filter(f => /^OmniPC-Discover-Beta-.*\.(exe|zip)$/.test(f));
+            if (files.length !== 2) throw new Error(`Expected installer and ZIP, found ${files.length}`);
+            for (const file of files) {
+              const existing = (await github.rest.repos.listReleaseAssets({...context.repo, release_id: release.id, per_page: 100})).data.find(a => a.name === file);
+              if (existing) await github.rest.repos.deleteReleaseAsset({...context.repo, asset_id: existing.id});
+              const data = fs.readFileSync(path.join('release', file));
+              await github.rest.repos.uploadReleaseAsset({...context.repo, release_id: release.id, name: file, data,
+                headers: {'content-type': 'application/octet-stream', 'content-length': data.length}});
+            }
+            core.notice(`Unpublished beta ready: ${release.html_url}`);

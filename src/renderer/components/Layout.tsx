@@ -8,6 +8,7 @@ import { Button, Modal } from './ui';
 const NAV: { path: string; label: string; icon: string; dev?: boolean }[] = [
   { path: '/home', label: 'Home', icon: '⌂' },
   { path: '/library', label: 'Library', icon: '▦' },
+  { path: '/discover', label: 'Discover', icon: '✧' },
   { path: '/systems', label: 'Systems', icon: '◎' },
   { path: '/emulators', label: 'Emulators', icon: '⚙' },
   { path: '/controllers', label: 'Controllers', icon: '🎮' },
@@ -65,6 +66,7 @@ export function Layout(props: { children: ReactNode; health: { problems: number;
         <div className="topbar">
           {consoleMode && <button className="btn ghost" onClick={() => navigate('/home')}>⌂ Home</button>}
           {consoleMode && <button className="btn ghost" onClick={() => navigate('/library')}>Library</button>}
+          {consoleMode && <button className="btn ghost" onClick={() => navigate('/discover')}>Discover</button>}
           {consoleMode && <button className="btn ghost" onClick={() => navigate('/doctor')}>OmniDoctor {props.health.problems ? `(${props.health.problems})` : ''}</button>}
           <button className="search-trigger" onClick={() => setPalette(true)}>
             ⌕ Search games, systems, emulators, settings <span className="right kbd">Ctrl K</span>

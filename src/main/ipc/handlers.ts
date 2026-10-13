@@ -207,6 +207,15 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
     'hardware.scan': () => c.scanHardware(),
 
     // --------------------------------------------------------------- library
+    'discover.query': q => c.discover.query(q),
+    'discover.detail': id => c.discover.detail(id),
+    'discover.load': () => { if (c.safeMode) throw new Error('Catalog downloads are disabled in Safe Mode'); return c.discover.fetchOfficial(); },
+    'discover.import': async () => { const file=await ui.pickFile('Import official Overdrive release ZIP',['zip']);return file?c.discover.importZip(file):null; },
+    'discover.download': (gameId,sourceId) => { if(c.safeMode)throw new Error('Downloads are disabled in Safe Mode');return c.discover.download(gameId,sourceId); },
+    'discover.openSource': (gameId,sourceId,partId) => ui.openExternal(c.discover.browserSource(gameId,sourceId,partId)),
+    'discover.reveal': id => ui.openPath(c.discover.transferFile(id).replace(/[\\/][^\\/]+$/,'')),
+    'discover.extract': id => { if(c.safeMode)throw new Error('Extraction is disabled in Safe Mode');return c.discover.extract(id); },
+    'discover.addFolder': async () => { const folder=await ui.pickFolder('Add prepared game folder to Library');if(!folder)return null;if(c.safeMode)throw new Error('Folder scan is disabled in Safe Mode');const {driveInfoFor,driveOf}=await import('../platform/drives');const drive=await driveInfoFor(folder);c.library.addPath(folder,drive?.volumeSerial??null,driveOf(folder));return {jobId:c.scanLibrary(false).id}; },
     'library.query': (q) => c.library.query(q),
     'library.game': (id) => gameDetails(id),
     'library.paths': () => c.library.listPaths(),
