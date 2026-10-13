@@ -28,7 +28,7 @@ const errors = [];
 try {
   app = await electron.launch({executablePath: (await import('electron')).default,
     args: ['--no-sandbox', resolve('.'), `--user-data-dir=${userData}`],
-    env: {...process.env, HOME: home, USERPROFILE: home}, timeout: 60000});
+    env: {...process.env}, timeout: 60000});
   const page = await app.firstWindow();
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => {if(m.type() === 'error') errors.push(m.text());});
