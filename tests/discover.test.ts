@@ -54,6 +54,14 @@ describe('Discover state and local Library boundary',()=>{
  it('extracts a supported archive into a new folder and invokes the normal library scan',async()=>{
   const root=dir(),archive=join(root,'game.zip');await zip(archive,{'Game/eboot.bin':Buffer.from('fixture')});const {s,jobs,getScanned}=service(root,async()=>({path:archive}));await jobs.wait(s.importZip(await releaseZip(root)).jobId);await jobs.wait(s.download('PPSA00001',s.detail('PPSA00001')!.game.sources[0].id).jobId);await jobs.wait(s.extract(s.detail('PPSA00001')!.transfers[0].id).jobId);expect(getScanned()).toBeTruthy();expect(readFileSync(join(getScanned()!,'Game','eboot.bin'),'utf8')).toBe('fixture');expect(s.detail('PPSA00001')!.transfers[0].status).toBe('extracted');
  });
+ it('automatically tries the next eligible archive when the first source fails',async()=>{
+  const root=dir(),file=join(root,'auto.zip'),archive=join(root,'download.zip');writeFileSync(archive,'fixture');
+  await zip(file,{'PPSA99058/eboot.bin':binary([record]),'PPSA99058/data/pages/PPSA00001.json':Buffer.from('{}'),'PPSA99058/data/releases/PPSA00001.json':Buffer.from(JSON.stringify([{...release,id:'first',record:'first',sizeBytes:7},{...release,id:'second',record:'second',sizeBytes:7}]))});
+  let attempts=0;const {s,jobs}=service(root,async()=>{if(++attempts===1)throw new Error('Invalid archive');return {path:archive};});await jobs.wait(s.importZip(file).jobId);const result=await jobs.wait(s.autoDownload('PPSA00001').jobId);expect(result.state).toBe('succeeded');expect(attempts).toBe(2);expect(s.detail('PPSA00001')!.transfers.map(t=>t.status)).toEqual(['failed','downloaded']);
+ });
+ it('does not automatically download when the catalog lacks an exact file size',async()=>{
+  const root=dir(),{s,jobs}=service(root);await jobs.wait(s.importZip(await releaseZip(root)).jobId);expect(()=>s.autoDownload('PPSA00001')).toThrow(/exact file size/);
+ });
  it('marks unfinished transfers interrupted after restart and preserves damaged catalog data',()=>{
   const root=dir(),{paths}=service(root);const folder=join(paths.data,'Discover');mkdirSync(folder,{recursive:true});writeFileSync(join(folder,'transfers.json'),JSON.stringify([{id:'x',gameId:'PPSA00001',status:'downloading'}]));writeFileSync(join(folder,'catalog.json'),'{broken');const restored=service(root);expect(restored.s.query({}).recoveryNote).toMatch(/damaged/);
  });

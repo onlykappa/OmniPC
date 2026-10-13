@@ -9,3 +9,9 @@ Search or filter the catalog and open a game to inspect its editions and sources
 This beta disables public-channel self-updates. Its GitHub workflow uploads the installer and portable ZIP exclusively to an unpublished draft release, without public Actions artifacts. Drafts are visible to repository writers; the source branch remains public because the repository is public. Publishing a prerelease would make it public.
 
 Validation: type checking, production build and targeted importer/download tests pass. The full suite is also required on the Windows beta runner before upload. The restricted development host could not run existing network-share integration tests because network interface enumeration is unavailable.
+
+## Automatic downloads in beta 3
+
+The main Download button selects an eligible single direct game file with an exact catalog file size, prioritizes published SHA-256 hashes, and retries up to five sources if a transfer fails. Supported signatures include ZIP, 7z, RAR, PS4 PKG, PFS/FFPFSC and exFAT. Unknown or missing sizes, unsupported file formats, browser-required sources and multipart sets stay in Advanced sources. PS5 images still require preparation and a compatible runtime; their download does not make them playable on Windows.
+
+HTTP installer filenames and MIME types, web pages, file-signature mismatches, exact size mismatches and supplied checksum mismatches are rejected. The comparison uses the archive or image file size, not an approximate installed game size. Size and signature checks cannot prove game identity or scan archive contents for malware. Downloaded files are never executed.

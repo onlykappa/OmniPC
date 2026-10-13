@@ -7,6 +7,7 @@ import type { DownloadManager } from '../downloads/downloadManager';
 import type { JobManager } from '../core/jobs';
 import type { EventBus } from '../core/events';
 import { extractArchive } from '../downloads/archive';
+import { automaticSources, gameFileType } from '@shared/gameDownload';
 import { readReleaseZip, httpsURL } from './importCatalog';
 
 export const OVERDRIVE_RELEASE = 'https://api.github.com/repos/overdriveps5/overdrive-releases/releases/tags/v0.2.2';
@@ -69,18 +70,33 @@ export class DiscoverService {
     const {game,source}=this.source(gameId,sourceId);
     if(source.parts.length!==1||source.parts[0].browserRequired)throw new Error('This source needs browser or multipart handling. Use Open source for its files.');
     if(this.transfers.some(t=>t.gameId===gameId&&t.status==='downloading'))throw new Error('This title already has an active download');
-    const part=source.parts[0];const url=httpsURL(part.url);if(!url)throw new Error('Download source is not a valid HTTPS URL');
+    const part=source.parts[0];if(/\.(exe|msi|bat|cmd|ps1|scr|com|js|vbs|lnk)$/i.test(part.filename))throw new Error('Installer and executable downloads are blocked.');const url=httpsURL(part.url);if(!url)throw new Error('Download source is not a valid HTTPS URL');
     const row:CatalogTransfer={id:randomUUID(),gameId,sourceId,title:game.title,status:'downloading',file:null,output:null,error:null,at:new Date().toISOString()};this.transfers.push(row);this.saveHistory();
     const job=this.deps.jobs.start('discover-download',`Download ${game.title}`,async ctx=>{
       try {
         ctx.step('Download file');const host=new URL(url).hostname;const allowedHosts=[host,...host==='archive.org'?['*.archive.org']:[],...host==='github.com'?['release-assets.githubusercontent.com','objects.githubusercontent.com']:[]];
-        const result=await this.deps.downloads.download({name:game.title,url,version:source.version||null,sourceLabel:source.provider,fileName:part.filename,allowedHosts,expectedSha256:part.sha256,expectedSize:part.sizeBytes,rejectHtml:true},ctx.signal);
+        const result=await this.deps.downloads.download({name:game.title,url,version:source.version||null,sourceLabel:source.provider,fileName:part.filename,allowedHosts,expectedSha256:part.sha256,expectedSize:part.sizeBytes,rejectHtml:true,gameFileType:gameFileType(part.filename)??undefined},ctx.signal);
         row.file=result.path;row.status='downloaded';this.saveHistory();
         // Only supported dump layouts are scanned automatically; packages/images remain downloads.
         if(extname(result.path).toLowerCase()==='.zar'){ctx.step('Scan supported game dump');await this.deps.scanFolder(dirname(result.path));}
         return row.file;
       }catch(err){row.status='failed';row.error=(err as Error).message;this.saveHistory();throw err;}
     },{lockKey:`discover-download-${gameId}`});void job.done.catch(()=>{});return {jobId:job.id};
+  }
+  autoDownload(gameId: string): {jobId:string} {
+    const game=this.catalog?.games.find(g=>g.id===gameId);if(!game)throw new Error('Catalog game no longer exists');
+    const sources=automaticSources(game.sources);
+    if(!sources.length)throw new Error('No automatic source has an exact file size and a supported game file format. Use Advanced sources for browser, multipart or other formats.');
+    const job=this.deps.jobs.start('discover-auto',`Download ${game.title}`,async ctx=>{
+      for(const source of sources.slice(0,5)) {
+        ctx.throwIfCancelled();ctx.step(`Check and download from ${source.provider}`);
+        const child=this.download(gameId,source.id);const abort=()=>this.deps.jobs.cancel(child.jobId);
+        ctx.signal.addEventListener('abort',abort,{once:true});
+        try {const result=await this.deps.jobs.wait(child.jobId);ctx.throwIfCancelled();if(result?.state==='succeeded')return this.transfers.filter(t=>t.gameId===gameId&&t.sourceId===source.id).at(-1)?.file;}
+        finally {ctx.signal.removeEventListener('abort',abort);}
+      }
+      throw new Error('The available automatic sources failed validation or could not download. Review Downloads & activity for the reason, or use Advanced sources.');
+    },{lockKey:`discover-auto-${gameId}`});void job.done.catch(()=>{});return {jobId:job.id};
   }
   transferFile(id:string):string { const row=this.transfers.find(t=>t.id===id);if(!row?.file||!existsSync(row.file))throw new Error('Downloaded file is missing');return row.file; }
   extract(id:string):{jobId:string} {

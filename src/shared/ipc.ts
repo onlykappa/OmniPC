@@ -101,6 +101,7 @@ export interface OmniApi {
   'discover.detail': (id: string) => import('./discover').DiscoverDetail | null;
   'discover.load': () => { jobId: string };
   'discover.import': () => Promise<{ jobId: string } | null>;
+  'discover.autoDownload': (gameId: string) => { jobId: string };
   'discover.download': (gameId: string, sourceId: string) => { jobId: string };
   'discover.openSource': (gameId: string, sourceId: string, partId: string) => void;
   'discover.reveal': (transferId: string) => void;

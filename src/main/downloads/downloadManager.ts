@@ -7,7 +7,7 @@
 
 import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream, createWriteStream, existsSync, statSync } from 'node:fs';
-import { mkdir, rename, rm } from 'node:fs/promises';
+import { mkdir, rename, rm, open } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { DownloadItem } from '@shared/models';
 import type { EventBus } from '../core/events';
@@ -15,10 +15,13 @@ import { OmniFailure } from '../core/errors';
 import { logger } from '../core/logger';
 import { hostAllowed } from './sources';
 
+import { matchesGameFileType, type GameFileType } from '@shared/gameDownload';
+
 const log = logger.scope('downloads');
 
 export interface DownloadRequest {
   rejectHtml?: boolean;
+  gameFileType?: GameFileType;
   name: string;
   url: string;
   version: string | null;
@@ -141,8 +144,10 @@ export class DownloadManager {
       const res = await this.fetchFollowingTrusted(i.req.url, i.req.allowedHosts, headers, i.controller.signal);
       if (!res.ok && res.status !== 206) throw new OmniFailure({ code: 'HTTP_ERROR', whatHappened: `The server returned HTTP ${res.status} for ${i.req.name}.`, probableCause: res.status === 404 ? 'The release file no longer exists upstream.' : null });
       if (i.req.rejectHtml && /(?:text\/html|application\/(?:xhtml|json))/i.test(res.headers.get('content-type') || '')) { await res.body?.cancel(); throw new Error('This source returned a web page. Open it in your browser to obtain the file.'); }
+      if (i.req.gameFileType && /(?:\.(?:exe|msi|bat|cmd|ps1|scr|com|js)(?:[\";\s]|$)|application\/(?:x-msdownload|x-msdos-program|x-msi))/i.test((res.headers.get('content-disposition') || '') + ' ' + (res.headers.get('content-type') || ''))) { await res.body?.cancel(); throw new Error('Rejected an installer or executable response.'); }
       const resumed = res.status === 206 && startOffset > 0;
       const len = Number(res.headers.get('content-length') ?? 0) || null;
+      if (i.req.gameFileType && len !== null && i.req.expectedSize !== null && len + (resumed ? startOffset : 0) !== i.req.expectedSize) { await res.body?.cancel(); throw new Error('The server file size does not match the catalog file size.'); }
       i.item.totalBytes = len !== null ? len + (resumed ? startOffset : 0) : i.req.expectedSize;
       i.item.receivedBytes = resumed ? startOffset : 0;
       const out = createWriteStream(i.partPath, { flags: resumed ? 'a' : 'w' });
@@ -150,9 +155,15 @@ export class DownloadManager {
       let windowBytes = 0;
       if (!res.body) throw new Error('empty response body');
       const reader = res.body.getReader();
+      let signature = Buffer.alloc(0);
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
+        if(i.req.gameFileType && !resumed && signature.length < 16) {
+          signature = Buffer.concat([signature, Buffer.from(value).subarray(0,16-signature.length)]);
+          if(signature.length === 16 && !matchesGameFileType(signature,i.req.gameFileType)) { await reader.cancel(); await new Promise<void>(resolve=>{out.once('close',resolve);out.destroy();}); await rm(i.partPath,{force:true}); throw new Error('File contents do not match the expected game file format. Download stopped before saving the payload.'); }
+        }
+        if(i.req.gameFileType && i.req.expectedSize !== null && i.item.receivedBytes + value.byteLength > i.req.expectedSize) { await reader.cancel(); await new Promise<void>(resolve=>{out.once('close',resolve);out.destroy();}); await rm(i.partPath, {force:true}); throw new Error('Download exceeds the expected catalog file size and was discarded.'); }
         if (!out.write(value)) await new Promise<void>((r) => out.once('drain', () => r()));
         i.item.receivedBytes += value.byteLength;
         windowBytes += value.byteLength;
@@ -197,6 +208,12 @@ export class DownloadManager {
     if (i.req.expectedSize && size !== i.req.expectedSize) {
       await rm(i.partPath, { force: true });
       throw new OmniFailure({ code: 'SIZE_MISMATCH', whatHappened: `The downloaded file for ${i.req.name} has the wrong size and was discarded.`, detected: [`Expected ${i.req.expectedSize} bytes, got ${size}`], probableCause: 'The download was interrupted or modified in transit.', userAction: ['Retry the download.'] });
+    }
+    if(i.req.gameFileType) {
+      const handle = await open(i.partPath, 'r');
+      const header = Buffer.alloc(16);
+      try { await handle.read(header, 0, header.length, 0); } finally { await handle.close(); }
+      if(!matchesGameFileType(header, i.req.gameFileType)) { await rm(i.partPath, {force:true}); throw new Error('File contents do not match the expected game file format. Executables and web pages are rejected.'); }
     }
     const sha = await sha256File(i.partPath);
     i.sha256 = sha;

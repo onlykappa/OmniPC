@@ -53,7 +53,8 @@ try {
   assert.equal(query.catalogCount, 1);
   await page.getByRole('button', {name: /Discover regression fixture, PS5, Not downloaded/}).click();
   await page.getByRole('dialog').getByRole('heading', {name: 'Discover regression fixture', exact: true}).waitFor();
-  await page.getByRole('dialog').locator('summary').click();
+  await page.getByRole('dialog').getByText('Advanced sources (1)', {exact: true}).click();
+  await page.getByRole('dialog').locator('summary').filter({hasText: 'Example host'}).click();
   await page.getByRole('button', {name: 'Open source', exact: true}).waitFor();
   assert.equal(await page.getByRole('button', {name: 'Download file', exact: true}).count(), 0);
   await page.getByRole('button', {name: '← Discover', exact: true}).click();

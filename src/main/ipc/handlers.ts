@@ -211,6 +211,7 @@ export function createApi(c: AppContainer, ui: UiHost): Impl {
     'discover.detail': id => c.discover.detail(id),
     'discover.load': () => { if (c.safeMode) throw new Error('Catalog downloads are disabled in Safe Mode'); return c.discover.fetchOfficial(); },
     'discover.import': async () => { const file=await ui.pickFile('Import official Overdrive release ZIP',['zip']);return file?c.discover.importZip(file):null; },
+    'discover.autoDownload': (gameId) => { if(c.safeMode)throw new Error('Downloads are disabled in Safe Mode');return c.discover.autoDownload(gameId); },
     'discover.download': (gameId,sourceId) => { if(c.safeMode)throw new Error('Downloads are disabled in Safe Mode');return c.discover.download(gameId,sourceId); },
     'discover.openSource': (gameId,sourceId,partId) => ui.openExternal(c.discover.browserSource(gameId,sourceId,partId)),
     'discover.reveal': id => ui.openPath(c.discover.transferFile(id).replace(/[\\/][^\\/]+$/,'')),

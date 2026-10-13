@@ -5,6 +5,7 @@ import { useLoad, useAction } from '../lib/hooks';
 import { navigate } from '../lib/router';
 import { useStore } from '../lib/store';
 import { Button, Chip, Empty, JobSteps, Panel, Spinner } from '../components/ui';
+import { automaticSources } from '@shared/gameDownload';
 import { bytes } from '../lib/format';
 
 const LABEL: Record<string,string> = { 'not-downloaded':'Not downloaded', 'in-library':'In Library', downloading:'Downloading', downloaded:'Downloaded, needs preparation', extracted:'Extracted', failed:'Download failed', interrupted:'Interrupted' };
@@ -41,6 +42,7 @@ function SourceGroup({group,gameId,onStarted}:{group:CatalogSource;gameId:string
 }
 function DiscoverGame({id,tick,onClose,onEdition}:{id:string;tick:number;onClose:()=>void;onEdition:(id:string)=>void}) {
   const {data,error,loading}=useLoad(()=>api('discover.detail',id),[id,tick]);
+  const [autoDownload,autoDownloading]=useAction(async()=>{await api('discover.autoDownload',id);});
   const [addFolder,adding]=useAction(async()=>{await api('discover.addFolder');});
   const [extract,extracting]=useAction(async(transferId:string)=>{await api('discover.extract',transferId);});
   const [reveal,revealing]=useAction(async(transferId:string)=>{await api('discover.reveal',transferId);});
@@ -48,11 +50,13 @@ function DiscoverGame({id,tick,onClose,onEdition}:{id:string;tick:number;onClose
   const detail=data as DiscoverDetail|null;const game=detail?.game;
   return <div className="discover-detail" data-modal role="dialog" aria-modal="true" aria-label={game?.title||'Game details'}><div className="discover-detail-inner"><div className="row"><Button variant="ghost" onClick={onClose}>← Discover</Button><span className="right"/><Button variant="ghost" disabled={adding} onClick={()=>void addFolder()}>Add prepared game folder</Button></div>{error&&<p role="alert">{error.message}</p>}{loading&&!game?<Spinner/>:game&&<>
     <div className="discover-hero" style={game.hero?{backgroundImage:`linear-gradient(90deg, rgba(11,13,18,.96),rgba(11,13,18,.5)),url(${JSON.stringify(game.hero)})`}:undefined}><div><Chip>{game.platform.toUpperCase()}</Chip><h1>{game.title}</h1><p>{game.publisher||game.developer}</p><p className="muted">{game.id} · {game.region||'Region unspecified'} · {game.releaseDate||'Release date unspecified'}</p><p className="small">{game.genres.join(' · ')}{game.sizeGb!==null?` · ${game.sizeGb} GB`:''}</p>{detail?.libraryGameId!==null&&<Button onClick={()=>navigate(`/game/${detail!.libraryGameId}`)}>Open local Library game</Button>}</div></div>
+    <div className="row"><Button disabled={autoDownloading||!automaticSources(game.sources).length||detail?.transfers.some(t=>t.status==='downloading')} onClick={()=>void autoDownload()}>Download</Button><p className="small muted">{automaticSources(game.sources).length?'Automatically selects an eligible game file source. Exact file size, file signature and available checksum are checked.':'Automatic download unavailable: no single supported file source with an exact file size. Use Advanced sources.'}</p></div>
+    <p className="small muted">Archives can contain unsafe files. These checks detect mismatches; they do not prove authenticity or replace an antivirus scan. Nothing downloaded is executed.</p>
     <p className="banner">Catalog entry only. Downloaded packages, images and archives may need preparation before an emulator can use them.</p>
     {detail?.transfers.length!==0&&<Panel title="Your downloads">{detail?.transfers.map(t=><div className="row discover-transfer" key={t.id}><div className="grow"><strong>{LABEL[t.status]}</strong><p className="small muted">{t.error||t.output||t.file||'Transfer in progress'}</p></div>{t.file&&<Button size="sm" variant="ghost" disabled={revealing} onClick={()=>void reveal(t.id)}>Show files</Button>}{t.file&&t.status==='downloaded'&&/\.(zip|7z)$/i.test(t.file)&&<Button size="sm" disabled={extracting} onClick={()=>void extract(t.id)}>Extract and scan</Button>}</div>)}</Panel>}
     {game.description&&<Panel title="About"><p className="discover-description">{game.description}</p></Panel>}
     {game.screenshots.length>0&&<div className="discover-shots">{game.screenshots.map(url=><img key={url} src={url} alt="Game screenshot" loading="lazy"/>)}</div>}
     {!!detail?.editions.length&&<Panel title="Other editions"><div className="row wrap">{detail.editions.map(e=><Button key={e.id} size="sm" variant="ghost" onClick={()=>onEdition(e.id)}>{e.platform.toUpperCase()} · {e.region||e.id}</Button>)}</div></Panel>}
-    <Panel title={`Available sources (${game.sources.length})`}><p className="small muted">Source listings come from the imported release and have not all been tested. Supported direct files use Downloads & activity; browser and multipart sources require manual host handling.</p>{game.sources.map(s=><SourceGroup key={s.id} group={s} gameId={game.id} onStarted={()=>{}}/>)}</Panel>
+    <details className="discover-source"><summary tabIndex={0}>Advanced sources ({game.sources.length})</summary><Panel title="Choose a source manually"><p className="small muted">Source listings come from the imported release and have not all been tested. Supported direct files use Downloads & activity; browser and multipart sources require manual host handling.</p>{game.sources.map(s=><SourceGroup key={s.id} group={s} gameId={game.id} onStarted={()=>{}}/>)}</Panel></details>
   </>}</div></div>;
 }
